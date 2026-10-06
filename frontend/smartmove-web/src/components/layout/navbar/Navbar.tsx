@@ -1,8 +1,20 @@
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { Search, Menu, Globe, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const navLinks = [
     { name: 'Home', href: '/', active: true },
     { name: 'Routes', href: '/routes' },
@@ -16,7 +28,10 @@ export default function Navbar() {
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="absolute top-0 left-0 w-full z-50 px-8 py-6 flex items-center justify-between"
+      className={cn(
+        "fixed top-0 left-0 w-full z-50 px-8 py-6 flex items-center justify-between transition-all duration-300",
+        scrolled ? "bg-white/80 backdrop-blur-md shadow-sm py-4" : "bg-transparent"
+      )}
     >
       {/* Logo */}
       <div className="flex items-center gap-2 text-2xl font-bold tracking-tighter text-gray-900 cursor-pointer">
