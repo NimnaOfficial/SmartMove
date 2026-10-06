@@ -71,3 +71,7 @@ pnpm-debug.log*
 infrastructure/docker/*_data/
 infrastructure/docker/mongo_data/
 infrastructure/docker/oracle_data/
+
+# peronal
+refer/
+UIskills/
