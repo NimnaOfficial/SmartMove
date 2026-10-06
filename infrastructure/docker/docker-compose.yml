@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # MongoDB (if you prefer Docker instead of local installation)
+  # ============================================================
+  mongodb:
+    image: mongo:7.0
+    container_name: smartmove-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: smartmove
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - smartmove-network
+
+  # MongoDB Admin UI
+  mongo-express:
+    image: mongo-express:latest
+    container_name: smartmove-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8888:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongodb
+    networks:
+      - smartmove-network
+
+  # ============================================================
+  # Oracle XE (if you prefer Docker instead of local installation)
+  # ============================================================
+  # oracle-xe:
+  #   image: gvenzl/oracle-xe:21-slim
+  #   container_name: smartmove-oracle
+  #   restart: unless-stopped
+  #   ports:
+  #     - "1521:1521"
+  #   environment:
+  #     ORACLE_PASSWORD: oracle123
+  #     APP_USER: smartmove
+  #     APP_USER_PASSWORD: smartmove123
+  #   volumes:
+  #     - oracle_data:/opt/oracle/oradata
+  #   networks:
+  #     - smartmove-network
+
+volumes:
+  mongodb_data:
+  # oracle_data:
+
+networks:
+  smartmove-network:
+    driver: bridge
