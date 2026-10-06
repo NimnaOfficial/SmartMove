@@ -28,12 +28,12 @@ export default function Navbar() {
       <div className="hidden md:flex items-center gap-10">
         {navLinks.map((link) => (
           <div key={link.name} className="relative group cursor-pointer">
-            <Link to={link.href} className={\`text-sm font-medium transition-colors hover:text-blue-600 \${link.active ? 'text-gray-900' : 'text-gray-600'}\`}>
+            <Link to={link.href} className={`text-sm font-medium transition-colors hover:text-blue-600 ${link.active ? 'text-gray-900' : 'text-gray-600'}`}>
               {link.name}
             </Link>
             {/* Active / Hover Indicator */}
             <motion.div 
-              className={\`absolute -bottom-2 left-0 h-0.5 bg-blue-600 transition-all duration-300 \${link.active ? 'w-full' : 'w-0 group-hover:w-full'}\`}
+              className={`absolute -bottom-2 left-0 h-0.5 bg-blue-600 transition-all duration-300 ${link.active ? 'w-full' : 'w-0 group-hover:w-full'}`}
             />
           </div>
         ))}
