@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import driverService from '@/services/driverService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Phone, Mail, Award, Star, Activity, ShieldCheck, MapPin, X, Edit3 } from 'lucide-react';
 
@@ -9,6 +10,18 @@ const fadeUp = {
 
 export default function DriverProfile() {
   const [isEditing, setIsEditing] = useState(false);
+  useEffect(() => {
+     const fetchProfile = async () => {
+        try {
+           const data = await driverService.getProfile();
+           if (data) setDriver(prev => ({ ...prev, ...data }));
+        } catch (e) {
+           console.error(e);
+        }
+     };
+     fetchProfile();
+  }, []);
+  
   const [driver, setDriver] = useState({
     name: 'Saman Kumara',
     id: 'DRV-8842',
@@ -23,7 +36,14 @@ export default function DriverProfile() {
     performance: 'Excellent'
   });
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+       await driverService.updateProfile(driver as any);
+       setIsEditing(false);
+    } catch(err) {
+       console.error(err);
+    }
     e.preventDefault();
     setIsEditing(false);
   };
@@ -130,11 +150,7 @@ export default function DriverProfile() {
               <Award className="w-5 h-5" /> Recent Reviews
             </h3>
             <div className="space-y-4">
-              {[
-                { name: 'Kavindu P.', rating: 5, date: 'Oct 12, 2026', comment: 'Very smooth and safe drive. Punctual as well.' },
-                { name: 'Nadeesha S.', rating: 5, date: 'Oct 10, 2026', comment: 'Excellent driver, very friendly and helpful with luggage.' },
-                { name: 'Amila W.', rating: 4, date: 'Oct 05, 2026', comment: 'Good trip, arrived exactly on time.' }
-              ].map((review, i) => (
+              {([] as any[]).map((review, i) => (
                 <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-sm font-bold text-gray-900">{review.name}</span>

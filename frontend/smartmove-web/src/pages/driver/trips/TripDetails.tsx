@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import tripService from '@/services/tripService';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -13,11 +14,26 @@ const fadeUp = {
 
 export default function TripDetails() {
   const { tripId } = useParams();
+  const [tripData, setTripData] = useState<any>(null);
   const navigate = useNavigate();
   const [tripStatus, setTripStatus] = useState('Scheduled');
 
   // Mock data
-  const trip = {
+  useEffect(() => {
+    const fetchTrip = async () => {
+       try {
+          if (tripId) {
+             const data = await tripService.getById(Number(tripId.replace(/\D/g,''))); // strip prefix if needed
+             setTripData(data);
+          }
+       } catch (e) {
+          console.error(e);
+       }
+    };
+    fetchTrip();
+  }, [tripId]);
+  
+  const trip = tripData || {
     id: tripId || 'TRP-1001',
     route: 'Coastal Express',
     from: 'Colombo',

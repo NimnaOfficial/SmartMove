@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import feedbackService from '@/services/feedbackService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Search, Filter, Star, Eye } from 'lucide-react';
 
@@ -17,14 +18,26 @@ export default function AdminFeedback() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
 
-  const mockFeedback = [
-    { id: 'F-001', rating: 5, passenger: 'John Doe', route: 'Colombo - Kandy', vehicle: 'ND-4521', driver: 'D. Palve', date: '2023-11-01', comment: 'Excellent trip, very comfortable and on time.' },
-    { id: 'F-002', rating: 3, passenger: 'Jane Smith', route: 'Galle - Colombo', vehicle: 'ND-3210', driver: 'S. Silva', date: '2023-11-02', comment: 'AC was not working properly, but the driver was polite.' },
-    { id: 'F-003', rating: 4, passenger: 'Kamal Perera', route: 'Kandy - Nuwara Eliya', vehicle: 'ND-8891', driver: 'K. Perera', date: '2023-11-03', comment: 'Good service.' },
-    { id: 'F-004', rating: 2, passenger: 'Nimali Fernando', route: 'Colombo - Jaffna', vehicle: 'ND-7712', driver: 'Unassigned', date: '2023-11-04', comment: 'Bus departed 30 mins late without prior notice.' },
-  ];
+  const [feedbackList, setFeedbackList] = useState<any[]>([]);
+  
 
-  const filtered = mockFeedback.filter(f => 
+  const fetchFeedback = async () => {
+    try {
+      
+      const data = await feedbackService.getAll();
+      setFeedbackList(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      
+    }
+  };
+
+  useEffect(() => {
+    fetchFeedback();
+  }, []);
+
+  const filtered = feedbackList.filter(f => 
     (activeFilter === 'All' || 
      (activeFilter === 'Positive' && f.rating >= 4) || 
      (activeFilter === 'Negative' && f.rating <= 2) || 

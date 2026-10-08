@@ -4,7 +4,7 @@ import { Link, useLocation, useOutlet } from 'react-router-dom';
 import { 
   LayoutDashboard, Car, Users, Map, CalendarCheck, 
   CreditCard, Wrench, MessageSquare, FileText, Bell, Database,
-  Search, Hexagon, X, CalendarClock, CheckCircle
+  Search, Hexagon, X, CheckCircle
 } from 'lucide-react';
 
 const navLinks = [
@@ -26,13 +26,7 @@ export default function AdminLayout() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'All' | 'Unread'>('Unread');
 
-  // Mock Notifications
-  const notifications = [
-    { id: 1, title: 'Trip schedule changed', time: '10 mins ago', unread: true, icon: CalendarClock, color: 'blue' },
-    { id: 2, title: 'Vehicle ND-4521 is due for maintenance', time: '1 hour ago', unread: true, icon: Wrench, color: 'orange' },
-    { id: 3, title: 'New feedback received', time: '2 hours ago', unread: false, icon: MessageSquare, color: 'purple' },
-    { id: 4, title: 'Service announcement published', time: '1 day ago', unread: false, icon: Hexagon, color: 'green' }
-  ];
+  const notifications: any[] = [];
 
   const filteredNotifs = notifications.filter(n => activeTab === 'All' || n.unread);
 

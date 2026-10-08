@@ -190,10 +190,7 @@ export default function PassengerDashboard() {
               </div>
               
               <div className="space-y-4">
-                {[
-                  { route: 'Mountain Pass', date: 'Oct 22, 2026', time: '11:00 AM', status: 'Payment Due', from: 'Kandy', to: 'Nuwara Eliya' },
-                  { route: 'Valley Line', date: 'Nov 05, 2026', time: '02:15 PM', status: 'Scheduled', from: 'Colombo', to: 'Kandy' }
-                ].map((trip, i) => (
+                {([] as any[]).map((trip, i) => (
                   <div key={i} onClick={() => navigate('/passenger/bookings')} className="cursor-pointer flex flex-col sm:flex-row gap-4 items-center p-4 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-sm transition-all group">
                     <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors flex-shrink-0">
                       <Navigation className="w-5 h-5" />
@@ -230,10 +227,7 @@ export default function PassengerDashboard() {
               </div>
 
               <div className="space-y-5">
-                {[
-                  { title: "Service Update: Northern Route", date: "Today, 09:00 AM", desc: "Minor delays expected on the Northern Star line due to track maintenance." },
-                  { title: "Holiday Schedule Released", date: "Yesterday, 14:30 PM", desc: "Check out our new expanded schedule for the upcoming holiday season." }
-                ].map((ann, i) => (
+                {([] as any[]).map((ann, i) => (
                   <div key={i} className="pb-5 border-b border-gray-50 last:border-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 text-sm mb-1">{ann.title}</h4>
                     <p className="text-xs text-gray-400 mb-2">{ann.date}</p>

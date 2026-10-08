@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import driverService from '@/services/driverService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -21,19 +22,31 @@ const staggerContainer = {
 const tabs = ['Today', 'Upcoming', 'Completed'] as const;
 type TabType = typeof tabs[number];
 
-const mockTrips = [
-  { id: 'TRP-1001', route: 'Coastal Express', from: 'Colombo', to: 'Galle', date: 'Oct 15, 2026', time: '08:30 AM', vehicle: 'ND-4521', status: 'Next', type: 'Today' },
-  { id: 'TRP-1002', route: 'Mountain Pass', from: 'Galle', to: 'Kandy', date: 'Oct 15, 2026', time: '01:00 PM', vehicle: 'ND-4521', status: 'Scheduled', type: 'Today' },
-  { id: 'TRP-1045', route: 'City Loop', from: 'Kandy', to: 'Colombo', date: 'Oct 16, 2026', time: '06:30 PM', vehicle: 'ND-4521', status: 'Scheduled', type: 'Upcoming' },
-  { id: 'TRP-0982', route: 'Northern Star', from: 'Colombo', to: 'Jaffna', date: 'Oct 10, 2026', time: '10:00 PM', vehicle: 'ND-3210', status: 'Completed', type: 'Completed' },
-];
+const [trips, setTrips] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTrips = async () => {
+    try {
+      setLoading(true);
+      const data = await driverService.getMyTrips();
+      setTrips(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTrips();
+  }, []);
 
 export default function MyTrips() {
   const [activeTab, setActiveTab] = useState<TabType>('Today');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  const filteredTrips = mockTrips.filter(t => 
+  const filteredTrips = trips.filter(t => 
     t.type === activeTab && 
     (t.route.toLowerCase().includes(searchQuery.toLowerCase()) || 
      t.id.toLowerCase().includes(searchQuery.toLowerCase()))

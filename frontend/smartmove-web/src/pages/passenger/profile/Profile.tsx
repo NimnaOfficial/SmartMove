@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import passengerService from '@/services/passengerService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Shield, Key, 
@@ -20,7 +21,7 @@ export default function Profile() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
-  const [profileData, setProfileData] = useState({
+  const [profileData, setProfileData] = useState<any>({
     firstName: 'Dipak',
     lastName: 'Palve',
     email: 'dipak.palve@example.com',
@@ -29,11 +30,26 @@ export default function Profile() {
     city: 'Colombo',
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    setIsChangingPassword(false);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await passengerService.getProfile();
+        if (data) setProfileData((prev: any) => ({ ...prev, ...data }));
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+    const handleSave = async () => {
+    try {
+      await passengerService.updateProfile(profileData);
+      setIsEditing(false);
+      setIsChangingPassword(false);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch(e) { console.error(e); }
   };
 
   return (

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import routeService from '@/services/routeService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Eye, Trash2, ArrowRight, Search, Filter } from 'lucide-react';
 
@@ -17,14 +18,26 @@ export default function AdminRoutes() {
   const [showForm, setShowForm] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<any>(null);
   
-  const mockRoutes = [
-    { id: 'RT-100', origin: 'Colombo', destination: 'Kandy', status: 'Active', trips: 12 },
-    { id: 'RT-101', origin: 'Colombo', destination: 'Galle', status: 'Active', trips: 8 },
-    { id: 'RT-102', origin: 'Kandy', destination: 'Nuwara Eliya', status: 'Active', trips: 5 },
-    { id: 'RT-103', origin: 'Colombo', destination: 'Jaffna', status: 'Inactive', trips: 0 },
-  ];
+  const [routes, setRoutes] = useState<any[]>([]);
+  
 
-  const filtered = mockRoutes.filter(r => 
+  const fetchRoutes = async () => {
+    try {
+      
+      const data = await routeService.getAll();
+      setRoutes(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      
+    }
+  };
+
+  useEffect(() => {
+    fetchRoutes();
+  }, []);
+
+  const filtered = routes.filter(r => 
     r.origin.toLowerCase().includes(search.toLowerCase()) || 
     r.destination.toLowerCase().includes(search.toLowerCase()) ||
     r.id.toLowerCase().includes(search.toLowerCase())

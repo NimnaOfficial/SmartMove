@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import contentService from '@/services/contentService';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, CalendarClock, AlertCircle, Info, Megaphone, CheckCircle2 } from 'lucide-react';
+import { Bell, CheckCircle2 } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -18,49 +19,27 @@ type TabType = typeof tabs[number];
 export default function DriverNotifications() {
   const [activeTab, setActiveTab] = useState<TabType>('All');
   
-  // Mock data
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'NOT-001',
-      type: 'schedule',
-      title: 'Schedule Change',
-      message: 'Your trip TRP-1045 has been rescheduled from 06:30 PM to 07:00 PM.',
-      date: 'Oct 14, 2026 • 09:15 AM',
-      read: false,
-      icon: CalendarClock,
-      color: 'blue'
-    },
-    {
-      id: 'NOT-002',
-      type: 'announcement',
-      title: 'Operational Announcement',
-      message: 'Mandatory safety briefing for all Northern route drivers tomorrow at 08:00 AM.',
-      date: 'Oct 13, 2026 • 04:30 PM',
-      read: false,
-      icon: Megaphone,
-      color: 'purple'
-    },
-    {
-      id: 'NOT-003',
-      type: 'alert',
-      title: 'Vehicle Maintenance Due',
-      message: 'Vehicle ND-4521 is scheduled for routine maintenance on Oct 20. Please confirm availability.',
-      date: 'Oct 12, 2026 • 11:00 AM',
-      read: true,
-      icon: AlertCircle,
-      color: 'orange'
-    },
-    {
-      id: 'NOT-004',
-      type: 'info',
-      title: 'Trip Completed Successfully',
-      message: 'Trip TRP-0982 has been marked as completed. Feedback summary is available.',
-      date: 'Oct 10, 2026 • 10:30 PM',
-      read: true,
-      icon: Info,
-      color: 'gray'
-    }
-  ]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  
+  useEffect(() => {
+     const fetchAnnouncements = async () => {
+        try {
+           const data = await contentService.getAllAnnouncements();
+           if (Array.isArray(data)) {
+              setNotifications(data.map((a: any) => ({
+                 id: a.announcementId || a.id,
+                 title: a.title,
+                 message: a.content,
+                 time: a.createdAt || 'Recent',
+                 read: false
+              })));
+           }
+        } catch (e) {
+           console.error(e);
+        }
+     };
+     fetchAnnouncements();
+  }, []);
 
   const filteredNotifications = notifications.filter(n => activeTab === 'All' || !n.read);
 

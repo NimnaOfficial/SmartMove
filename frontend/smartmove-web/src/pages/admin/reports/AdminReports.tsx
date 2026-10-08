@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Users, Wrench, PieChart, ArrowRight } from 'lucide-react';
 
+
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }

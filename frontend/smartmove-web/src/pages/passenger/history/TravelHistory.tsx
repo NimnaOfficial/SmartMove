@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import reportService from '@/services/reportService';
+import authService from '@/services/authService';
 import { motion } from 'framer-motion';
 import { Filter, Calendar, MapPin, CheckCircle, XCircle } from 'lucide-react';
 
@@ -16,11 +18,28 @@ export default function TravelHistory() {
   const [filterRoute, setFilterRoute] = useState('');
   const [filterDate, setFilterDate] = useState('');
 
-  const historyData = [
-    { id: 'TRP-8821', route: 'Colombo to Kandy', date: 'Oct 10, 2026', vehicle: 'ND-4521 (Luxury Coach)', booking: 'B-7741', paymentStatus: 'Paid' },
-    { id: 'TRP-8742', route: 'Galle to Matara', date: 'Sep 25, 2026', vehicle: 'ND-3210 (Mini Bus)', booking: 'B-7602', paymentStatus: 'Paid' },
-    { id: 'TRP-8511', route: 'Kandy to Nuwara Eliya', date: 'Aug 14, 2026', vehicle: 'ND-8891 (Standard)', booking: 'B-7321', paymentStatus: 'Refunded' }
-  ];
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+       try {
+         const user = authService.getCurrentUser();
+         if (user?.id) {
+            const data = await reportService.getPassengerHistory(user.id);
+            if (data) {
+               setHistoryData(Array.isArray(data) ? data : []);
+            }
+         }
+       } catch (e) {
+         console.error(e);
+       } finally {
+         setLoading(false);
+       }
+    };
+    fetchHistory();
+  }, []);
+
 
   const filteredHistory = historyData.filter(trip => {
     return (filterRoute === '' || trip.route.toLowerCase().includes(filterRoute.toLowerCase())) &&

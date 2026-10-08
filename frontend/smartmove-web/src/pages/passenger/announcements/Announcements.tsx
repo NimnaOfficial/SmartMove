@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import contentService from '@/services/contentService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BellRing, AlertTriangle, Info, Calendar, Users, Search, 
@@ -21,44 +22,7 @@ const tabs = ['All', 'Alerts', 'News'] as const;
 type TabType = typeof tabs[number];
 
 // Mock MongoDB Document Data
-const mockAnnouncements = [
-  {
-    id: 'ANN-001',
-    title: 'Mountain Pass Express Detour',
-    message: 'Due to heavy snowfall in the northern region, all trips on the Mountain Pass route will experience an estimated 45-minute delay. Our routing algorithms have already selected the safest alternative paths. Your safety is our absolute priority.',
-    publishedDate: 'Oct 08, 2026 • 14:30',
-    priority: 'High Priority',
-    audience: 'Mountain Route Passengers',
-    type: 'alert'
-  },
-  {
-    id: 'ANN-002',
-    title: 'New Luxury Fleet Additions',
-    message: 'We are thrilled to announce the addition of 15 new premium hybrid-electric coaches to our coastal lines. These vehicles feature expanded legroom, panoramic windows, and ultra-fast complimentary Wi-Fi for all passengers.',
-    publishedDate: 'Oct 05, 2026 • 09:00',
-    priority: 'General News',
-    audience: 'All Passengers',
-    type: 'info'
-  },
-  {
-    id: 'ANN-003',
-    title: 'Scheduled System Maintenance',
-    message: 'Our central booking and e-ticketing system will undergo scheduled infrastructure upgrades on Sunday from 2:00 AM to 4:00 AM EST. Ticket purchasing will be temporarily paused during this window. Active tickets remain valid.',
-    publishedDate: 'Oct 01, 2026 • 10:15',
-    priority: 'Warning',
-    audience: 'All Users',
-    type: 'warning'
-  },
-  {
-    id: 'ANN-004',
-    title: 'Holiday Schedule Adjustments',
-    message: 'In preparation for the upcoming national holiday, we are adding 50 additional express routes between major hubs to accommodate increased travel demand. Check the trip search portal for newly available times.',
-    publishedDate: 'Sep 28, 2026 • 16:45',
-    priority: 'General News',
-    audience: 'All Passengers',
-    type: 'info'
-  }
-];
+const mockAnnouncements : any[] = [];
 
 export default function Announcements() {
   const [activeTab, setActiveTab] = useState<TabType>('All');
