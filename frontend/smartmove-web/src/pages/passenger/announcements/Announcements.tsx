@@ -1,18 +1,24 @@
-import { motion } from 'framer-motion';
-import { BellRing, AlertTriangle, Info, Calendar, Users, Search, Filter } from 'lucide-react';
 import { useState } from 'react';
-import Navbar from '@/components/layout/navbar/Navbar';
-import Footer from '@/components/layout/footer/Footer';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  BellRing, AlertTriangle, Info, Calendar, Users, Search, 
+  Filter, Megaphone, ChevronRight
+} from 'lucide-react';
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  exit: { opacity: 0, y: -20, transition: { duration: 0.3 } }
 };
 
 const staggerContainer = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  exit: { opacity: 0, transition: { staggerChildren: 0.05 } }
 };
+
+const tabs = ['All', 'Alerts', 'News'] as const;
+type TabType = typeof tabs[number];
 
 // Mock MongoDB Document Data
 const mockAnnouncements = [
@@ -55,145 +61,174 @@ const mockAnnouncements = [
 ];
 
 export default function Announcements() {
+  const [activeTab, setActiveTab] = useState<TabType>('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredAnnouncements = mockAnnouncements.filter(a => {
+    const matchesTab = 
+      activeTab === 'All' ? true : 
+      activeTab === 'Alerts' ? (a.type === 'alert' || a.type === 'warning') : 
+      (a.type === 'info');
+      
+    const matchesSearch = 
+      a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      a.message.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    return matchesTab && matchesSearch;
+  });
 
   const getPriorityStyles = (type: string) => {
     switch(type) {
       case 'alert':
-        return { icon: BellRing, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100', badge: 'bg-red-600' };
+        return { icon: BellRing, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100', badge: 'bg-red-100 text-red-700', side: 'bg-red-500' };
       case 'warning':
-        return { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', badge: 'bg-amber-500' };
+        return { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', badge: 'bg-amber-100 text-amber-700', side: 'bg-amber-500' };
       case 'info':
       default:
-        return { icon: Info, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', badge: 'bg-blue-600' };
+        return { icon: Info, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', badge: 'bg-blue-100 text-blue-700', side: 'bg-blue-500' };
     }
   };
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen font-sans">
-      <Navbar />
-
-      {/* =========================================
-          HERO SECTION
-          ========================================= */}
-      <section className="relative h-[45vh] min-h-[380px] w-full flex items-center justify-center pt-20">
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=2074&auto=format&fit=crop"
-            alt="Communication Network"
-            className="w-full h-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-slate-900/80" />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent" />
-        </div>
-
-        <div className="relative z-10 w-full px-8 md:px-16 lg:px-24 xl:px-32 text-center pb-10">
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl md:text-6xl font-medium tracking-tight text-white mb-4 drop-shadow-lg"
-          >
-            Live <span className="font-serif italic text-blue-300">Announcements</span>
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-lg text-gray-300 font-light max-w-2xl mx-auto drop-shadow-md"
-          >
+    <div className="max-w-7xl mx-auto h-full flex flex-col w-full pb-10">
+      
+      {/* Header Section */}
+      <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-[#1e3f7a]">
+              <Megaphone className="w-6 h-6" />
+            </div>
+            Announcements
+          </h1>
+          <p className="text-gray-500 mt-2 font-light max-w-lg">
             Real-time operational updates, travel alerts, and news directly from our dispatch network.
-          </motion.p>
+          </p>
         </div>
-      </section>
-
-      {/* =========================================
-          FILTER WIDGET (Overlapping Hero)
-          ========================================= */}
-      <section className="relative z-20 w-full px-8 md:px-16 lg:px-24 xl:px-32 -mt-20">
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-white/70 backdrop-blur-2xl rounded-3xl p-4 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.05)] ring-1 ring-white/50 max-w-5xl mx-auto flex flex-col md:flex-row gap-4"
-        >
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        
+        {/* Search Bar */}
+        <div className="flex gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
               type="text" 
+              placeholder="Search announcements..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search announcements by keyword..." 
-              className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-12 pr-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-sm"
+              className="w-full bg-white border border-gray-200 rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3f7a] focus:border-transparent transition-all shadow-sm"
             />
           </div>
-          <button className="bg-gray-900 text-white px-8 py-3 rounded-2xl font-medium hover:bg-blue-600 transition-all shadow-lg hover:shadow-blue-600/30 flex items-center justify-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filter
+          <button className="flex-shrink-0 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-full text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center gap-2 shadow-sm">
+            <Filter className="w-4 h-4" />
+            <span className="hidden sm:inline">Filter</span>
           </button>
-        </motion.div>
-      </section>
+        </div>
+      </motion.div>
 
-      {/* =========================================
-          ANNOUNCEMENTS GRID
-          ========================================= */}
-      <section className="py-20 px-8 md:px-16 lg:px-24 xl:px-32">
-        <div className="max-w-5xl mx-auto">
-          
-          <motion.div 
+      {/* Tabs */}
+      <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex items-center gap-2 mb-8 bg-gray-100/80 p-1.5 rounded-full w-fit border border-gray-200/50">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`relative px-6 py-2.5 rounded-full text-sm font-semibold transition-colors ${activeTab === tab ? 'text-[#1e3f7a]' : 'text-gray-500 hover:text-gray-900'}`}
+          >
+            {activeTab === tab && (
+              <motion.div
+                layoutId="announcementTab"
+                className="absolute inset-0 bg-white rounded-full shadow-sm border border-gray-200/50"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <span className="relative z-10">{tab}</span>
+          </button>
+        ))}
+      </motion.div>
+
+      {/* Announcements List */}
+      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-2 gap-8"
+            exit="exit"
+            className="space-y-5"
           >
-            {mockAnnouncements.map((announcement) => {
-              const styles = getPriorityStyles(announcement.type);
-              const Icon = styles.icon;
+            {filteredAnnouncements.length > 0 ? (
+              filteredAnnouncements.map((announcement) => {
+                const styles = getPriorityStyles(announcement.type);
+                const Icon = styles.icon;
 
-              return (
-                <motion.div 
-                  key={announcement.id} 
-                  variants={fadeUp}
-                  className="bg-white rounded-[2rem] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] transition-all duration-500 group flex flex-col h-full"
-                >
-                  <div className="flex justify-between items-start mb-6">
-                    <div className={`w-12 h-12 rounded-2xl ${styles.bg} ${styles.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-500`}>
-                      <Icon className="w-6 h-6" />
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className={`text-[10px] uppercase tracking-widest font-bold text-white px-3 py-1 rounded-full ${styles.badge} mb-2 shadow-sm`}>
-                        {announcement.priority}
-                      </span>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {announcement.publishedDate}
+                return (
+                  <motion.div 
+                    key={announcement.id}
+                    variants={fadeUp}
+                    className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-blue-100 transition-all duration-300 flex flex-col md:flex-row gap-6 group relative overflow-hidden"
+                  >
+                    {/* Decorative Side Bar */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${styles.side}`} />
+
+                    {/* Left: Icon & Title */}
+                    <div className="flex-1 md:max-w-md flex flex-col justify-center">
+                      <div className="flex items-start gap-4 mb-3">
+                        <div className={`w-10 h-10 rounded-xl ${styles.bg} ${styles.color} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-500`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${styles.badge} mb-2`}>
+                            {announcement.priority}
+                          </span>
+                          <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#1e3f7a] transition-colors line-clamp-2">{announcement.title}</h3>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <h3 className="text-2xl font-medium text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
-                    {announcement.title}
-                  </h3>
-                  
-                  <p className="text-gray-500 font-light leading-relaxed mb-8 flex-grow">
-                    {announcement.message}
-                  </p>
-
-                  <div className="mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Users className="w-4 h-4 text-gray-400" />
-                      Audience: <span className="font-medium text-gray-700">{announcement.audience}</span>
+                    {/* Middle: Message */}
+                    <div className="flex-1 flex flex-col justify-center px-4 md:border-l md:border-gray-100">
+                      <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
+                        {announcement.message}
+                      </p>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+
+                    {/* Right: Meta & Actions */}
+                    <div className="flex flex-col items-start md:items-end justify-center md:border-l md:border-gray-100 md:pl-6 min-w-[160px] gap-3 mt-4 md:mt-0">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <span>{announcement.publishedDate}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Users className="w-4 h-4 text-gray-400" />
+                        <span className="font-medium text-gray-700">{announcement.audience}</span>
+                      </div>
+                      <button className="mt-2 w-full md:w-auto px-4 py-2 rounded-xl bg-gray-50 text-[#1e3f7a] text-sm font-semibold hover:bg-blue-50 border border-gray-200 hover:border-blue-100 transition-colors flex items-center justify-center gap-1 group/btn">
+                        Read More
+                        <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                className="flex flex-col items-center justify-center py-20 text-center"
+              >
+                <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                  <Megaphone className="w-10 h-10 text-gray-300" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No announcements found</h3>
+                <p className="text-gray-500 font-light max-w-md">
+                  We couldn't find any announcements matching your current filters or search query.
+                </p>
+              </motion.div>
+            )}
           </motion.div>
+        </AnimatePresence>
+      </div>
 
-        </div>
-      </section>
-
-      <Footer />
     </div>
   );
 }

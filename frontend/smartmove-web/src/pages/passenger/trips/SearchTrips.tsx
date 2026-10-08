@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Calendar, Clock, ShieldCheck, Users, ArrowRight, Filter, ChevronDown } from 'lucide-react';
-import PassengerLayout from '@/components/layout/PassengerLayout';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -35,7 +34,6 @@ export default function SearchTrips() {
   };
 
   return (
-    <PassengerLayout>
       <div className="max-w-7xl mx-auto h-full flex flex-col gap-8 w-full pb-10">
         
         {/* Header Section */}
@@ -218,6 +216,5 @@ export default function SearchTrips() {
         </motion.div>
 
       </div>
-    </PassengerLayout>
   );
 }
