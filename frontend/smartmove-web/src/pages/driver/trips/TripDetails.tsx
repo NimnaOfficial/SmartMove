@@ -126,7 +126,10 @@ export default function TripDetails() {
                >
                  Complete Trip
                </button>
-               <button className="flex-none bg-red-50 text-red-600 py-3 px-4 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
+               <button 
+                 onClick={() => alert('Issue reporting module will open here.')}
+                 className="flex-none bg-red-50 text-red-600 py-3 px-4 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors flex items-center gap-2"
+               >
                  <AlertTriangle className="w-4 h-4" /> Report Issue
                </button>
              </div>
@@ -168,7 +171,10 @@ export default function TripDetails() {
                 <p className="text-4xl font-extrabold">{trip.passengers}</p>
                 <p className="text-gray-400 text-sm font-medium mt-1">Booked Seats</p>
               </div>
-              <button className="px-4 py-2 bg-white text-black text-sm font-bold rounded-lg hover:bg-gray-100 transition-colors">
+              <button 
+                onClick={() => alert(`Showing manifest for ${trip.passengers} passengers.`)}
+                className="px-4 py-2 bg-white text-black text-sm font-bold rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 View List
               </button>
             </div>
