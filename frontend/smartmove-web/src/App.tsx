@@ -5,6 +5,8 @@ import Home from '@/pages/home/Home';
 import SearchTrips from '@/pages/passenger/trips/SearchTrips';
 import Announcements from '@/pages/passenger/announcements/Announcements';
 import About from '@/pages/about/About';
+import Login from '@/pages/auth/Login';
+import Register from '@/pages/auth/Register';
 import Dashboard from '@/pages/dashboard/Dashboard';
 
 function App() {
@@ -37,6 +39,8 @@ function App() {
         <Route path="/passenger/trips" element={<SearchTrips />} />
         <Route path="/passenger/announcements" element={<Announcements />} />
         <Route path="/about" element={<About />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
