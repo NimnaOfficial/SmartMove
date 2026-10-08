@@ -21,6 +21,11 @@ export default function AdminBookings() {
     { id: 'BKG-9921', passenger: 'Jane Smith', trip: 'T-1048', route: 'Kandy &rarr; Nuwara Eliya', date: 'Oct 16, 2026', amount: 18.50, bookingStatus: 'Pending', paymentStatus: 'Unpaid' },
     { id: 'BKG-1102', passenger: 'Saman Silva', trip: 'T-1045', route: 'Colombo &rarr; Galle', date: 'Oct 15, 2026', amount: 15.00, bookingStatus: 'Cancelled', paymentStatus: 'Refunded' },
   ];
+  const filtered = mockBookings.filter(b => 
+    b.id.toLowerCase().includes(search.toLowerCase()) || 
+    b.passenger.toLowerCase().includes(search.toLowerCase()) ||
+    b.trip.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -36,7 +41,7 @@ export default function AdminBookings() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input 
             type="text" 
-            placeholder="Search bookings by ID or passenger..." 
+            placeholder="Search bookings by ID, passenger or trip..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#0a0b10] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
@@ -64,7 +69,7 @@ export default function AdminBookings() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {mockBookings.map((b) => (
+              {filtered.map((b) => (
                 <motion.tr variants={fadeUp} key={b.id} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="p-5 pl-8 font-semibold text-white">{b.id}</td>
                   <td className="p-5 text-sm font-medium text-gray-300">{b.passenger}</td>

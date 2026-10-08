@@ -28,6 +28,14 @@ import AdminFeedback from '@/pages/admin/feedback/AdminFeedback';
 import AdminReports from '@/pages/admin/reports/AdminReports';
 import AdminContent from '@/pages/admin/content/AdminContent';
 
+// Driver Imports
+import DriverLayout from '@/components/layout/DriverLayout';
+import DriverDashboard from '@/pages/driver/dashboard/DriverDashboard';
+import MyTrips from '@/pages/driver/trips/MyTrips';
+import TripDetails from '@/pages/driver/trips/TripDetails';
+import DriverProfile from '@/pages/driver/profile/DriverProfile';
+import DriverNotifications from '@/pages/driver/notifications/DriverNotifications';
+
 function App() {
   useEffect(() => {
     const lenis = new Lenis({
@@ -83,6 +91,15 @@ function App() {
           <Route path="feedback" element={<AdminFeedback />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="content" element={<AdminContent />} />
+        </Route>
+
+        {/* Driver Routes */}
+        <Route path="/driver" element={<DriverLayout />}>
+          <Route path="dashboard" element={<DriverDashboard />} />
+          <Route path="trips" element={<MyTrips />} />
+          <Route path="trips/:tripId" element={<TripDetails />} />
+          <Route path="profile" element={<DriverProfile />} />
+          <Route path="notifications" element={<DriverNotifications />} />
         </Route>
       </Routes>
     </Router>

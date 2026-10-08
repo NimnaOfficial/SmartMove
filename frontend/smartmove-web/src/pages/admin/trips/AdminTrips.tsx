@@ -22,6 +22,12 @@ export default function AdminTrips() {
     { id: 'T-1045', route: 'Colombo &rarr; Galle', vehicle: 'ND-3210', driver: 'S. Silva', date: 'Oct 15, 2026', time: '09:15 AM', booked: 25, capacity: 25, status: 'Full' },
     { id: 'T-1048', route: 'Kandy &rarr; Nuwara Eliya', vehicle: 'ND-8891', driver: 'K. Perera', date: 'Oct 16, 2026', time: '07:30 AM', booked: 5, capacity: 54, status: 'Scheduled' },
   ];
+  const filtered = mockTrips.filter(t => 
+    t.id.toLowerCase().includes(search.toLowerCase()) || 
+    t.route.toLowerCase().includes(search.toLowerCase()) ||
+    t.vehicle.toLowerCase().includes(search.toLowerCase()) ||
+    t.driver.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -43,7 +49,7 @@ export default function AdminTrips() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input 
             type="text" 
-            placeholder="Search trips by ID or route..." 
+            placeholder="Search trips by ID, route, vehicle or driver..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#0a0b10] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
@@ -71,7 +77,7 @@ export default function AdminTrips() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {mockTrips.map((t) => (
+              {filtered.map((t) => (
                 <motion.tr variants={fadeUp} key={t.id} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="p-5 pl-8 font-semibold text-white">{t.id}</td>
                   <td className="p-5 text-sm font-medium text-gray-200" dangerouslySetInnerHTML={{ __html: t.route }}></td>
