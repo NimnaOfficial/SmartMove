@@ -72,7 +72,7 @@ export default function MyBookings() {
   const [activeTab, setActiveTab] = useState<TabType>('Upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
-  const [modalMode, setModalMode] = useState<'view' | 'cancel' | 'pay'>('view');
+  const [modalMode, setModalMode] = useState<'view' | 'cancel' | 'pay' | 'feedback'>('view');
 
   const filteredBookings = mockBookings.filter(b => 
     b.type === activeTab && 
@@ -334,19 +334,27 @@ export default function MyBookings() {
                         <span className="text-3xl font-bold text-[#1e3f7a]">${selectedBooking.amount.toFixed(2)}</span>
                       </div>
 
-                      <div className="mt-4 flex gap-3">
+                      <div className="mt-4 flex flex-col sm:flex-row gap-3">
                         <button 
                           onClick={() => setSelectedBooking(null)}
                           className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
                         >
                           Close
                         </button>
-                        {selectedBooking.paymentStatus === 'Unpaid' && (
+                        {selectedBooking.paymentStatus === 'Unpaid' && selectedBooking.bookingStatus !== 'Cancelled' && (
                           <button 
                             onClick={() => setModalMode('pay')}
                             className="flex-1 py-3 rounded-xl bg-[#1e3f7a] text-white font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-900/20"
                           >
                             Pay Now
+                          </button>
+                        )}
+                        {selectedBooking.bookingStatus === 'Completed' && (
+                          <button 
+                            onClick={() => setModalMode('feedback')}
+                            className="flex-1 py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-900/20"
+                          >
+                            Write a Review
                           </button>
                         )}
                       </div>
@@ -405,7 +413,7 @@ export default function MyBookings() {
                          </button>
                       </div>
                     </div>
-                  ) : (
+                  ) : modalMode === 'cancel' ? (
                     <div className="space-y-6 text-center">
                       <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-500">
                         <AlertCircle className="w-8 h-8" />
@@ -430,6 +438,50 @@ export default function MyBookings() {
                            className="flex-1 py-3.5 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
                          >
                            Yes, Cancel
+                         </button>
+                      </div>
+                    </div>
+                  ) : null}
+                  {modalMode === 'feedback' && (
+                    <div className="space-y-6">
+                      <div className="text-center">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">How was your trip?</h3>
+                        <p className="text-gray-500 text-sm">Please rate your experience on the <strong className="text-gray-900">{selectedBooking.route}</strong> route.</p>
+                      </div>
+                      
+                      <div className="flex justify-center gap-2 py-4">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button key={star} className="text-gray-300 hover:text-yellow-400 transition-colors">
+                            <svg className="w-10 h-10 fill-current" viewBox="0 0 24 24">
+                              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">Write a Review</label>
+                        <textarea 
+                          rows={4} 
+                          className="w-full bg-white border border-gray-200 rounded-xl p-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-600 resize-none"
+                          placeholder="Tell us what you liked or what could be improved..."
+                        ></textarea>
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                         <button 
+                           onClick={() => setModalMode('view')}
+                           className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
+                         >
+                           Cancel
+                         </button>
+                         <button 
+                           onClick={() => {
+                             setSelectedBooking(null);
+                           }}
+                           className="flex-1 py-3.5 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20"
+                         >
+                           Submit Review
                          </button>
                       </div>
                     </div>

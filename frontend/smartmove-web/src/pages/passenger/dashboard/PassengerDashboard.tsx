@@ -98,7 +98,7 @@ export default function PassengerDashboard() {
                     <label className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold block mb-2">From</label>
                     <div className="flex items-center gap-3">
                       <MapPin className="w-5 h-5 text-white/70" />
-                      <input type="text" placeholder="Origin City" className="bg-transparent border-none outline-none text-white placeholder-white/40 w-full font-medium" />
+                      <input id="dash-origin" type="text" placeholder="Origin City" className="bg-transparent border-none outline-none text-white placeholder-white/40 w-full font-medium" />
                     </div>
                   </div>
                   
@@ -106,7 +106,7 @@ export default function PassengerDashboard() {
                     <label className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold block mb-2">To</label>
                     <div className="flex items-center gap-3">
                       <MapPin className="w-5 h-5 text-white/70" />
-                      <input type="text" placeholder="Destination City" className="bg-transparent border-none outline-none text-white placeholder-white/40 w-full font-medium" />
+                      <input id="dash-dest" type="text" placeholder="Destination City" className="bg-transparent border-none outline-none text-white placeholder-white/40 w-full font-medium" />
                     </div>
                   </div>
 
@@ -114,7 +114,7 @@ export default function PassengerDashboard() {
                     <label className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold block mb-2">Date</label>
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-white/70" />
-                      <input type="date" className="bg-transparent border-none outline-none text-white w-full font-medium [color-scheme:dark]" />
+                      <input id="dash-date" type="date" className="bg-transparent border-none outline-none text-white w-full font-medium [color-scheme:dark]" />
                     </div>
                   </div>
 
@@ -133,7 +133,18 @@ export default function PassengerDashboard() {
                 </div>
 
                 <div className="mt-6 flex justify-end">
-                  <button onClick={() => navigate('/passenger/trips')} className="bg-white text-[#1e3f7a] px-8 py-3.5 rounded-xl font-bold shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 w-full md:w-auto justify-center">
+                  <button onClick={() => {
+                    const originInput = document.getElementById('dash-origin') as HTMLInputElement;
+                    const destInput = document.getElementById('dash-dest') as HTMLInputElement;
+                    const dateInput = document.getElementById('dash-date') as HTMLInputElement;
+                    navigate('/passenger/trips', {
+                      state: {
+                        origin: originInput?.value || '',
+                        destination: destInput?.value || '',
+                        date: dateInput?.value || ''
+                      }
+                    });
+                  }} className="bg-white text-[#1e3f7a] px-8 py-3.5 rounded-xl font-bold shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 w-full md:w-auto justify-center">
                     <Search className="w-5 h-5" /> Search Available Trips
                   </button>
                 </div>

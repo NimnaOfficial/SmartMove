@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Calendar, Clock, ShieldCheck, Users, ArrowRight, Filter, ChevronDown, Check } from 'lucide-react';
+import { Search, MapPin, Calendar, Clock, ShieldCheck, Users, ArrowRight, Filter, ChevronDown, Check, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -23,17 +24,35 @@ const mockTrips = [
 type SortOption = 'earliest' | 'latest' | 'price_asc' | 'price_desc';
 
 export default function SearchTrips() {
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [date, setDate] = useState('');
+  const location = useLocation();
+  const state = location.state as any;
+
+  const [origin, setOrigin] = useState(state?.origin || '');
+  const [destination, setDestination] = useState(state?.destination || '');
+  const [date, setDate] = useState(state?.date || '');
   
-  const [searchCriteria, setSearchCriteria] = useState({ origin: '', destination: '', date: '' });
+  const [searchCriteria, setSearchCriteria] = useState({ 
+    origin: state?.origin || '', 
+    destination: state?.destination || '', 
+    date: state?.date || '' 
+  });
   
   const [isSearching, setIsSearching] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
   const [modalMode, setModalMode] = useState<'details' | 'book'>('details');
   const [sortBy, setSortBy] = useState<SortOption>('earliest');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [maxPrice, setMaxPrice] = useState<number>(50);
+  const [selectedVehicle, setSelectedVehicle] = useState<string>('All');
+  
+  useEffect(() => {
+    if (state?.origin || state?.destination || state?.date) {
+      handleSearch(new Event('submit') as any);
+    }
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +66,7 @@ export default function SearchTrips() {
   const filteredAndSortedTrips = useMemo(() => {
     let result = [...mockTrips];
 
-    // Filter
+    // Search Criteria
     if (searchCriteria.origin) {
       result = result.filter(t => t.origin.toLowerCase().includes(searchCriteria.origin.toLowerCase()));
     }
@@ -56,6 +75,12 @@ export default function SearchTrips() {
     }
     if (searchCriteria.date) {
       result = result.filter(t => t.date === searchCriteria.date);
+    }
+
+    // Advanced Filters
+    result = result.filter(t => t.fare <= maxPrice);
+    if (selectedVehicle !== 'All') {
+      result = result.filter(t => t.vehicle.includes(selectedVehicle));
     }
 
     // Sort
@@ -72,7 +97,7 @@ export default function SearchTrips() {
     });
 
     return result;
-  }, [searchCriteria, sortBy]);
+  }, [searchCriteria, sortBy, maxPrice, selectedVehicle]);
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: 'earliest', label: 'Earliest' },
@@ -178,7 +203,7 @@ export default function SearchTrips() {
             Found <span className="text-gray-900 font-bold">{filteredAndSortedTrips.length}</span> trips available
           </div>
           <div className="flex items-center gap-4 text-sm relative">
-            <button className="flex items-center gap-2 text-gray-600 hover:text-[#1e3f7a] transition-colors font-medium bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <button onClick={() => setShowFilters(true)} className="flex items-center gap-2 text-gray-600 hover:text-[#1e3f7a] transition-colors font-medium bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
               <Filter className="w-4 h-4" /> Filters
             </button>
             <div className="w-px h-6 bg-gray-200" />
@@ -229,7 +254,7 @@ export default function SearchTrips() {
                </div>
                <h3 className="text-lg font-bold text-gray-900 mb-1">No trips found</h3>
                <p className="text-gray-500">Try adjusting your search criteria or viewing a different date.</p>
-               <button onClick={() => { setSearchCriteria({origin:'', destination:'', date:''}); setOrigin(''); setDestination(''); setDate(''); }} className="mt-6 text-[#1e3f7a] font-semibold hover:underline">
+               <button onClick={() => { setSearchCriteria({origin:'', destination:'', date:''}); setOrigin(''); setDestination(''); setDate(''); setMaxPrice(50); setSelectedVehicle('All'); }} className="mt-6 text-[#1e3f7a] font-semibold hover:underline">
                  Clear all filters
                </button>
             </div>
@@ -438,6 +463,80 @@ export default function SearchTrips() {
                       </div>
                     </div>
                   )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Filters Modal */}
+          {showFilters && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-end p-4 bg-[#1e3f7a]/40 backdrop-blur-sm"
+              onClick={() => setShowFilters(false)}
+            >
+              <motion.div 
+                initial={{ x: '100%', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100%', opacity: 0 }}
+                transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white w-full max-w-md h-full rounded-[2rem] shadow-2xl flex flex-col"
+              >
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-gray-900">Advanced Filters</h3>
+                  <button onClick={() => setShowFilters(false)} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
+                    <X className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+                
+                <div className="p-6 flex-1 overflow-y-auto space-y-8">
+                  {/* Price Range Filter */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4">Maximum Price: ${maxPrice}</h4>
+                    <input 
+                      type="range" 
+                      min="10" 
+                      max="100" 
+                      value={maxPrice} 
+                      onChange={(e) => setMaxPrice(Number(e.target.value))}
+                      className="w-full accent-[#1e3f7a]"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-2">
+                      <span>$10</span>
+                      <span>$100</span>
+                    </div>
+                  </div>
+
+                  {/* Vehicle Type Filter */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4">Vehicle Type</h4>
+                    <div className="space-y-3">
+                      {['All', 'Coach', 'Bus'].map(type => (
+                        <label key={type} className="flex items-center gap-3 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="vehicle"
+                            checked={selectedVehicle === type}
+                            onChange={() => setSelectedVehicle(type)}
+                            className="w-4 h-4 text-[#1e3f7a]"
+                          />
+                          <span className="text-sm text-gray-700">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-gray-100 flex gap-3">
+                  <button onClick={() => { setMaxPrice(50); setSelectedVehicle('All'); }} className="flex-1 py-3 font-semibold text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100">
+                    Reset
+                  </button>
+                  <button onClick={() => setShowFilters(false)} className="flex-[2] py-3 font-semibold text-white bg-[#1e3f7a] rounded-xl hover:bg-[#152e5e]">
+                    Apply Filters
+                  </button>
                 </div>
               </motion.div>
             </motion.div>

@@ -76,7 +76,7 @@ export default function AdminRoutes() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {mockRoutes.map((r) => (
+              {filtered.map((r) => (
                 <motion.tr variants={fadeUp} key={r.id} className="hover:bg-white/[0.02] transition-colors group">
                   <td className="p-5 pl-8 font-semibold text-white">{r.id}</td>
                   <td className="p-5">
