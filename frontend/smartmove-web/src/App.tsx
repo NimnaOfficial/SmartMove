@@ -8,6 +8,9 @@ import About from '@/pages/about/About';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
 import PassengerDashboard from '@/pages/passenger/dashboard/PassengerDashboard';
+import PassengerLayout from '@/components/layout/PassengerLayout';
+import MyBookings from '@/pages/passenger/bookings/MyBookings';
+
 function App() {
   useEffect(() => {
     const lenis = new Lenis({
@@ -35,12 +38,17 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/passenger/trips" element={<SearchTrips />} />
-        <Route path="/passenger/announcements" element={<Announcements />} />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/passenger/dashboard" element={<PassengerDashboard />} />
+        
+        {/* Passenger Routes using Shared Layout */}
+        <Route path="/passenger" element={<PassengerLayout />}>
+          <Route path="dashboard" element={<PassengerDashboard />} />
+          <Route path="trips" element={<SearchTrips />} />
+          <Route path="bookings" element={<MyBookings />} />
+          <Route path="announcements" element={<Announcements />} />
+        </Route>
       </Routes>
     </Router>
   );
