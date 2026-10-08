@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
 import { 
   Home, Navigation, Bookmark, Bell, Settings, 
-  Search, MapPin
+  Search, MapPin, LogOut
 } from 'lucide-react';
 
 const navLinks = [
@@ -11,7 +11,7 @@ const navLinks = [
   { name: 'Search Trips', icon: Navigation, path: '/passenger/trips' },
   { name: 'My Bookings', icon: Bookmark, path: '/passenger/bookings' },
   { name: 'Announcements', icon: Bell, path: '/passenger/announcements' },
-  { name: 'Settings', icon: Settings, path: '/settings' },
+  { name: 'Profile & Settings', icon: Settings, path: '/passenger/profile' },
 ];
 
 export default function PassengerLayout() {
@@ -20,7 +20,7 @@ export default function PassengerLayout() {
   const outlet = useOutlet();
 
   return (
-    <div className="min-h-screen w-full bg-[#1e3f7a] font-sans selection:bg-blue-400 selection:text-white flex">
+    <div className="min-h-screen w-full bg-[#1e3f7a] font-sans selection:bg-blue-400 selection:text-white flex overflow-hidden">
       {/* =========================================
           LEFT SIDEBAR (Fixed, Deep Navy)
           ========================================= */}
@@ -28,7 +28,7 @@ export default function PassengerLayout() {
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="fixed top-0 left-0 w-[80px] lg:w-[260px] h-screen flex flex-col z-20 transition-all duration-300"
+        className="w-[80px] lg:w-[260px] h-screen flex flex-col z-20 flex-shrink-0"
       >
         <div className="h-28 flex items-center justify-center lg:justify-start lg:px-10">
           <Link to="/" className="flex items-center gap-3 group">
@@ -39,36 +39,32 @@ export default function PassengerLayout() {
           </Link>
         </div>
 
-        {/* Removed lg:px-4 right padding so the active tab connects perfectly to the white canvas */}
-        <nav className="flex-1 flex flex-col gap-2 px-2 lg:pl-4 lg:pr-0 mt-2 lg:mt-6 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 flex flex-col gap-2 pl-2 lg:pl-6 mt-6 relative">
           {navLinks.map((link) => {
             const isActive = location.pathname.startsWith(link.path);
             return (
               <Link 
                 key={link.name} 
                 to={link.path}
-                className="relative flex items-center justify-center lg:justify-start gap-4 p-4 lg:pl-6 cursor-pointer group"
+                className={`relative flex items-center justify-center lg:justify-start gap-4 p-4 lg:pl-6 cursor-pointer group rounded-l-full transition-all duration-300 ${isActive ? '' : 'hover:bg-white/5'}`}
               >
-                {/* Smooth Tab Indicator for Active State */}
-                {isActive ? (
-                  <>
-                    <motion.div 
-                      layoutId="activeTab" 
-                      className="absolute inset-0 bg-[#f4f7fb] rounded-l-[1.5rem] lg:rounded-l-full w-full left-2 lg:left-0 z-0" 
-                    />
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeTab" 
+                    className="absolute inset-0 bg-[#f4f7fb] rounded-l-full w-full z-0" 
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  >
                     {/* Top curve */}
-                    <div className="absolute -top-6 right-0 w-6 h-6 bg-transparent hidden lg:block overflow-hidden">
+                    <div className="absolute -top-6 right-0 w-6 h-6 hidden lg:block">
                       <div className="absolute inset-0 bg-[#f4f7fb]" />
-                      <div className="absolute inset-0 bg-[#1e3f7a] rounded-br-full" />
+                      <div className="absolute inset-0 bg-[#1e3f7a] rounded-br-3xl" />
                     </div>
                     {/* Bottom curve */}
-                    <div className="absolute -bottom-6 right-0 w-6 h-6 bg-transparent hidden lg:block overflow-hidden">
+                    <div className="absolute -bottom-6 right-0 w-6 h-6 hidden lg:block">
                       <div className="absolute inset-0 bg-[#f4f7fb]" />
-                      <div className="absolute inset-0 bg-[#1e3f7a] rounded-tr-full" />
+                      <div className="absolute inset-0 bg-[#1e3f7a] rounded-tr-3xl" />
                     </div>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 rounded-l-[1.5rem] lg:rounded-l-full transition-colors z-0 left-2 lg:left-0" />
+                  </motion.div>
                 )}
 
                 <link.icon className={`w-5 h-5 z-10 transition-colors duration-300 ${isActive ? 'text-[#1e3f7a]' : 'text-blue-200 group-hover:text-white'}`} />
@@ -79,19 +75,30 @@ export default function PassengerLayout() {
             )
           })}
         </nav>
+
+        {/* Logout Option Left Down Corner */}
+        <div className="p-4 lg:p-6 mt-auto">
+          <Link 
+            to="/login"
+            className="flex items-center justify-center lg:justify-start gap-4 p-4 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition-colors group"
+          >
+            <LogOut className="w-5 h-5 text-red-400 group-hover:text-red-300 transition-colors" />
+            <span className="font-medium hidden lg:block text-red-400 group-hover:text-red-300 transition-colors">Logout</span>
+          </Link>
+        </div>
       </motion.div>
 
       {/* =========================================
           MAIN CONTENT AREA (Scrollable Window)
           ========================================= */}
-      <div className="flex-1 ml-[80px] lg:ml-[260px] flex flex-col min-h-screen bg-[#1e3f7a]">
+      <div className="flex-1 flex flex-col min-h-screen">
         
         {/* Top Header */}
         <motion.div 
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="h-28 flex-shrink-0 px-6 lg:px-10 flex items-center justify-between sticky top-0 z-10 bg-[#1e3f7a]/90 backdrop-blur-sm"
+          className="h-28 flex-shrink-0 px-6 lg:px-10 flex items-center justify-between"
         >
           {/* Dynamic Search Bar */}
           <motion.div 
@@ -127,20 +134,22 @@ export default function PassengerLayout() {
           </div>
         </motion.div>
 
-        {/* White Dashboard Canvas - Only the inside animates */}
-        <div className="flex-1 bg-[#f4f7fb] lg:rounded-tl-[2.5rem] p-6 lg:p-10 shadow-[-20px_0_40px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden relative">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 15, scale: 0.99 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -15, scale: 0.99 }}
-              transition={{ duration: 0.4, ease: "circOut" }}
-              className="h-full flex flex-col"
-            >
-              {outlet}
-            </motion.div>
-          </AnimatePresence>
+        {/* White Dashboard Canvas */}
+        <div className="flex-1 bg-[#f4f7fb] lg:rounded-tl-[2.5rem] shadow-[-10px_0_30px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden relative">
+          <div className="h-full overflow-y-auto overflow-x-hidden p-6 lg:p-10 no-scrollbar">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="h-full"
+              >
+                {outlet}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
 
       </div>

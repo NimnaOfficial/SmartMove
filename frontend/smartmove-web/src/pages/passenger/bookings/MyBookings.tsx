@@ -7,14 +7,14 @@ import {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-  exit: { opacity: 0, y: -20, transition: { duration: 0.3 } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
 };
 
 const staggerContainer = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-  exit: { opacity: 0, transition: { staggerChildren: 0.05 } }
+  exit: { opacity: 0, transition: { duration: 0.2 } }
 };
 
 const tabs = ['Upcoming', 'Completed', 'Cancelled'] as const;
@@ -71,6 +71,8 @@ const mockBookings = [
 export default function MyBookings() {
   const [activeTab, setActiveTab] = useState<TabType>('Upcoming');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [modalMode, setModalMode] = useState<'view' | 'cancel'>('view');
 
   const filteredBookings = mockBookings.filter(b => 
     b.type === activeTab && 
@@ -221,11 +223,17 @@ export default function MyBookings() {
                     <p className="text-sm text-gray-400 font-medium mb-1">Total</p>
                     <p className="text-2xl font-bold text-[#1e3f7a] mb-4">${booking.amount.toFixed(2)}</p>
                     <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                      <button className="flex-1 px-4 py-2 rounded-xl bg-gray-50 text-gray-700 text-sm font-semibold hover:bg-gray-100 border border-gray-200 transition-colors flex items-center justify-center gap-1">
+                      <button 
+                        onClick={() => { setSelectedBooking(booking); setModalMode('view'); }}
+                        className="flex-1 px-4 py-2 rounded-xl bg-gray-50 text-gray-700 text-sm font-semibold hover:bg-gray-100 border border-gray-200 transition-colors flex items-center justify-center gap-1"
+                      >
                         View
                       </button>
                       {activeTab === 'Upcoming' && (
-                        <button className="flex-1 px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 border border-red-100 transition-colors">
+                        <button 
+                          onClick={() => { setSelectedBooking(booking); setModalMode('cancel'); }}
+                          className="flex-1 px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 border border-red-100 transition-colors"
+                        >
                           Cancel
                         </button>
                       )}
@@ -249,6 +257,187 @@ export default function MyBookings() {
               </motion.div>
             )}
           </motion.div>
+        </AnimatePresence>
+
+        {/* Modal Popups */}
+        <AnimatePresence>
+          {selectedBooking && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1e3f7a]/40 backdrop-blur-sm"
+              onClick={() => setSelectedBooking(null)}
+            >
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
+              >
+                {/* Modal Header */}
+                <div className={`${modalMode === 'cancel' ? 'bg-red-500' : 'bg-[#1e3f7a]'} p-6 text-white flex justify-between items-center relative overflow-hidden transition-colors`}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent" />
+                  <div className="relative z-10">
+                    <h3 className="text-2xl font-bold">
+                      {modalMode === 'cancel' ? 'Cancel Booking' : 'Booking Details'}
+                    </h3>
+                    <p className="text-white/80 text-sm mt-1">{selectedBooking.id}</p>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedBooking(null)}
+                    className="relative z-10 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-8">
+                  {modalMode === 'view' ? (
+                    <div className="space-y-6">
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex justify-between items-center">
+                        <div>
+                           <p className="text-sm font-semibold text-gray-500 mb-1 uppercase tracking-wider">Status</p>
+                           <p className={`font-bold ${selectedBooking.bookingStatus === 'Confirmed' ? 'text-green-600' : 'text-blue-600'}`}>
+                             {selectedBooking.bookingStatus}
+                           </p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-sm font-semibold text-gray-500 mb-1 uppercase tracking-wider">Payment</p>
+                           <p className="font-bold text-gray-900">{selectedBooking.paymentStatus}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                         <div className="flex justify-between border-b border-gray-100 pb-2">
+                           <span className="text-gray-500">Route</span>
+                           <span className="font-bold text-gray-900">{selectedBooking.route}</span>
+                         </div>
+                         <div className="flex justify-between border-b border-gray-100 pb-2">
+                           <span className="text-gray-500">Trip</span>
+                           <span className="font-bold text-gray-900">{selectedBooking.trip}</span>
+                         </div>
+                         <div className="flex justify-between border-b border-gray-100 pb-2">
+                           <span className="text-gray-500">Travel Date</span>
+                           <span className="font-bold text-gray-900">{selectedBooking.date}</span>
+                         </div>
+                         <div className="flex justify-between pb-2">
+                           <span className="text-gray-500">Departure</span>
+                           <span className="font-bold text-gray-900">{selectedBooking.time}</span>
+                         </div>
+                      </div>
+
+                      <div className="pt-4 flex justify-between items-center border-t border-gray-100">
+                        <span className="text-gray-500 font-medium">Amount Paid</span>
+                        <span className="text-3xl font-bold text-[#1e3f7a]">${selectedBooking.amount.toFixed(2)}</span>
+                      </div>
+
+                      <div className="mt-4 flex gap-3">
+                        <button 
+                          onClick={() => setSelectedBooking(null)}
+                          className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
+                        >
+                          Close
+                        </button>
+                        {selectedBooking.paymentStatus === 'Unpaid' && (
+                          <button 
+                            onClick={() => setModalMode('pay')}
+                            className="flex-1 py-3 rounded-xl bg-[#1e3f7a] text-white font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-900/20"
+                          >
+                            Pay Now
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : modalMode === 'pay' ? (
+                    <div className="space-y-6">
+                      <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100">
+                        <p className="text-sm font-semibold text-blue-800 mb-1">Simulated Payment Sandbox</p>
+                        <p className="text-xs text-blue-600">This is a sandbox gateway for CW testing. Do not enter real card details.</p>
+                      </div>
+
+                      <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <span className="text-gray-500 font-medium">Total Amount Due</span>
+                        <span className="text-3xl font-bold text-[#1e3f7a]">${selectedBooking.amount.toFixed(2)}</span>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Cardholder Name</label>
+                          <input type="text" placeholder="John Doe" className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3f7a]" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">Card Number</label>
+                          <div className="relative">
+                            <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input type="text" placeholder="0000 0000 0000 0000" className="w-full bg-white border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3f7a]" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Expiry</label>
+                            <input type="text" placeholder="MM/YY" className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3f7a]" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">CVV</label>
+                            <input type="text" placeholder="123" className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3f7a]" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                         <button 
+                           onClick={() => setModalMode('view')}
+                           className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
+                         >
+                           Cancel
+                         </button>
+                         <button 
+                           onClick={() => {
+                             setSelectedBooking(null);
+                             // Handle success mock here
+                           }}
+                           className="flex-1 py-3.5 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 flex items-center justify-center gap-2"
+                         >
+                           <CheckCircle2 className="w-5 h-5" /> Pay ${selectedBooking.amount.toFixed(2)}
+                         </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6 text-center">
+                      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-500">
+                        <AlertCircle className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Are you sure?</h3>
+                        <p className="text-gray-500">
+                          Do you really want to cancel booking <strong className="text-gray-900">{selectedBooking.id}</strong>? 
+                          This action cannot be undone. Standard cancellation policies apply.
+                        </p>
+                      </div>
+                      
+                      <div className="flex gap-3 pt-4">
+                         <button 
+                           onClick={() => setSelectedBooking(null)}
+                           className="flex-1 py-3.5 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
+                         >
+                           Keep Booking
+                         </button>
+                         <button 
+                           onClick={() => setSelectedBooking(null)}
+                           className="flex-1 py-3.5 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+                         >
+                           Yes, Cancel
+                         </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
