@@ -279,11 +279,9 @@ export default function PassengerDashboard() {
 
                   {/* System Action Button */}
                   <motion.div variants={fadeUp} className="flex justify-end pr-14 -mt-4">
-                    <Link to="/passenger/trips">
-                      <button className="bg-[#1e3f7a] hover:bg-[#152e5e] text-white px-8 py-2.5 rounded-full text-sm font-semibold shadow-lg transition-all hover:-translate-y-0.5">
-                        Search Routes
-                      </button>
-                    </Link>
+                    <button className="bg-[#1e3f7a] hover:bg-[#152e5e] text-white px-8 py-2.5 rounded-full text-sm font-semibold shadow-lg transition-all hover:-translate-y-0.5">
+                      Search Routes
+                    </button>
                   </motion.div>
 
                 </div>
@@ -380,3 +378,4 @@ export default function PassengerDashboard() {
     </div>
   );
 }
+
