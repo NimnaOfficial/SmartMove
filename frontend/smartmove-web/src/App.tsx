@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect } from 'react';
 import Lenis from '@studio-freight/lenis';
 import Home from '@/pages/home/Home';
+import SearchTrips from '@/pages/passenger/trips/SearchTrips';
 import Dashboard from '@/pages/dashboard/Dashboard';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/passenger/trips" element={<SearchTrips />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
