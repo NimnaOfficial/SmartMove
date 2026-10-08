@@ -7,14 +7,14 @@ import {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-  exit: { opacity: 0, y: -20, transition: { duration: 0.3 } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
 };
 
 const staggerContainer = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-  exit: { opacity: 0, transition: { staggerChildren: 0.05 } }
+  exit: { opacity: 0, transition: { duration: 0.2 } }
 };
 
 const tabs = ['All', 'Alerts', 'News'] as const;
@@ -63,6 +63,7 @@ const mockAnnouncements = [
 export default function Announcements() {
   const [activeTab, setActiveTab] = useState<TabType>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
 
   const filteredAnnouncements = mockAnnouncements.filter(a => {
     const matchesTab = 
@@ -202,7 +203,10 @@ export default function Announcements() {
                         <Users className="w-4 h-4 text-gray-400" />
                         <span className="font-medium text-gray-700">{announcement.audience}</span>
                       </div>
-                      <button className="mt-2 w-full md:w-auto px-4 py-2 rounded-xl bg-gray-50 text-[#1e3f7a] text-sm font-semibold hover:bg-blue-50 border border-gray-200 hover:border-blue-100 transition-colors flex items-center justify-center gap-1 group/btn">
+                      <button 
+                        onClick={() => setSelectedAnnouncement(announcement)}
+                        className="mt-2 w-full md:w-auto px-4 py-2 rounded-xl bg-gray-50 text-[#1e3f7a] text-sm font-semibold hover:bg-blue-50 border border-gray-200 hover:border-blue-100 transition-colors flex items-center justify-center gap-1 group/btn"
+                      >
                         Read More
                         <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                       </button>
@@ -229,6 +233,72 @@ export default function Announcements() {
         </AnimatePresence>
       </div>
 
+      {/* Modal Popup */}
+      <AnimatePresence>
+        {selectedAnnouncement && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1e3f7a]/40 backdrop-blur-sm"
+            onClick={() => setSelectedAnnouncement(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="bg-[#1e3f7a] p-6 text-white flex justify-between items-start relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 to-transparent" />
+                <div className="relative z-10 pr-8">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-md">
+                      {selectedAnnouncement.priority}
+                    </span>
+                    <span className="text-blue-200 text-sm flex items-center gap-1">
+                      <Calendar className="w-4 h-4" /> {selectedAnnouncement.publishedDate}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold leading-tight mt-2">
+                    {selectedAnnouncement.title}
+                  </h3>
+                </div>
+                <button 
+                  onClick={() => setSelectedAnnouncement(null)}
+                  className="relative z-10 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-8">
+                <div className="prose prose-blue max-w-none">
+                  <p className="text-gray-600 leading-relaxed text-lg whitespace-pre-wrap">
+                    {selectedAnnouncement.message}
+                  </p>
+                </div>
+                
+                <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Users className="w-5 h-5 text-gray-400" />
+                    <span>Target Audience: <strong className="text-gray-900">{selectedAnnouncement.audience}</strong></span>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedAnnouncement(null)}
+                    className="px-6 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

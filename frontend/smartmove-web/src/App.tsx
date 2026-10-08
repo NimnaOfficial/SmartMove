@@ -10,6 +10,7 @@ import Register from '@/pages/auth/Register';
 import PassengerDashboard from '@/pages/passenger/dashboard/PassengerDashboard';
 import PassengerLayout from '@/components/layout/PassengerLayout';
 import MyBookings from '@/pages/passenger/bookings/MyBookings';
+import Profile from '@/pages/passenger/profile/Profile';
 
 function App() {
   useEffect(() => {
@@ -48,6 +49,7 @@ function App() {
           <Route path="trips" element={<SearchTrips />} />
           <Route path="bookings" element={<MyBookings />} />
           <Route path="announcements" element={<Announcements />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </Router>
