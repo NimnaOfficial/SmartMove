@@ -60,7 +60,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <div className="flex gap-3 mt-2">
-                  <button className="bg-[#022c22] text-[#98F5E1] px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-black/10">View Report</button>
+                  <button onClick={() => window.location.href = '/admin/reports'} className="bg-[#022c22] text-[#98F5E1] px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-black/10">View Report</button>
                   <button className="bg-white/30 text-[#064e3b] px-6 py-2.5 rounded-full text-sm font-bold backdrop-blur-sm hover:bg-white/40 transition-colors">Export</button>
                 </div>
               </div>
@@ -221,17 +221,17 @@ export default function AdminDashboard() {
                   <CalendarCheck className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="bg-white text-purple-600 px-4 py-1.5 rounded-full text-xs font-bold shadow-md hover:scale-105 transition-transform">Create</button>
-                  <button className="bg-black/20 text-white px-4 py-1.5 rounded-full text-xs font-bold backdrop-blur-md hover:bg-black/30 transition-colors">View Schedule</button>
+                  <button onClick={() => window.location.href = '/admin/trips'} className="bg-white text-purple-600 px-4 py-1.5 rounded-full text-xs font-bold shadow-md hover:scale-105 transition-transform">Create</button>
+                  <button onClick={() => window.location.href = '/admin/trips'} className="bg-black/20 text-white px-4 py-1.5 rounded-full text-xs font-bold backdrop-blur-md hover:bg-black/30 transition-colors">View Schedule</button>
                 </div>
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-3 mt-4">
-              <button className="bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-3 flex items-center justify-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
+              <button onClick={() => window.location.href = '/admin/vehicles'} className="bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-3 flex items-center justify-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
                 <Car className="w-4 h-4 text-emerald-400" /> Add Vehicle
               </button>
-              <button className="bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-3 flex items-center justify-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
+              <button onClick={() => window.location.href = '/admin/drivers'} className="bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-3 flex items-center justify-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
                 <Users className="w-4 h-4 text-blue-400" /> Add Driver
               </button>
             </div>

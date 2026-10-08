@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Eye, CheckCircle2, XCircle } from 'lucide-react';
 
 const fadeUp = {
@@ -14,6 +14,7 @@ const staggerContainer = {
 
 export default function AdminBookings() {
   const [search, setSearch] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
   const mockBookings = [
     { id: 'BKG-7829', passenger: 'John Doe', trip: 'T-1042', route: 'Colombo &rarr; Kandy', date: 'Oct 15, 2026', amount: 15.00, bookingStatus: 'Confirmed', paymentStatus: 'Paid' },
@@ -91,7 +92,7 @@ export default function AdminBookings() {
                     </span>
                   </td>
                   <td className="p-5 pr-8 flex items-center justify-end gap-2">
-                    <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                    <button onClick={() => setSelectedBooking(b)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
                     {b.bookingStatus !== 'Cancelled' && (
@@ -106,6 +107,60 @@ export default function AdminBookings() {
           </table>
         </div>
       </motion.div>
+
+      {/* View Booking Modal */}
+      <AnimatePresence>
+        {selectedBooking && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative"
+            >
+              <h2 className="text-2xl font-bold text-white mb-6">Booking Details</h2>
+              <div className="space-y-4">
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Booking ID</span>
+                  <span className="text-white font-medium">{selectedBooking.id}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Passenger</span>
+                  <span className="text-white font-medium">{selectedBooking.passenger}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Trip</span>
+                  <span className="text-white font-medium">{selectedBooking.trip}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Route</span>
+                  <span className="text-white font-medium" dangerouslySetInnerHTML={{ __html: selectedBooking.route }}></span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Date</span>
+                  <span className="text-white font-medium">{selectedBooking.date}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Amount</span>
+                  <span className="text-white font-medium">${selectedBooking.amount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Booking Status</span>
+                  <span className="text-white font-medium">{selectedBooking.bookingStatus}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Payment Status</span>
+                  <span className="text-white font-medium">{selectedBooking.paymentStatus}</span>
+                </div>
+              </div>
+              <div className="flex justify-end mt-8">
+                <button onClick={() => setSelectedBooking(null)} className="px-5 py-2.5 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all">Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

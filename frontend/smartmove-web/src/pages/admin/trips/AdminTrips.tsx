@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Filter, Edit2, Eye, Trash2, ShieldCheck, Users, Clock } from 'lucide-react';
 
 const fadeUp = {
@@ -14,6 +14,8 @@ const staggerContainer = {
 
 export default function AdminTrips() {
   const [search, setSearch] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<any>(null);
 
   const mockTrips = [
     { id: 'T-1042', route: 'Colombo &rarr; Kandy', vehicle: 'ND-4521', driver: 'D. Palve', date: 'Oct 15, 2026', time: '08:00 AM', booked: 32, capacity: 45, status: 'Scheduled' },
@@ -28,7 +30,10 @@ export default function AdminTrips() {
           <h1 className="text-3xl font-bold text-white tracking-tight">Trip Scheduling</h1>
           <p className="text-gray-400 mt-2 font-medium">Manage and monitor daily trip operations.</p>
         </div>
-        <button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 transition-transform flex items-center gap-2">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" /> Schedule Trip
         </button>
       </motion.div>
@@ -91,10 +96,10 @@ export default function AdminTrips() {
                     </span>
                   </td>
                   <td className="p-5 pr-8 flex items-center justify-end gap-2">
-                    <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                    <button onClick={() => setSelectedTrip(t)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
+                    <button onClick={() => { setSelectedTrip(t); setShowForm(true); }} className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
@@ -107,6 +112,109 @@ export default function AdminTrips() {
           </table>
         </div>
       </motion.div>
+
+      {/* Add/Edit Trip Modal */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
+            >
+              <h2 className="text-2xl font-bold text-white mb-6">{selectedTrip ? 'Edit Trip' : 'Create New Trip'}</h2>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400 block mb-1">Route</label>
+                    <select className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
+                      <option>Colombo - Kandy</option>
+                      <option>Colombo - Galle</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400 block mb-1">Vehicle</label>
+                    <select className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
+                      <option>ND-4521</option>
+                      <option>ND-3210</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400 block mb-1">Date</label>
+                    <input type="date" className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50 [color-scheme:dark]" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400 block mb-1">Time</label>
+                    <input type="time" className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50 [color-scheme:dark]" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-400 block mb-1">Status</label>
+                  <select defaultValue={selectedTrip?.status} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
+                    <option>Scheduled</option>
+                    <option>In Progress</option>
+                    <option>Completed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-8">
+                <button onClick={() => { setShowForm(false); setSelectedTrip(null); }} className="px-5 py-2.5 rounded-xl font-semibold text-gray-300 hover:bg-white/5 transition-all">Cancel</button>
+                <button onClick={() => { setShowForm(false); setSelectedTrip(null); }} className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all">Save Trip</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* View Trip Modal */}
+      <AnimatePresence>
+        {selectedTrip && !showForm && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative"
+            >
+              <h2 className="text-2xl font-bold text-white mb-6">Trip Details</h2>
+              <div className="space-y-4">
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Trip ID</span>
+                  <span className="text-white font-medium">{selectedTrip.id}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Route</span>
+                  <span className="text-white font-medium" dangerouslySetInnerHTML={{ __html: selectedTrip.route }}></span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Schedule</span>
+                  <span className="text-white font-medium">{selectedTrip.date} @ {selectedTrip.time}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Vehicle / Driver</span>
+                  <span className="text-white font-medium">{selectedTrip.vehicle} / {selectedTrip.driver}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Occupancy</span>
+                  <span className="text-white font-medium">{selectedTrip.booked} / {selectedTrip.capacity}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Status</span>
+                  <span className="text-white font-medium">{selectedTrip.status}</span>
+                </div>
+              </div>
+              <div className="flex justify-end mt-8">
+                <button onClick={() => setSelectedTrip(null)} className="px-5 py-2.5 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all">Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
