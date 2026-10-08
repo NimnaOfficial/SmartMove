@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Map, Plus, Edit2, Eye, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Edit2, Eye, Trash2, ArrowRight } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
