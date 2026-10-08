@@ -12,7 +12,7 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/dashboard');
+    navigate('/passenger/dashboard');
   };
 
   const [navOpen, setNavOpen] = useState(false);

@@ -7,8 +7,7 @@ import Announcements from '@/pages/passenger/announcements/Announcements';
 import About from '@/pages/about/About';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
-import Dashboard from '@/pages/dashboard/Dashboard';
-
+import PassengerDashboard from '@/pages/passenger/dashboard/PassengerDashboard';
 function App() {
   useEffect(() => {
     const lenis = new Lenis({
@@ -41,7 +40,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/passenger/dashboard" element={<PassengerDashboard />} />
       </Routes>
     </Router>
   );
