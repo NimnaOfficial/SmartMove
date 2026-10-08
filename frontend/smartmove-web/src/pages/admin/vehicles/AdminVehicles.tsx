@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import vehicleService from '@/services/vehicleService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Car, Search, Filter, Plus, Edit2, Eye, Trash2, Settings2 } from 'lucide-react';
 
@@ -17,14 +18,26 @@ export default function AdminVehicles() {
   const [showForm, setShowForm] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   
-  const mockVehicles = [
-    { id: 'V-101', reg: 'ND-4521', type: 'Luxury Coach', capacity: 45, status: 'Active', driver: 'D. Palve' },
-    { id: 'V-102', reg: 'ND-3210', type: 'Mini Bus', capacity: 25, status: 'Maintenance', driver: 'S. Silva' },
-    { id: 'V-103', reg: 'ND-8891', type: 'Standard', capacity: 54, status: 'Active', driver: 'K. Perera' },
-    { id: 'V-104', reg: 'ND-7712', type: 'Sleeper', capacity: 30, status: 'Inactive', driver: 'Unassigned' },
-  ];
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  
 
-  const filtered = mockVehicles.filter(v => 
+  const fetchVehicles = async () => {
+    try {
+      
+      const data = await vehicleService.getAll();
+      setVehicles(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const filtered = vehicles.filter(v => 
     v.reg.toLowerCase().includes(search.toLowerCase()) || 
     v.id.toLowerCase().includes(search.toLowerCase())
   );

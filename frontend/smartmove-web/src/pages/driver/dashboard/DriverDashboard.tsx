@@ -1,5 +1,8 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import driverService from '@/services/driverService';
+import authService from '@/services/authService';
 import { 
   MapPin, Clock, Navigation, CheckCircle2,
   Calendar, Star, TrendingUp
@@ -18,17 +21,26 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-const performanceData = [
-  { day: 'Mon', hours: 6 },
-  { day: 'Tue', hours: 8.5 },
-  { day: 'Wed', hours: 7 },
-  { day: 'Thu', hours: 9 },
-  { day: 'Fri', hours: 11 },
-  { day: 'Sat', hours: 5 },
-  { day: 'Sun', hours: 4 },
-];
+/* removed static */
 
 export default function DriverDashboard() {
+  const [profile, setProfile] = useState<any>(null);
+  const [trips, setTrips] = useState<any[]>([]);
+
+  useEffect(() => {
+     const fetchDashboard = async () => {
+        try {
+           const pData = await driverService.getProfile();
+           setProfile(pData);
+           const tData = await driverService.getMyTrips();
+           setTrips(Array.isArray(tData) ? tData : []);
+        } catch (e) {
+           console.error(e);
+        }
+     };
+     fetchDashboard();
+  }, []);
+
   const navigate = useNavigate();
 
   return (
@@ -103,11 +115,7 @@ export default function DriverDashboard() {
           </div>
 
           <div className="space-y-4">
-            {[
-              { id: 'T-101', route: 'Coastal Express', from: 'Colombo', to: 'Galle', time: '08:30 AM', duration: '3h 15m', status: 'Next' },
-              { id: 'T-102', route: 'Mountain Pass', from: 'Galle', to: 'Kandy', time: '01:00 PM', duration: '4h 45m', status: 'Scheduled' },
-              { id: 'T-103', route: 'City Loop', from: 'Kandy', to: 'Colombo', time: '06:30 PM', duration: '3h 30m', status: 'Scheduled' }
-            ].map((trip, i) => (
+            {([] as any[]).map((trip, i) => (
               <motion.div key={i} variants={fadeUp} className="bg-white rounded-[1.5rem] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100 flex items-center justify-between group hover:border-gray-300 transition-all">
                 <div className="flex items-center gap-5">
                   <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-900 group-hover:bg-black group-hover:text-white transition-colors">
@@ -153,7 +161,7 @@ export default function DriverDashboard() {
              
              <div className="h-[240px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={performanceData}>
+                  <AreaChart data={[]}>
                     <defs>
                       <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#000" stopOpacity={0.1}/>

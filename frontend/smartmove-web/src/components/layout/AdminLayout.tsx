@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useOutlet } from 'react-router-dom';
 import { 
   LayoutDashboard, Car, Users, Map, CalendarCheck, 
   CreditCard, Wrench, MessageSquare, FileText, Bell, Database,
-  Search, Hexagon
+  Search, Hexagon, X, CheckCircle
 } from 'lucide-react';
 
 const navLinks = [
@@ -22,6 +23,12 @@ const navLinks = [
 export default function AdminLayout() {
   const location = useLocation();
   const outlet = useOutlet();
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'All' | 'Unread'>('Unread');
+
+  const notifications: any[] = [];
+
+  const filteredNotifs = notifications.filter(n => activeTab === 'All' || n.unread);
 
   return (
     <div className="min-h-screen w-full bg-[#0a0b10] text-gray-300 font-sans selection:bg-purple-500/30 selection:text-white flex flex-col overflow-hidden relative">
@@ -74,21 +81,90 @@ export default function AdminLayout() {
         </div>
 
         {/* Right: Search, Notifications, Profile */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative">
            <button className="w-10 h-10 rounded-full bg-[#1a1b23]/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:border-white/20 transition-all relative">
              <Search className="w-4 h-4" />
            </button>
-           <button className="w-10 h-10 rounded-full bg-[#1a1b23]/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:border-white/20 transition-all relative">
+           
+           <button 
+             onClick={() => setIsNotifOpen(!isNotifOpen)}
+             className={`w-10 h-10 rounded-full bg-[#1a1b23]/80 backdrop-blur-md border ${isNotifOpen ? 'border-purple-500/50 text-white' : 'border-white/10 text-gray-400'} flex items-center justify-center hover:text-white hover:border-white/20 transition-all relative`}
+           >
              <Bell className="w-4 h-4" />
              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
            </button>
-           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[2px] cursor-pointer hover:scale-105 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+
+           <Link to="/admin/profile" className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[2px] cursor-pointer hover:scale-105 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.4)]">
              <img 
                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" 
                alt="Admin" 
                className="w-full h-full rounded-full border-2 border-[#0a0b10] object-cover"
              />
-           </div>
+           </Link>
+
+           {/* Notifications Dropdown Panel */}
+           <AnimatePresence>
+             {isNotifOpen && (
+               <motion.div 
+                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                 animate={{ opacity: 1, y: 0, scale: 1 }}
+                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                 transition={{ duration: 0.2 }}
+                 className="absolute top-14 right-12 w-80 bg-[#161721]/95 backdrop-blur-xl rounded-[2rem] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden z-50 flex flex-col"
+               >
+                 <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
+                   <h3 className="font-bold text-white">Notifications</h3>
+                   <button onClick={() => setIsNotifOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                     <X className="w-4 h-4" />
+                   </button>
+                 </div>
+                 
+                 <div className="flex px-4 py-2 gap-4 border-b border-white/5 text-sm font-semibold">
+                   <button 
+                     onClick={() => setActiveTab('Unread')} 
+                     className={`${activeTab === 'Unread' ? 'text-white border-b-2 border-purple-500' : 'text-gray-500'} pb-2 transition-colors`}
+                   >
+                     Unread
+                   </button>
+                   <button 
+                     onClick={() => setActiveTab('All')} 
+                     className={`${activeTab === 'All' ? 'text-white border-b-2 border-purple-500' : 'text-gray-500'} pb-2 transition-colors`}
+                   >
+                     All
+                   </button>
+                 </div>
+
+                 <div className="flex-1 max-h-80 overflow-y-auto custom-scrollbar p-2">
+                   {filteredNotifs.length > 0 ? (
+                     filteredNotifs.map(n => {
+                       const Icon = n.icon;
+                       return (
+                         <div key={n.id} className="p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer flex gap-3 relative group">
+                           {n.unread && <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-purple-500 rounded-full" />}
+                           <div className={`w-10 h-10 rounded-xl bg-${n.color}-500/20 text-${n.color}-400 flex items-center justify-center flex-shrink-0 border border-${n.color}-500/20`}>
+                             <Icon className="w-5 h-5" />
+                           </div>
+                           <div>
+                             <p className={`text-sm font-semibold ${n.unread ? 'text-white' : 'text-gray-400'} leading-snug`}>{n.title}</p>
+                             <p className="text-xs text-gray-500 mt-1">{n.time}</p>
+                           </div>
+                         </div>
+                       );
+                     })
+                   ) : (
+                     <div className="p-8 text-center flex flex-col items-center justify-center text-gray-500">
+                       <CheckCircle className="w-8 h-8 mb-2 opacity-50" />
+                       <p className="text-sm font-semibold">You're all caught up!</p>
+                     </div>
+                   )}
+                 </div>
+                 
+                 <div className="p-3 border-t border-white/5 bg-white/5 text-center">
+                   <button className="text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors">Mark all as read</button>
+                 </div>
+               </motion.div>
+             )}
+           </AnimatePresence>
         </div>
       </motion.div>
 

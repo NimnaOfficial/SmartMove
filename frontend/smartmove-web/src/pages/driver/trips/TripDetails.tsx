@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import tripService from '@/services/tripService';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -13,11 +14,26 @@ const fadeUp = {
 
 export default function TripDetails() {
   const { tripId } = useParams();
+  const [tripData, setTripData] = useState<any>(null);
   const navigate = useNavigate();
   const [tripStatus, setTripStatus] = useState('Scheduled');
 
   // Mock data
-  const trip = {
+  useEffect(() => {
+    const fetchTrip = async () => {
+       try {
+          if (tripId) {
+             const data = await tripService.getById(Number(tripId.replace(/\D/g,''))); // strip prefix if needed
+             setTripData(data);
+          }
+       } catch (e) {
+          console.error(e);
+       }
+    };
+    fetchTrip();
+  }, [tripId]);
+  
+  const trip = tripData || {
     id: tripId || 'TRP-1001',
     route: 'Coastal Express',
     from: 'Colombo',
@@ -126,7 +142,10 @@ export default function TripDetails() {
                >
                  Complete Trip
                </button>
-               <button className="flex-none bg-red-50 text-red-600 py-3 px-4 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
+               <button 
+                 onClick={() => alert('Issue reporting module will open here.')}
+                 className="flex-none bg-red-50 text-red-600 py-3 px-4 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors flex items-center gap-2"
+               >
                  <AlertTriangle className="w-4 h-4" /> Report Issue
                </button>
              </div>
@@ -168,7 +187,10 @@ export default function TripDetails() {
                 <p className="text-4xl font-extrabold">{trip.passengers}</p>
                 <p className="text-gray-400 text-sm font-medium mt-1">Booked Seats</p>
               </div>
-              <button className="px-4 py-2 bg-white text-black text-sm font-bold rounded-lg hover:bg-gray-100 transition-colors">
+              <button 
+                onClick={() => alert(`Showing manifest for ${trip.passengers} passengers.`)}
+                className="px-4 py-2 bg-white text-black text-sm font-bold rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 View List
               </button>
             </div>

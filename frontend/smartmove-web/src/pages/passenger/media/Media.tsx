@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import contentService from '@/services/contentService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Image as ImageIcon, Video, Filter, MapPin, Calendar, X } from 'lucide-react';
 

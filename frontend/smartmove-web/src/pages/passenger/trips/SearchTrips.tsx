@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MapPin, Calendar, Clock, ShieldCheck, Users, ArrowRight, Filter, ChevronDown, Check, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import tripService from '@/services/tripService';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -13,13 +14,7 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-// Mock Trips
-const mockTrips = [
-  { id: 1, route: 'Express City Line', origin: 'Colombo', destination: 'Kandy', date: '2026-10-15', departureTime: '08:00 AM', arrivalTime: '11:30 AM', vehicle: 'Luxury Coach', availableSeats: 12, fare: 25.00, status: 'On Time' },
-  { id: 2, route: 'Coastal Cruiser', origin: 'Colombo', destination: 'Galle', date: '2026-10-15', departureTime: '09:15 AM', arrivalTime: '11:45 AM', vehicle: 'Standard Bus', availableSeats: 24, fare: 15.00, status: 'On Time' },
-  { id: 3, route: 'Mountain Pass', origin: 'Kandy', destination: 'Nuwara Eliya', date: '2026-10-16', departureTime: '07:30 AM', arrivalTime: '10:00 AM', vehicle: 'Mini Coach', availableSeats: 5, fare: 18.50, status: 'Scheduled' },
-  { id: 4, route: 'Northern Star', origin: 'Colombo', destination: 'Jaffna', date: '2026-10-17', departureTime: '10:00 PM', arrivalTime: '06:00 AM', vehicle: 'Sleeper Bus', availableSeats: 18, fare: 45.00, status: 'Scheduled' },
-];
+/* removed mockTrips */
 
 type SortOption = 'earliest' | 'latest' | 'price_asc' | 'price_desc';
 
@@ -63,8 +58,27 @@ export default function SearchTrips() {
     }, 600);
   };
 
+  
+  const [trips, setTrips] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchTrips = async () => {
+       try {
+          const data = await tripService.search({
+             origin: searchCriteria.origin,
+             destination: searchCriteria.destination,
+             date: searchCriteria.date
+          });
+          setTrips(Array.isArray(data) ? data : []);
+       } catch(e) {
+          console.error(e);
+       }
+    };
+    fetchTrips();
+  }, [searchCriteria]);
+  
   const filteredAndSortedTrips = useMemo(() => {
-    let result = [...mockTrips];
+    let result = [...trips];
+
 
     // Search Criteria
     if (searchCriteria.origin) {

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import driverService from '@/services/driverService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Eye, Star, Search, Filter } from 'lucide-react';
 
@@ -17,13 +18,26 @@ export default function AdminDrivers() {
   const [showForm, setShowForm] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   
-  const mockDrivers = [
-    { id: 'DRV-771', name: 'Dipak Palve', contact: '+94 77 123 4567', status: 'On Duty', assigned: 'T-1042', rating: 4.8 },
-    { id: 'DRV-772', name: 'Saman Silva', contact: '+94 71 987 6543', status: 'Off Duty', assigned: 'None', rating: 4.5 },
-    { id: 'DRV-773', name: 'Kamal Perera', contact: '+94 75 456 7890', status: 'On Duty', assigned: 'T-1045', rating: 4.9 },
-  ];
+  const [drivers, setDrivers] = useState<any[]>([]);
+  
 
-  const filtered = mockDrivers.filter(d => 
+  const fetchDrivers = async () => {
+    try {
+      
+      const data = await driverService.getAll();
+      setDrivers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      
+    }
+  };
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const filtered = drivers.filter(d => 
     d.name.toLowerCase().includes(search.toLowerCase()) || 
     d.id.toLowerCase().includes(search.toLowerCase())
   );

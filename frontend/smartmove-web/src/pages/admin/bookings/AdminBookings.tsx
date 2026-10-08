@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import bookingService from '@/services/bookingService';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Eye, CheckCircle2, XCircle } from 'lucide-react';
 
@@ -16,12 +18,25 @@ export default function AdminBookings() {
   const [search, setSearch] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
-  const mockBookings = [
-    { id: 'BKG-7829', passenger: 'John Doe', trip: 'T-1042', route: 'Colombo &rarr; Kandy', date: 'Oct 15, 2026', amount: 15.00, bookingStatus: 'Confirmed', paymentStatus: 'Paid' },
-    { id: 'BKG-9921', passenger: 'Jane Smith', trip: 'T-1048', route: 'Kandy &rarr; Nuwara Eliya', date: 'Oct 16, 2026', amount: 18.50, bookingStatus: 'Pending', paymentStatus: 'Unpaid' },
-    { id: 'BKG-1102', passenger: 'Saman Silva', trip: 'T-1045', route: 'Colombo &rarr; Galle', date: 'Oct 15, 2026', amount: 15.00, bookingStatus: 'Cancelled', paymentStatus: 'Refunded' },
-  ];
-  const filtered = mockBookings.filter(b => 
+  const [bookings, setBookings] = useState<any[]>([]);
+  
+
+  const fetchBookings = async () => {
+    try {
+      
+      const data = await bookingService.getAll();
+      setBookings(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+  const filtered = bookings.filter(b => 
     b.id.toLowerCase().includes(search.toLowerCase()) || 
     b.passenger.toLowerCase().includes(search.toLowerCase()) ||
     b.trip.toLowerCase().includes(search.toLowerCase())

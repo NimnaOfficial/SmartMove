@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import reportService from '@/services/reportService';
 import { 
   Car, Users, Route as RouteIcon, CalendarCheck, 
   Wrench, Plus, MoreHorizontal, AlertCircle, MessageSquare
@@ -19,20 +21,31 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-const revenueData = [
-  { name: 'Apr', value: 4100 },
-  { name: 'May', value: 2200 },
-  { name: 'Jun', value: 3500 },
-  { name: 'Jul', value: 1200 },
-  { name: 'Aug', value: 2456 },
-];
-
-const occupancyData = [
-  { name: 'Booked', value: 75, color: '#a855f7' },
-  { name: 'Available', value: 25, color: '#fb923c' },
-];
+const revenueData: any[] = [];
+const occupancyData: any[] = [];
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<any>({
+    activeRoutes: 12,
+    totalVehicles: 45,
+    totalDrivers: 38,
+    activeTrips: 8,
+    revenue: 12500,
+    occupancyRate: 85
+  });
+  
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+         const dashboardStats = await reportService.getDashboardStats();
+         if (dashboardStats) setStats(dashboardStats);
+      } catch (e) {
+         console.error('Failed to load dashboard', e);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
   const navigate = useNavigate();
 
   return (
@@ -56,7 +69,7 @@ export default function AdminDashboard() {
                 <span className="text-[#064e3b] font-medium text-lg">Today's Revenue</span>
                 <div>
                   <h2 className="text-5xl font-extrabold text-[#064e3b] tracking-tight">
-                    <span className="text-3xl font-bold">$</span>12,456<span className="text-2xl font-bold">.50</span>
+                    <span className="text-3xl font-bold">$</span>{stats?.revenue?.toLocaleString() || '0'}<span className="text-2xl font-bold">.00</span>
                   </h2>
                   <p className="text-[#064e3b]/80 mt-2 text-sm font-medium flex items-center gap-1">
                     +15.3% revenue from yesterday

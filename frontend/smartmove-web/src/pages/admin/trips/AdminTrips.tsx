@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import tripService from '@/services/tripService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Filter, Edit2, Eye, Trash2, ShieldCheck, Users, Clock } from 'lucide-react';
 
@@ -17,12 +18,25 @@ export default function AdminTrips() {
   const [showForm, setShowForm] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
 
-  const mockTrips = [
-    { id: 'T-1042', route: 'Colombo &rarr; Kandy', vehicle: 'ND-4521', driver: 'D. Palve', date: 'Oct 15, 2026', time: '08:00 AM', booked: 32, capacity: 45, status: 'Scheduled' },
-    { id: 'T-1045', route: 'Colombo &rarr; Galle', vehicle: 'ND-3210', driver: 'S. Silva', date: 'Oct 15, 2026', time: '09:15 AM', booked: 25, capacity: 25, status: 'Full' },
-    { id: 'T-1048', route: 'Kandy &rarr; Nuwara Eliya', vehicle: 'ND-8891', driver: 'K. Perera', date: 'Oct 16, 2026', time: '07:30 AM', booked: 5, capacity: 54, status: 'Scheduled' },
-  ];
-  const filtered = mockTrips.filter(t => 
+  const [trips, setTrips] = useState<any[]>([]);
+  
+
+  const fetchTrips = async () => {
+    try {
+      
+      const data = await tripService.getAll();
+      setTrips(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      
+    }
+  };
+
+  useEffect(() => {
+    fetchTrips();
+  }, []);
+  const filtered = trips.filter(t => 
     t.id.toLowerCase().includes(search.toLowerCase()) || 
     t.route.toLowerCase().includes(search.toLowerCase()) ||
     t.vehicle.toLowerCase().includes(search.toLowerCase()) ||

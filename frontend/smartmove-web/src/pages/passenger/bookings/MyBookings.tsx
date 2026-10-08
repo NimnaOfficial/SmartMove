@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import bookingService from '@/services/bookingService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bookmark, Calendar, MapPin, Search, 
@@ -21,52 +22,24 @@ const tabs = ['Upcoming', 'Completed', 'Cancelled'] as const;
 type TabType = typeof tabs[number];
 
 // Mock Data following Specification
-const mockBookings = [
-  {
-    id: 'BKG-7829-XL',
-    route: 'Coastal Express',
-    trip: 'Colombo to Galle',
-    date: 'Oct 15, 2026',
-    time: '08:30 AM',
-    amount: 15.00,
-    bookingStatus: 'Confirmed',
-    paymentStatus: 'Paid',
-    type: 'Upcoming'
-  },
-  {
-    id: 'BKG-9921-MD',
-    route: 'Mountain Pass',
-    trip: 'Kandy to Nuwara Eliya',
-    date: 'Oct 22, 2026',
-    time: '11:00 AM',
-    amount: 18.50,
-    bookingStatus: 'Pending',
-    paymentStatus: 'Unpaid',
-    type: 'Upcoming'
-  },
-  {
-    id: 'BKG-1102-CH',
-    route: 'City Loop',
-    trip: 'Colombo Fort to Mount Lavinia',
-    date: 'Sep 28, 2026',
-    time: '04:15 PM',
-    amount: 5.50,
-    bookingStatus: 'Completed',
-    paymentStatus: 'Paid',
-    type: 'Completed'
-  },
-  {
-    id: 'BKG-0092-ZX',
-    route: 'Northern Star',
-    trip: 'Colombo to Jaffna',
-    date: 'Aug 12, 2026',
-    time: '10:00 PM',
-    amount: 45.00,
-    bookingStatus: 'Cancelled',
-    paymentStatus: 'Refunded',
-    type: 'Cancelled'
-  }
-];
+const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const data = await bookingService.getMyBookings();
+      setBookings(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
 export default function MyBookings() {
   const [activeTab, setActiveTab] = useState<TabType>('Upcoming');
@@ -74,7 +47,7 @@ export default function MyBookings() {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [modalMode, setModalMode] = useState<'view' | 'cancel' | 'pay' | 'feedback'>('view');
 
-  const filteredBookings = mockBookings.filter(b => 
+  const filteredBookings = bookings.filter(b => 
     b.type === activeTab && 
     (b.route.toLowerCase().includes(searchQuery.toLowerCase()) || 
      b.id.toLowerCase().includes(searchQuery.toLowerCase()))

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import maintenanceService from '@/services/maintenanceService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PenTool, Search, Filter, Plus, Edit2, Eye, Trash2 } from 'lucide-react';
 
@@ -19,13 +20,26 @@ export default function AdminMaintenance() {
   const [showDelete, setShowDelete] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   
-  const mockMaintenance = [
-    { id: 'M-101', vehicle: 'ND-4521', date: '2023-11-05', nextDate: '2024-05-05', type: 'Routine', status: 'Completed', desc: 'Oil change and basic checkup' },
-    { id: 'M-102', vehicle: 'ND-3210', date: '2023-11-20', nextDate: '2023-12-05', type: 'Repair', status: 'Due', desc: 'Brake pad replacement' },
-    { id: 'M-103', vehicle: 'ND-8891', date: '2023-12-10', nextDate: '2024-06-10', type: 'Inspection', status: 'Upcoming', desc: 'Annual emission test' },
-  ];
+  const [maintenanceRecords, setMaintenanceRecords] = useState<any[]>([]);
+  
 
-  const filtered = mockMaintenance.filter(m => 
+  const fetchMaintenance = async () => {
+    try {
+      
+      const data = await maintenanceService.getAll();
+      setMaintenanceRecords(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      
+    }
+  };
+
+  useEffect(() => {
+    fetchMaintenance();
+  }, []);
+
+  const filtered = maintenanceRecords.filter(m => 
     (activeTab === 'All' || m.status === activeTab) &&
     (m.vehicle.toLowerCase().includes(search.toLowerCase()) || m.type.toLowerCase().includes(search.toLowerCase()))
   );

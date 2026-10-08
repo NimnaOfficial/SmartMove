@@ -27,6 +27,13 @@ import AdminMaintenance from '@/pages/admin/maintenance/AdminMaintenance';
 import AdminFeedback from '@/pages/admin/feedback/AdminFeedback';
 import AdminReports from '@/pages/admin/reports/AdminReports';
 import AdminContent from '@/pages/admin/content/AdminContent';
+import AdminProfile from '@/pages/admin/profile/AdminProfile';
+
+// Error Pages Imports
+import NotFound from '@/pages/error/NotFound';
+import Forbidden from '@/pages/error/Forbidden';
+import SessionExpired from '@/pages/error/SessionExpired';
+import ServerError from '@/pages/error/ServerError';
 
 // Driver Imports
 import DriverLayout from '@/components/layout/DriverLayout';
@@ -91,6 +98,7 @@ function App() {
           <Route path="feedback" element={<AdminFeedback />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="content" element={<AdminContent />} />
+          <Route path="profile" element={<AdminProfile />} />
         </Route>
 
         {/* Driver Routes */}
@@ -101,6 +109,12 @@ function App() {
           <Route path="profile" element={<DriverProfile />} />
           <Route path="notifications" element={<DriverNotifications />} />
         </Route>
+
+        {/* Error Pages */}
+        <Route path="/403" element={<Forbidden />} />
+        <Route path="/500" element={<ServerError />} />
+        <Route path="/session-expired" element={<SessionExpired />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

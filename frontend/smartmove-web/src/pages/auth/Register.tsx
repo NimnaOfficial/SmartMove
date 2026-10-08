@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu, MapPin, Home, Navigation, Bell, Info } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import authService from '@/services/authService';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -13,11 +14,35 @@ export default function Register() {
     confirmPassword: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate('/login');
-  };
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) { 
+       setError('Passwords do not match'); 
+       return; 
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const response = await authService.register({
+         firstName: formData.name.split(' ')[0],
+         lastName: formData.name.split(' ')[1] || '',
+         email: formData.email,
+         phone: formData.phone,
+         password: formData.password,
+         role: 'PASSENGER'
+      });
+      localStorage.setItem('smartmove_token', response.token);
+      localStorage.setItem('smartmove_user', JSON.stringify(response));
+      navigate('/passenger/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
   const [navOpen, setNavOpen] = useState(false);
 
   const navLinks = [

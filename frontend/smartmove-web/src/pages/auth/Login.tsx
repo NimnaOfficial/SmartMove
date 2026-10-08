@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu, MapPin, Home, Navigation, Bell, Info } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import authService from '@/services/authService';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -9,10 +10,25 @@ export default function Login() {
     email: '',
     password: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/passenger/dashboard');
+    setLoading(true);
+    setError('');
+    try {
+      const response = await authService.login(formData);
+      localStorage.setItem('smartmove_token', response.token);
+      localStorage.setItem('smartmove_user', JSON.stringify(response));
+      if (response.role === 'ADMIN') navigate('/admin/dashboard');
+      else if (response.role === 'DRIVER') navigate('/driver/dashboard');
+      else navigate('/passenger/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const [navOpen, setNavOpen] = useState(false);

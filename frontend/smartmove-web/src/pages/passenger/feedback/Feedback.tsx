@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import feedbackService from '@/services/feedbackService';
+import authService from '@/services/authService';
 import { motion } from 'framer-motion';
 import { Star, MessageSquare, MapPin, Send, RotateCcw, Clock } from 'lucide-react';
 
@@ -16,10 +18,36 @@ export default function Feedback() {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
 
-  const previousFeedback = [
-    { id: 1, route: 'Colombo to Kandy', date: 'Oct 10, 2026', rating: 5, comment: 'Excellent journey, the coach was very comfortable and arrived right on time.' },
-    { id: 2, route: 'Galle to Colombo', date: 'Sep 25, 2026', rating: 4, comment: 'Good service, but the departure was slightly delayed by 10 minutes.' }
-  ];
+  const [previousFeedback, setPreviousFeedback] = useState<any[]>([]);
+  const [formData, setFormData] = useState({ routeId: '', comment: '' });
+  
+  const fetchFeedback = async () => {
+    try {
+      const user = authService.getCurrentUser();
+      if (user?.id) {
+         const data = await feedbackService.getByPassenger(user.id);
+         setPreviousFeedback(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  
+  useEffect(() => {
+    fetchFeedback();
+  }, []);
+  
+  const handleSubmit = async () => {
+     try {
+       await feedbackService.submit({ ...formData, rating, type: 'FEEDBACK' } as any);
+       fetchFeedback();
+       setFormData({ routeId: '', comment: '' });
+       setRating(0);
+     } catch (e) {
+       console.error(e);
+     }
+  };
+
 
   return (
     <div className="max-w-4xl mx-auto h-full flex flex-col gap-8 w-full pb-10">
