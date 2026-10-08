@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, MapPin, Calendar, ChevronRight,
   Clock, ShieldCheck, Navigation, ArrowRight,
@@ -16,6 +17,7 @@ const fadeUp = {
 };
 
 export default function PassengerDashboard() {
+  const navigate = useNavigate();
   return (
     <div className="max-w-7xl mx-auto h-full flex flex-col gap-8 w-full pb-10">
       
@@ -25,7 +27,7 @@ export default function PassengerDashboard() {
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
           <p className="text-gray-500 mt-2 font-light">Welcome back, here is your travel summary.</p>
         </div>
-        <button className="hidden sm:flex items-center gap-2 bg-[#1e3f7a] text-white px-5 py-2.5 rounded-full font-semibold hover:bg-[#152e5e] transition-colors shadow-md hover:-translate-y-0.5">
+        <button onClick={() => navigate('/passenger/trips')} className="hidden sm:flex items-center gap-2 bg-[#1e3f7a] text-white px-5 py-2.5 rounded-full font-semibold hover:bg-[#152e5e] transition-colors shadow-md hover:-translate-y-0.5">
           <Search className="w-4 h-4" /> New Booking
         </button>
       </motion.div>
@@ -131,7 +133,7 @@ export default function PassengerDashboard() {
                 </div>
 
                 <div className="mt-6 flex justify-end">
-                  <button className="bg-white text-[#1e3f7a] px-8 py-3.5 rounded-xl font-bold shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 w-full md:w-auto justify-center">
+                  <button onClick={() => navigate('/passenger/trips')} className="bg-white text-[#1e3f7a] px-8 py-3.5 rounded-xl font-bold shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 w-full md:w-auto justify-center">
                     <Search className="w-5 h-5" /> Search Available Trips
                   </button>
                 </div>
@@ -173,7 +175,7 @@ export default function PassengerDashboard() {
             <motion.div variants={fadeUp} className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-gray-900 text-lg">Upcoming Trips</h3>
-                <button className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">View All</button>
+                <button onClick={() => navigate('/passenger/bookings')} className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">View All</button>
               </div>
               
               <div className="space-y-4">
@@ -181,7 +183,7 @@ export default function PassengerDashboard() {
                   { route: 'Mountain Pass', date: 'Oct 22, 2026', time: '11:00 AM', status: 'Payment Due', from: 'Kandy', to: 'Nuwara Eliya' },
                   { route: 'Valley Line', date: 'Nov 05, 2026', time: '02:15 PM', status: 'Scheduled', from: 'Colombo', to: 'Kandy' }
                 ].map((trip, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row gap-4 items-center p-4 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-sm transition-all group">
+                  <div key={i} onClick={() => navigate('/passenger/bookings')} className="cursor-pointer flex flex-col sm:flex-row gap-4 items-center p-4 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-sm transition-all group">
                     <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors flex-shrink-0">
                       <Navigation className="w-5 h-5" />
                     </div>
@@ -229,7 +231,7 @@ export default function PassengerDashboard() {
                 ))}
               </div>
               
-              <button className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
+              <button onClick={() => navigate('/passenger/announcements')} className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
                 View All Announcements
               </button>
             </motion.div>
@@ -254,7 +256,7 @@ export default function PassengerDashboard() {
                 <p className="text-xs text-gray-400 font-medium">Reviewed on Oct 10, 2026</p>
               </div>
 
-              <button className="w-full mt-5 py-2.5 rounded-xl border-2 border-gray-100 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => navigate('/passenger/feedback')} className="w-full mt-5 py-2.5 rounded-xl border-2 border-gray-100 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
                 <MessageSquare className="w-4 h-4" /> Submit New Feedback
               </button>
             </motion.div>

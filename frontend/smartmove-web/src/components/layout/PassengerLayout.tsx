@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation, useOutlet } from 'react-router-dom';
+import { Link, useLocation, useOutlet, useNavigate } from 'react-router-dom';
 import { 
   Home, Navigation, Bookmark, Bell, Settings, 
-  Search, MapPin, LogOut
+  Search, MapPin, LogOut, History, MessageSquare, Image as ImageIcon
 } from 'lucide-react';
 
 const navLinks = [
   { name: 'Dashboard', icon: Home, path: '/passenger/dashboard' },
   { name: 'Search Trips', icon: Navigation, path: '/passenger/trips' },
   { name: 'My Bookings', icon: Bookmark, path: '/passenger/bookings' },
+  { name: 'Travel History', icon: History, path: '/passenger/travel-history' },
+  { name: 'Feedback', icon: MessageSquare, path: '/passenger/feedback' },
   { name: 'Announcements', icon: Bell, path: '/passenger/announcements' },
+  { name: 'Media', icon: ImageIcon, path: '/passenger/media' },
   { name: 'Profile & Settings', icon: Settings, path: '/passenger/profile' },
 ];
 
@@ -18,6 +21,7 @@ export default function PassengerLayout() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const location = useLocation();
   const outlet = useOutlet();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen w-full bg-[#1e3f7a] font-sans selection:bg-blue-400 selection:text-white flex overflow-hidden">
@@ -118,7 +122,7 @@ export default function PassengerLayout() {
 
           {/* Profile Section */}
           <div className="flex items-center gap-4 ml-auto">
-            <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-all relative">
+            <button onClick={() => navigate('/passenger/announcements')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-all relative">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-[#1e3f7a]" />
             </button>
