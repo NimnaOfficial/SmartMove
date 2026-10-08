@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Search, Filter, Plus, Edit2, Eye, Trash2, Star } from 'lucide-react';
+import { Plus, Edit2, Eye, Star } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -13,7 +12,6 @@ const staggerContainer = {
 };
 
 export default function AdminDrivers() {
-  const [search, setSearch] = useState('');
   
   const mockDrivers = [
     { id: 'DRV-771', name: 'Dipak Palve', contact: '+94 77 123 4567', status: 'On Duty', assigned: 'T-1042', rating: 4.8 },

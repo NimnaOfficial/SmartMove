@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Car, Search, Filter, Plus, Edit2, Eye, Trash2, Settings2 } from 'lucide-react';
 
 const fadeUp = {

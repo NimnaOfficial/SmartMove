@@ -18,6 +18,15 @@ import Media from '@/pages/passenger/media/Media';
 // Admin Imports
 import AdminLayout from '@/components/layout/AdminLayout';
 import AdminDashboard from '@/pages/admin/dashboard/AdminDashboard';
+import AdminVehicles from '@/pages/admin/vehicles/AdminVehicles';
+import AdminDrivers from '@/pages/admin/drivers/AdminDrivers';
+import AdminRoutes from '@/pages/admin/routes/AdminRoutes';
+import AdminTrips from '@/pages/admin/trips/AdminTrips';
+import AdminBookings from '@/pages/admin/bookings/AdminBookings';
+import AdminMaintenance from '@/pages/admin/maintenance/AdminMaintenance';
+import AdminFeedback from '@/pages/admin/feedback/AdminFeedback';
+import AdminReports from '@/pages/admin/reports/AdminReports';
+import AdminContent from '@/pages/admin/content/AdminContent';
 
 function App() {
   useEffect(() => {
@@ -65,7 +74,15 @@ function App() {
         {/* Admin Routes using Shared Ethereal Layout */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="dashboard" element={<AdminDashboard />} />
-          {/* Future admin routes will go here */}
+          <Route path="vehicles" element={<AdminVehicles />} />
+          <Route path="drivers" element={<AdminDrivers />} />
+          <Route path="routes" element={<AdminRoutes />} />
+          <Route path="trips" element={<AdminTrips />} />
+          <Route path="bookings" element={<AdminBookings />} />
+          <Route path="maintenance" element={<AdminMaintenance />} />
+          <Route path="feedback" element={<AdminFeedback />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="content" element={<AdminContent />} />
         </Route>
       </Routes>
     </Router>
