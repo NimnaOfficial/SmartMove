@@ -72,7 +72,7 @@ export default function MyBookings() {
   const [activeTab, setActiveTab] = useState<TabType>('Upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
-  const [modalMode, setModalMode] = useState<'view' | 'cancel'>('view');
+  const [modalMode, setModalMode] = useState<'view' | 'cancel' | 'pay'>('view');
 
   const filteredBookings = mockBookings.filter(b => 
     b.type === activeTab && 
