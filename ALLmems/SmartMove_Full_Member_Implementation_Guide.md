@@ -1,4 +1,4 @@
-# SmartMove Full Implementation Guide - Member by Member
+ï»¿# SmartMove Full Implementation Guide - Member by Member
 
 Based on the `SmartMove_Oracle_MongoDB_Practical_Work_Allocation_4_Members.md` and the advanced requirements from `ALL.pdf` and `DM2 CW -1 (1).pdf`, this guide provides the complete PL/SQL procedures, SQL queries, NoSQL MongoDB queries, and implementation steps allocated specifically to each team member. 
 
@@ -6,7 +6,7 @@ This covers all 5 Business Reports, Transactions, PL/SQL Functions, Triggers, an
 
 ---
 
-## Member 1 — Oracle Schema Foundation, References & Security
+## Member 1 â€” Oracle Schema Foundation, References & Security
 
 **Responsibility:** Master tables (`PASSENGER`, `DRIVER`, `VEHICLE`, `ROUTE`), primary keys, constraints, verifying IDs for MongoDB references, User Management, and Backup strategies.
 
@@ -118,7 +118,7 @@ SELECT ROUTE_ID, ORIGIN, DESTINATION FROM ROUTE;
 
 ---
 
-## Member 2 — Oracle PL/SQL, Reports 1–3 and MongoDB Queries 1–2
+## Member 2 â€” Oracle PL/SQL, Reports 1â€“3 and MongoDB Queries 1â€“2
 
 **Responsibility:** Shared PL/SQL business functions, Exception Handling, Business Reports 1, 2, and 3 (Materialized Views), and MongoDB Aggregations.
 
@@ -221,7 +221,7 @@ db.reviews.aggregate([
 
 ---
 
-## Member 3 — Oracle Transactional Tables, Triggers & Reports 4–5
+## Member 3 â€” Oracle Transactional Tables, Triggers & Reports 4â€“5
 
 **Responsibility:** Tables (`TRIP`, `BOOKING`, `PAYMENT`, `MAINTENANCE`, `FEEDBACK`), maintaining strict transaction behaviors, updating seat capacities (Triggers), Explicit Cursors, and Reports 4 & 5.
 
@@ -229,9 +229,9 @@ db.reviews.aggregate([
 
 ```sql
 -- 5. TRIP TABLE
-CREATE SEQUENCE SEQ_TRIP START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE SEQ_TRIPS START WITH 1 INCREMENT BY 1;
 CREATE TABLE TRIP (
-    TRIP_ID NUMBER(10) DEFAULT SEQ_TRIP.NEXTVAL PRIMARY KEY,
+    TRIP_ID NUMBER(10) DEFAULT SEQ_TRIPS.NEXTVAL PRIMARY KEY,
     ROUTE_ID NUMBER(10) NOT NULL,
     VEHICLE_ID NUMBER(10) NOT NULL,
     DRIVER_ID NUMBER(10) NOT NULL,
@@ -417,7 +417,7 @@ ORDER BY OCCUPANCY_PERCENTAGE DESC;
 
 ---
 
-## Member 4 — MongoDB Collections, Nested Documents, Indexes & Queries 3–4
+## Member 4 â€” MongoDB Collections, Nested Documents, Indexes & Queries 3â€“4
 
 **Responsibility:** MongoDB setup, Nested Documents, creating indexes, inserting records referencing Oracle IDs, and queries for searching and retrieving documents.
 

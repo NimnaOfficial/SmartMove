@@ -105,35 +105,58 @@ print("Inserting Test Data into 'vehicle_documents'...");
 db.vehicle_documents.insertMany([
   {
     vehicleId: 1,
-    documentType: "INSURANCE",
-    fileName: "ins_ND-4521_2026.pdf",
-    url: "https://smartmove-storage.s3.amazonaws.com/docs/ins_ND-4521_2026.pdf",
-    uploadedAt: new Date("2026-01-10T10:00:00Z"),
-    status: "VALID"
-  },
-  {
-    vehicleId: 1,
-    documentType: "REGISTRATION",
-    fileName: "reg_ND-4521.pdf",
-    url: "https://smartmove-storage.s3.amazonaws.com/docs/reg_ND-4521.pdf",
-    uploadedAt: new Date("2022-05-15T09:00:00Z"),
-    status: "VALID"
-  },
-  {
-    vehicleId: 3,
-    documentType: "EMISSION_TEST",
-    fileName: "eco_ND-8891_2025.pdf",
-    url: "https://smartmove-storage.s3.amazonaws.com/docs/eco_ND-8891_2025.pdf",
-    uploadedAt: new Date("2025-08-20T14:30:00Z"),
-    status: "EXPIRED"
+    registration: "ND-4521",
+    documents: [
+      {
+        type: "INSURANCE",
+        fileName: "ins_ND-4521_2026.pdf",
+        url: "https://smartmove-storage.s3.amazonaws.com/docs/ins_ND-4521_2026.pdf",
+        uploadedAt: new Date("2026-01-10T10:00:00Z"),
+        status: "VALID"
+      },
+      {
+        type: "REGISTRATION",
+        fileName: "reg_ND-4521.pdf",
+        url: "https://smartmove-storage.s3.amazonaws.com/docs/reg_ND-4521.pdf",
+        uploadedAt: new Date("2022-05-15T09:00:00Z"),
+        status: "VALID"
+      }
+    ],
+    images: [
+      {
+        type: "IMAGE",
+        url: "https://smartmove-storage.s3.amazonaws.com/media/vehicle1_exterior.jpg",
+        caption: "Exterior view"
+      }
+    ]
   },
   {
     vehicleId: 2,
-    documentType: "ROUTE_PERMIT",
-    fileName: "permit_ND-3210.pdf",
-    url: "https://smartmove-storage.s3.amazonaws.com/docs/permit_ND-3210.pdf",
-    uploadedAt: new Date("2026-03-01T11:15:00Z"),
-    status: "VALID"
+    registration: "ND-3210",
+    documents: [
+      {
+        type: "ROUTE_PERMIT",
+        fileName: "permit_ND-3210.pdf",
+        url: "https://smartmove-storage.s3.amazonaws.com/docs/permit_ND-3210.pdf",
+        uploadedAt: new Date("2026-03-01T11:15:00Z"),
+        status: "VALID"
+      }
+    ],
+    images: []
+  },
+  {
+    vehicleId: 3,
+    registration: "ND-8891",
+    documents: [
+      {
+        type: "EMISSION_TEST",
+        fileName: "eco_ND-8891_2025.pdf",
+        url: "https://smartmove-storage.s3.amazonaws.com/docs/eco_ND-8891_2025.pdf",
+        uploadedAt: new Date("2025-08-20T14:30:00Z"),
+        status: "EXPIRED"
+      }
+    ],
+    images: []
   }
 ]);
 
