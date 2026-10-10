@@ -47,8 +47,9 @@ public class BookingController {
      * Returns all bookings for the authenticated passenger using JWT-extracted userId.
      */
     @GetMapping("/api/bookings/my-bookings")
-    public org.springframework.http.ResponseEntity<?> endpoint4() {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint4(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        if (userId == null) return org.springframework.http.ResponseEntity.status(401).build();
+        return org.springframework.http.ResponseEntity.ok(service.findByPassengerId(userId));
     }
 
     /**

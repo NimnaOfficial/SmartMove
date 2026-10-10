@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import bookingService from '@/services/bookingService';
-
+import { Booking } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Eye, CheckCircle2, XCircle } from 'lucide-react';
 
@@ -16,30 +16,40 @@ const staggerContainer = {
 
 export default function AdminBookings() {
   const [search, setSearch] = useState('');
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-  const [bookings, setBookings] = useState<any[]>([]);
-  
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchBookings = async () => {
     try {
-      
       const data = await bookingService.getAll();
       setBookings(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      
+    } catch (e: any) {
+      console.error('Failed to fetch bookings:', e);
+      setError('Failed to fetch bookings.');
     }
   };
 
   useEffect(() => {
     fetchBookings();
   }, []);
+  
+  const handleCancelBooking = async (id: number) => {
+    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
+    try {
+      await bookingService.cancel(id);
+      fetchBookings();
+    } catch (e: any) {
+      console.error('Failed to cancel booking', e);
+      alert('Failed to cancel booking: ' + (e.response?.data?.message || e.message));
+    }
+  };
+
   const filtered = bookings.filter(b => 
-    b.id.toLowerCase().includes(search.toLowerCase()) || 
-    b.passenger.toLowerCase().includes(search.toLowerCase()) ||
-    b.trip.toLowerCase().includes(search.toLowerCase())
+    b.bookingId.toString().includes(search) || 
+    (b.passengerName && b.passengerName.toLowerCase().includes(search.toLowerCase())) ||
+    b.tripId.toString().includes(search)
   );
 
   return (
@@ -69,6 +79,12 @@ export default function AdminBookings() {
         </div>
       </motion.div>
 
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl">
+          {error}
+        </div>
+      )}
+
       <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="bg-[#1a1b23] border border-white/5 rounded-[2rem] overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1000px]">
@@ -85,29 +101,31 @@ export default function AdminBookings() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {filtered.map((b) => (
-                <motion.tr variants={fadeUp} key={b.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="p-5 pl-8 font-semibold text-white">{b.id}</td>
-                  <td className="p-5 text-sm font-medium text-gray-300">{b.passenger}</td>
+                <motion.tr variants={fadeUp} key={b.bookingId} className="hover:bg-white/[0.02] transition-colors group">
+                  <td className="p-5 pl-8 font-semibold text-white">#{b.bookingId}</td>
+                  <td className="p-5 text-sm font-medium text-gray-300">{b.passengerName || `Passenger #${b.passengerId}`}</td>
                   <td className="p-5">
-                    <p className="text-sm font-bold text-gray-200" dangerouslySetInnerHTML={{ __html: b.route }}></p>
-                    <p className="text-xs text-gray-500 mt-1">{b.trip} • {b.date}</p>
+                    <p className="text-sm font-bold text-gray-200">
+                      {b.routeOrigin} &rarr; {b.routeDestination}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Trip #{b.tripId} • {b.departureDate} {b.departureTime}</p>
                   </td>
                   <td className="p-5 text-sm font-bold text-purple-400">
-                    ${b.amount.toFixed(2)}
+                    ${b.totalAmount.toFixed(2)}
                   </td>
                   <td className="p-5">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
-                      ${b.bookingStatus === 'Confirmed' ? 'bg-emerald-500/20 text-emerald-400' : 
-                        b.bookingStatus === 'Pending' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {b.bookingStatus === 'Confirmed' && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      {b.bookingStatus === 'Cancelled' && <XCircle className="w-3.5 h-3.5" />}
+                      ${b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 
+                        b.bookingStatus === 'PENDING' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {(b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED') && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      {b.bookingStatus === 'CANCELLED' && <XCircle className="w-3.5 h-3.5" />}
                       {b.bookingStatus}
                     </span>
                   </td>
                   <td className="p-5">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
-                      ${b.paymentStatus === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : 
-                        b.paymentStatus === 'Unpaid' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                      ${b.paymentStatus === 'PAID' ? 'bg-emerald-500/20 text-emerald-400' : 
+                        b.paymentStatus === 'UNPAID' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-400'}`}>
                       {b.paymentStatus}
                     </span>
                   </td>
@@ -115,14 +133,19 @@ export default function AdminBookings() {
                     <button onClick={() => setSelectedBooking(b)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
-                    {b.bookingStatus !== 'Cancelled' && (
-                      <button className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
+                    {b.bookingStatus !== 'CANCELLED' && (
+                      <button onClick={() => handleCancelBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
                         <XCircle className="w-4 h-4" />
                       </button>
                     )}
                   </td>
                 </motion.tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-gray-500">No bookings found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -143,27 +166,33 @@ export default function AdminBookings() {
               <div className="space-y-4">
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Booking ID</span>
-                  <span className="text-white font-medium">{selectedBooking.id}</span>
+                  <span className="text-white font-medium">#{selectedBooking.bookingId}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Passenger</span>
-                  <span className="text-white font-medium">{selectedBooking.passenger}</span>
+                  <span className="text-white font-medium">{selectedBooking.passengerName || `ID: ${selectedBooking.passengerId}`}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
-                  <span className="text-gray-400">Trip</span>
-                  <span className="text-white font-medium">{selectedBooking.trip}</span>
+                  <span className="text-gray-400">Trip ID</span>
+                  <span className="text-white font-medium">#{selectedBooking.tripId}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Route</span>
-                  <span className="text-white font-medium" dangerouslySetInnerHTML={{ __html: selectedBooking.route }}></span>
+                  <span className="text-white font-medium">
+                    {selectedBooking.routeOrigin} &rarr; {selectedBooking.routeDestination}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Date</span>
-                  <span className="text-white font-medium">{selectedBooking.date}</span>
+                  <span className="text-white font-medium">{selectedBooking.departureDate} {selectedBooking.departureTime}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
-                  <span className="text-gray-400">Amount</span>
-                  <span className="text-white font-medium">${selectedBooking.amount.toFixed(2)}</span>
+                  <span className="text-gray-400">Tickets</span>
+                  <span className="text-white font-medium">{selectedBooking.ticketQuantity}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Total Amount</span>
+                  <span className="text-white font-medium">${selectedBooking.totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Booking Status</span>

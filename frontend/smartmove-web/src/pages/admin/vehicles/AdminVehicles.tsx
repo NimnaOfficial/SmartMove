@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import vehicleService from '@/services/vehicleService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Car, Search, Filter, Plus, Edit2, Eye, Trash2, Settings2 } from 'lucide-react';
+import { Vehicle, VehicleFormData } from '@/types';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -16,20 +17,26 @@ const staggerContainer = {
 export default function AdminVehicles() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [viewOnly, setViewOnly] = useState(false);
   
-  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   
+  const [formData, setFormData] = useState<VehicleFormData>({
+    registrationNumber: '',
+    type: 'Standard',
+    model: '',
+    year: new Date().getFullYear(),
+    capacity: 45,
+    status: 'ACTIVE'
+  });
 
   const fetchVehicles = async () => {
     try {
-      
       const data = await vehicleService.getAll();
       setVehicles(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
-    } finally {
-      
     }
   };
 
@@ -37,9 +44,67 @@ export default function AdminVehicles() {
     fetchVehicles();
   }, []);
 
+  const handleOpenForm = (v?: Vehicle) => {
+    setViewOnly(false);
+    if (v) {
+      setSelectedVehicle(v);
+      setFormData({
+        registrationNumber: v.registrationNumber || '',
+        type: v.type || 'Standard',
+        model: v.model || '',
+        year: v.year || new Date().getFullYear(),
+        capacity: v.capacity || 45,
+        status: v.status || 'ACTIVE'
+      });
+    } else {
+      setSelectedVehicle(null);
+      setFormData({
+        registrationNumber: '',
+        type: 'Standard',
+        model: '',
+        year: new Date().getFullYear(),
+        capacity: 45,
+        status: 'ACTIVE'
+      });
+    }
+    setShowForm(true);
+  };
+
+  const handleView = (v: Vehicle) => {
+    setSelectedVehicle(v);
+    setViewOnly(true);
+    setShowForm(false);
+  };
+
+  const handleSave = async () => {
+    try {
+      if (selectedVehicle) {
+        await vehicleService.update(selectedVehicle.vehicleId, formData);
+      } else {
+        await vehicleService.create(formData);
+      }
+      setShowForm(false);
+      setSelectedVehicle(null);
+      fetchVehicles();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm("Are you sure you want to delete this vehicle?")) {
+      try {
+        await vehicleService.delete(id);
+        fetchVehicles();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   const filtered = vehicles.filter(v => 
-    v.reg.toLowerCase().includes(search.toLowerCase()) || 
-    v.id.toLowerCase().includes(search.toLowerCase())
+    (v.registrationNumber || '').toLowerCase().includes(search.toLowerCase()) || 
+    (v.vehicleId?.toString() || '').includes(search.toLowerCase())
   );
 
   return (
@@ -50,7 +115,7 @@ export default function AdminVehicles() {
           <p className="text-gray-400 mt-2 font-medium">Manage and monitor all operational vehicles.</p>
         </div>
         <button 
-          onClick={() => setShowForm(true)}
+          onClick={() => handleOpenForm()}
           className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
         >
           <Plus className="w-5 h-5" /> Add Vehicle
@@ -93,42 +158,47 @@ export default function AdminVehicles() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {filtered.map((v) => (
-                <motion.tr variants={fadeUp} key={v.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="p-5 pl-8 font-semibold text-white">{v.id}</td>
+                <motion.tr variants={fadeUp} key={v.vehicleId} className="hover:bg-white/[0.02] transition-colors group">
+                  <td className="p-5 pl-8 font-semibold text-white">{v.vehicleId}</td>
                   <td className="p-5 text-sm font-medium text-gray-300">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
                         <Car className="w-4 h-4" />
                       </div>
-                      {v.reg}
+                      {v.registrationNumber}
                     </div>
                   </td>
                   <td className="p-5">
                     <p className="text-sm text-gray-300 font-medium">{v.type}</p>
                     <p className="text-xs text-gray-500">{v.capacity} Seats</p>
                   </td>
-                  <td className="p-5 text-sm text-gray-400">{v.driver}</td>
+                  <td className="p-5 text-sm text-gray-400">{v.driverName || 'Unassigned'}</td>
                   <td className="p-5">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
-                      ${v.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 
-                        v.status === 'Maintenance' ? 'bg-orange-500/20 text-orange-400' : 
+                      ${v.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400' : 
+                        v.status === 'MAINTENANCE' ? 'bg-orange-500/20 text-orange-400' : 
                         'bg-red-500/20 text-red-400'}`}>
                       {v.status}
                     </span>
                   </td>
                   <td className="p-5 pr-8 flex items-center justify-end gap-2">
-                    <button onClick={() => setSelectedVehicle(v)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                    <button onClick={() => handleView(v)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button onClick={() => { setSelectedVehicle(v); setShowForm(true); }} className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
+                    <button onClick={() => handleOpenForm(v)} className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
+                    <button onClick={() => handleDelete(v.vehicleId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
                 </motion.tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-5 text-center text-gray-500">No vehicles found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -149,35 +219,67 @@ export default function AdminVehicles() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-400 block mb-1">Registration Number</label>
-                  <input type="text" defaultValue={selectedVehicle?.reg} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. ND-4521" />
+                  <input type="text" 
+                    value={formData.registrationNumber} 
+                    onChange={e => setFormData({...formData, registrationNumber: e.target.value})}
+                    className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" 
+                    placeholder="e.g. ND-4521" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-400 block mb-1">Type</label>
-                    <select defaultValue={selectedVehicle?.type} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
-                      <option>Luxury Coach</option>
-                      <option>Mini Bus</option>
-                      <option>Standard</option>
-                      <option>Sleeper</option>
+                    <select 
+                      value={formData.type} 
+                      onChange={e => setFormData({...formData, type: e.target.value})}
+                      className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
+                      <option value="Luxury Coach">Luxury Coach</option>
+                      <option value="Mini Bus">Mini Bus</option>
+                      <option value="Standard">Standard</option>
+                      <option value="Sleeper">Sleeper</option>
                     </select>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-400 block mb-1">Capacity</label>
-                    <input type="number" defaultValue={selectedVehicle?.capacity} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. 45" />
+                    <input type="number" 
+                      value={formData.capacity} 
+                      onChange={e => setFormData({...formData, capacity: parseInt(e.target.value) || 0})}
+                      className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" 
+                      placeholder="e.g. 45" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-400 block mb-1">Model</label>
+                    <input type="text" 
+                      value={formData.model} 
+                      onChange={e => setFormData({...formData, model: e.target.value})}
+                      className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" 
+                      placeholder="e.g. Volvo 9900" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-400 block mb-1">Year</label>
+                    <input type="number" 
+                      value={formData.year} 
+                      onChange={e => setFormData({...formData, year: parseInt(e.target.value) || 2026})}
+                      className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" />
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-400 block mb-1">Status</label>
-                  <select defaultValue={selectedVehicle?.status} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
-                    <option>Active</option>
-                    <option>Maintenance</option>
-                    <option>Inactive</option>
+                  <select 
+                    value={formData.status} 
+                    onChange={e => setFormData({...formData, status: e.target.value})}
+                    className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
+                    <option value="ACTIVE">Active</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="INACTIVE">Inactive</option>
+                    <option value="RETIRED">Retired</option>
                   </select>
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-8">
-                <button onClick={() => { setShowForm(false); setSelectedVehicle(null); }} className="px-5 py-2.5 rounded-xl font-semibold text-gray-300 hover:bg-white/5 transition-all">Cancel</button>
-                <button onClick={() => { setShowForm(false); setSelectedVehicle(null); }} className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all">Save</button>
+                <button onClick={() => setShowForm(false)} className="px-5 py-2.5 rounded-xl font-semibold text-gray-300 hover:bg-white/5 transition-all">Cancel</button>
+                <button onClick={handleSave} className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all">Save</button>
               </div>
             </motion.div>
           </motion.div>
@@ -186,7 +288,7 @@ export default function AdminVehicles() {
 
       {/* View Vehicle Modal */}
       <AnimatePresence>
-        {selectedVehicle && !showForm && (
+        {selectedVehicle && viewOnly && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
@@ -199,15 +301,19 @@ export default function AdminVehicles() {
               <div className="space-y-4">
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">ID</span>
-                  <span className="text-white font-medium">{selectedVehicle.id}</span>
+                  <span className="text-white font-medium">{selectedVehicle.vehicleId}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Registration</span>
-                  <span className="text-white font-medium">{selectedVehicle.reg}</span>
+                  <span className="text-white font-medium">{selectedVehicle.registrationNumber}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Type</span>
                   <span className="text-white font-medium">{selectedVehicle.type}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Model / Year</span>
+                  <span className="text-white font-medium">{selectedVehicle.model} / {selectedVehicle.year}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Capacity</span>
@@ -219,7 +325,7 @@ export default function AdminVehicles() {
                 </div>
               </div>
               <div className="flex justify-end mt-8">
-                <button onClick={() => setSelectedVehicle(null)} className="px-5 py-2.5 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all">Close</button>
+                <button onClick={() => setViewOnly(false)} className="px-5 py-2.5 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all">Close</button>
               </div>
             </motion.div>
           </motion.div>

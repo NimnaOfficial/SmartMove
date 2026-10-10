@@ -22,12 +22,12 @@ export default function Profile() {
   const [showToast, setShowToast] = useState(false);
 
   const [profileData, setProfileData] = useState<any>({
-    firstName: 'Dipak',
-    lastName: 'Palve',
-    email: 'dipak.palve@example.com',
-    phone: '+94 77 123 4567',
-    address: '123 Coastal Road',
-    city: 'Colombo',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
   });
 
   useEffect(() => {

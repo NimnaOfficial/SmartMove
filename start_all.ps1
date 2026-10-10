@@ -22,7 +22,7 @@ foreach ($service in $services) {
     
     # Launch each service in a separate hidden PowerShell window (or minimized)
     # Using Start-Process so they don't block the current terminal
-    Start-Process -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Command", "Title '$service'; mvn spring-boot:run -pl services/$service" -WindowStyle Minimized
+    Start-Process -WorkingDirectory $PWD.Path -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Command", "Title '$service'; mvn spring-boot:run -pl services/$service" -WindowStyle Minimized
     
     # Wait a few seconds before starting the next one (especially important for Service Registry)
     if ($service -eq "service-registry") {

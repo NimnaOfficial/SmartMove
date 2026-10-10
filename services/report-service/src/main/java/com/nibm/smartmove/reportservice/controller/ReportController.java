@@ -56,6 +56,10 @@ public class ReportController {
         java.util.Map<String, Object> stats = new java.util.HashMap<>();
         stats.put("totalVehicles", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM VEHICLE", Integer.class));
         stats.put("activeDrivers", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM DRIVER", Integer.class));
+        stats.put("todaysTrips", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM TRIP WHERE TRUNC(CREATED_AT) = TRUNC(SYSDATE)", Integer.class));
+        stats.put("todaysBookings", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM BOOKING WHERE TRUNC(BOOKING_DATE) = TRUNC(SYSDATE)", Integer.class));
+        stats.put("todaysRevenue", jdbcTemplate.queryForObject("SELECT COALESCE(SUM(TOTAL_FARE), 0) FROM BOOKING WHERE TRUNC(BOOKING_DATE) = TRUNC(SYSDATE) AND STATUS = 'CONFIRMED'", Integer.class));
+        stats.put("maintenanceDue", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM MAINTENANCE WHERE STATUS = 'SCHEDULED' OR STATUS = 'OVERDUE'", Integer.class));
         return org.springframework.http.ResponseEntity.ok(stats);
     }
 }

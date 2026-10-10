@@ -11,4 +11,6 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE LOWER(b.status) LIKE LOWER(CONCAT('%', :q, '%')) OR CAST(b.passengerId AS String) LIKE CONCAT('%', :q, '%')")
     List<Booking> search(@Param("q") String q);
+    
+    List<Booking> findByPassengerId(Long passengerId);
 }

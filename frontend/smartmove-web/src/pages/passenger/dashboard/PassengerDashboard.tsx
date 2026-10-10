@@ -1,3 +1,6 @@
+import { useState, useEffect } from 'react';
+import bookingService from '@/services/bookingService';
+import contentService from '@/services/contentService';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -18,6 +21,42 @@ const fadeUp = {
 
 export default function PassengerDashboard() {
   const navigate = useNavigate();
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  
+  const userStr = localStorage.getItem('smartmove_user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const firstName = user?.FIRST_NAME || 'Passenger';
+
+  useEffect(() => {
+    bookingService.getMyBookings().then(data => {
+      if (Array.isArray(data)) {
+        setAllBookings(data);
+        const upcoming = data.filter(b => b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'PENDING').sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        setUpcomingBookings(upcoming.slice(0, 3));
+      }
+    }).catch(e => console.error(e));
+
+    contentService.getAllAnnouncements().then(data => {
+      if (Array.isArray(data)) {
+        setAnnouncements(data.slice(0, 3));
+      }
+    }).catch(e => console.error(e));
+
+    contentService.getAllReviews().then(data => {
+      if (Array.isArray(data)) {
+        setReviews(data.slice(0, 1)); // Just show the latest 1
+      }
+    }).catch(e => console.error(e));
+  }, []);
+
+  const nextBooking = upcomingBookings.length > 0 ? upcomingBookings[0] : null;
+  const totalTrips = allBookings.length;
+  const completedTrips = allBookings.filter(b => b.bookingStatus === 'COMPLETED').length;
+  const activeTripsCount = allBookings.filter(b => b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'PENDING').length;
+
   return (
     <div className="max-w-7xl mx-auto h-full flex flex-col gap-8 w-full pb-10">
       
@@ -25,7 +64,7 @@ export default function PassengerDashboard() {
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
-          <p className="text-gray-500 mt-2 font-light">Welcome back, here is your travel summary.</p>
+          <p className="text-gray-500 mt-2 font-light">Welcome back {firstName}, here is your travel summary.</p>
         </div>
         <button onClick={() => navigate('/passenger/trips')} className="hidden sm:flex items-center gap-2 bg-[#1e3f7a] text-white px-5 py-2.5 rounded-full font-semibold hover:bg-[#152e5e] transition-colors shadow-md hover:-translate-y-0.5">
           <Search className="w-4 h-4" /> New Booking
@@ -40,7 +79,7 @@ export default function PassengerDashboard() {
              </div>
              <div>
                <p className="text-sm text-gray-500 font-medium">Total Trips</p>
-               <h3 className="text-2xl font-bold text-gray-900">42</h3>
+               <h3 className="text-2xl font-bold text-gray-900">{totalTrips}</h3>
              </div>
           </motion.div>
 
@@ -50,7 +89,7 @@ export default function PassengerDashboard() {
              </div>
              <div>
                <p className="text-sm text-gray-500 font-medium">Completed Trips</p>
-               <h3 className="text-2xl font-bold text-gray-900">38</h3>
+               <h3 className="text-2xl font-bold text-gray-900">{completedTrips}</h3>
              </div>
           </motion.div>
 
@@ -60,7 +99,7 @@ export default function PassengerDashboard() {
              </div>
              <div>
                <p className="text-sm text-gray-500 font-medium">Upcoming Trips</p>
-               <h3 className="text-2xl font-bold text-gray-900">4</h3>
+               <h3 className="text-2xl font-bold text-gray-900">{activeTripsCount}</h3>
              </div>
           </motion.div>
 
@@ -70,7 +109,7 @@ export default function PassengerDashboard() {
              </div>
              <div>
                <p className="text-sm text-gray-500 font-medium">Active Bookings</p>
-               <h3 className="text-2xl font-bold text-gray-900">2</h3>
+               <h3 className="text-2xl font-bold text-gray-900">{activeTripsCount}</h3>
              </div>
           </motion.div>
       </motion.div>
@@ -101,6 +140,7 @@ export default function PassengerDashboard() {
                       <input id="dash-origin" type="text" placeholder="Origin City" className="bg-transparent border-none outline-none text-white placeholder-white/40 w-full font-medium" />
                     </div>
                   </div>
+
                   
                   <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4">
                     <label className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold block mb-2">To</label>
@@ -152,35 +192,47 @@ export default function PassengerDashboard() {
             </motion.div>
 
             {/* Next Booking Summary */}
+            {nextBooking ? (
             <motion.div variants={fadeUp} className="bg-white rounded-[1.5rem] p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6 items-center">
               <div className="w-full md:w-auto">
                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                    <ShieldCheck className="w-5 h-5 text-blue-600" /> Next Booking Summary
                  </h3>
                  <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-bold inline-block mb-2 text-sm tracking-wide">
-                   TOMORROW
+                   UPCOMING
                  </div>
-                 <p className="text-3xl font-bold text-gray-900">08:30 AM</p>
-                 <p className="text-gray-500 font-medium">Oct 15, 2026</p>
+                 <p className="text-3xl font-bold text-gray-900">Seat {nextBooking.seatNumber || 'Any'}</p>
+                 <p className="text-gray-500 font-medium">Booking #{nextBooking.bookingId}</p>
               </div>
               <div className="flex-1 w-full bg-gray-50 rounded-xl p-5 border border-gray-100">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-gray-900">Coastal Express</span>
-                  <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full uppercase tracking-wider">Confirmed</span>
+                  <span className="font-bold text-gray-900">Total Paid</span>
+                  <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full uppercase tracking-wider">${nextBooking.amount || 0}</span>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <p className="text-xs text-gray-500 uppercase font-semibold">Origin</p>
-                    <p className="font-medium text-gray-900">Colombo</p>
+                    <p className="text-xs text-gray-500 uppercase font-semibold">Status</p>
+                    <p className="font-medium text-gray-900">{nextBooking.bookingStatus}</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-gray-400" />
                   <div className="flex-1 text-right">
-                    <p className="text-xs text-gray-500 uppercase font-semibold">Destination</p>
-                    <p className="font-medium text-gray-900">Galle</p>
+                    <p className="text-xs text-gray-500 uppercase font-semibold">Date</p>
+                    <p className="font-medium text-gray-900">{nextBooking.createdAt ? new Date(nextBooking.createdAt).toLocaleDateString() : 'N/A'}</p>
                   </div>
                 </div>
               </div>
             </motion.div>
+            ) : (
+            <motion.div variants={fadeUp} className="bg-white rounded-[1.5rem] p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col gap-6 items-center justify-center text-center">
+                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                   <ShieldCheck className="w-5 h-5 text-blue-600" /> No Upcoming Bookings
+                 </h3>
+                 <p className="text-gray-500">You do not have any upcoming trips scheduled.</p>
+                 <button onClick={() => navigate('/passenger/trips')} className="bg-blue-50 text-blue-600 px-6 py-2 rounded-xl font-bold shadow-sm hover:bg-blue-100 transition-all flex items-center gap-2 mt-2">
+                   Book a Trip Now
+                 </button>
+            </motion.div>
+            )}
 
             {/* Upcoming Trips List */}
             <motion.div variants={fadeUp} className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100">
@@ -190,24 +242,26 @@ export default function PassengerDashboard() {
               </div>
               
               <div className="space-y-4">
-                {([] as any[]).map((trip, i) => (
+                {upcomingBookings.length > 0 ? upcomingBookings.map((trip, i) => (
                   <div key={i} onClick={() => navigate('/passenger/bookings')} className="cursor-pointer flex flex-col sm:flex-row gap-4 items-center p-4 rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-sm transition-all group">
                     <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors flex-shrink-0">
                       <Navigation className="w-5 h-5" />
                     </div>
                     <div className="flex-1 text-center sm:text-left min-w-0">
-                      <h4 className="text-base font-bold text-gray-900 truncate">{trip.route}</h4>
-                      <p className="text-sm text-gray-500 truncate">{trip.from} to {trip.to}</p>
+                      <h4 className="text-base font-bold text-gray-900 truncate">Booking #{trip.bookingId}</h4>
+                      <p className="text-sm text-gray-500 truncate">Status: {trip.bookingStatus}</p>
                     </div>
                     <div className="text-center sm:text-right">
-                      <p className="font-semibold text-gray-900">{trip.date}</p>
-                      <p className="text-sm text-gray-500">{trip.time}</p>
+                      <p className="font-semibold text-gray-900">${trip.amount}</p>
+                      <p className="text-sm text-gray-500">{trip.createdAt ? new Date(trip.createdAt).toLocaleDateString() : 'N/A'}</p>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors sm:ml-2">
                       <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <p className="text-sm text-gray-500 text-center py-4">No recent bookings found.</p>
+                )}
               </div>
             </motion.div>
 
@@ -223,17 +277,19 @@ export default function PassengerDashboard() {
                   <Bell className="w-5 h-5 text-orange-500" />
                   <h3 className="font-semibold text-gray-900 text-lg">Announcements</h3>
                 </div>
-                <span className="text-xs font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded-full">NEW</span>
+                {announcements.length > 0 && <span className="text-xs font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded-full">NEW</span>}
               </div>
 
               <div className="space-y-5">
-                {([] as any[]).map((ann, i) => (
+                {announcements.length > 0 ? announcements.map((ann, i) => (
                   <div key={i} className="pb-5 border-b border-gray-50 last:border-0 last:pb-0">
-                    <h4 className="font-semibold text-gray-900 text-sm mb-1">{ann.title}</h4>
-                    <p className="text-xs text-gray-400 mb-2">{ann.date}</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{ann.desc}</p>
+                    <h4 className="font-semibold text-gray-900 text-sm mb-1">{ann.title || 'Notification'}</h4>
+                    <p className="text-xs text-gray-400 mb-2">{ann.createdAt ? new Date(ann.createdAt).toLocaleDateString() : ''}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{ann.message || ann.desc || ''}</p>
                   </div>
-                ))}
+                )) : (
+                  <p className="text-sm text-gray-500 py-2">No new announcements at this time.</p>
+                )}
               </div>
               
               <button onClick={() => navigate('/passenger/announcements')} className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
@@ -245,21 +301,27 @@ export default function PassengerDashboard() {
             <motion.div variants={fadeUp} className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-6">
                 <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                <h3 className="font-semibold text-gray-900 text-lg">Your Feedback</h3>
+                <h3 className="font-semibold text-gray-900 text-lg">Recent Reviews</h3>
               </div>
               
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-gray-900 text-sm">Coastal Express</span>
-                  <div className="flex items-center gap-1">
-                    {[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />)}
+              {reviews.length > 0 ? reviews.map((review, i) => (
+                <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-bold text-gray-900 text-sm">Route {review.routeId || ''}</span>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: review.rating || 5 }).map((_, s) => (
+                        <Star key={s} className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                      ))}
+                    </div>
                   </div>
+                  <p className="text-sm text-gray-600 italic mb-3">
+                    "{review.comment || 'Great experience!'}"
+                  </p>
+                  <p className="text-xs text-gray-400 font-medium">Reviewed on {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</p>
                 </div>
-                <p className="text-sm text-gray-600 italic mb-3">
-                  "Excellent journey, the coach was very comfortable and arrived right on time."
-                </p>
-                <p className="text-xs text-gray-400 font-medium">Reviewed on Oct 10, 2026</p>
-              </div>
+              )) : (
+                <p className="text-sm text-gray-500 py-2">No recent feedback.</p>
+              )}
 
               <button onClick={() => navigate('/passenger/feedback')} className="w-full mt-5 py-2.5 rounded-xl border-2 border-gray-100 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
                 <MessageSquare className="w-4 h-4" /> Submit New Feedback
@@ -271,3 +333,4 @@ export default function PassengerDashboard() {
     </div>
   );
 }
+

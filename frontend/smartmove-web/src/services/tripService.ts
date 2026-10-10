@@ -18,6 +18,9 @@ const tripService = {
     const res = await apiClient.put(`/trips/${id}`, data);
     return res.data;
   },
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/trips/${id}`);
+  },
   updateStatus: async (id: number, status: string): Promise<Trip> => {
     const res = await apiClient.patch(`/trips/${id}/status`, { status });
     return res.data;
