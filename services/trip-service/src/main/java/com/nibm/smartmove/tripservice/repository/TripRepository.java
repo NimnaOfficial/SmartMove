@@ -1,0 +1,8 @@
+package com.nibm.smartmove.tripservice.repository;
+import com.nibm.smartmove.tripservice.entity.Trip;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface TripRepository extends JpaRepository<Trip, Long> {
+}

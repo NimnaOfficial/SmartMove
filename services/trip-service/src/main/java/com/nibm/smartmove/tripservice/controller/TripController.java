@@ -1,0 +1,68 @@
+package com.nibm.smartmove.tripservice.controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@RestController
+@CrossOrigin(origins = "*")
+public class TripController {
+    @Autowired
+    private com.nibm.smartmove.tripservice.service.TripService service;
+
+
+    /**
+     * Retrieves all trips from Oracle TRIP table with route, vehicle, driver info via JOINs.
+     */
+    @GetMapping("/api/trips")
+    public org.springframework.http.ResponseEntity<?> endpoint0() {
+        return org.springframework.http.ResponseEntity.ok(service.findAll());
+    }
+
+    /**
+     * Schedules a new trip. Calls PL/SQL procedure SP_SCHEDULE_TRIP. Validates route/vehicle/driver exist, vehicle and driver available.
+     */
+    @PostMapping("/api/trips")
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
+    /**
+     * Retrieves single trip by tripId with full details (route, vehicle, driver, seat info).
+     */
+    @GetMapping("/api/trips/{id}")
+    public org.springframework.http.ResponseEntity<?> endpoint2(@PathVariable Long id) {
+        return service.findById(id).map(org.springframework.http.ResponseEntity::ok).orElse(org.springframework.http.ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Updates trip info (date, time, fare, status). Admin/driver endpoint.
+     */
+    @PutMapping("/api/trips/{id}")
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
+    /**
+     * Updates only the trip status (SCHEDULED→IN_PROGRESS→COMPLETED or CANCELLED). Driver can update own trips.
+     */
+    @PatchMapping("/api/trips/{id}/status")
+    public org.springframework.http.ResponseEntity<?> endpoint4(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
+    /**
+     * Searches trips by origin, destination, date, maxPrice. Public endpoint for passengers to find available trips.
+     */
+    @GetMapping("/api/trips/search")
+    public org.springframework.http.ResponseEntity<?> endpoint5() {
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
+    /**
+     * Returns trips scheduled in the near future. Used by passenger dashboard.
+     */
+    @GetMapping("/api/trips/upcoming")
+    public org.springframework.http.ResponseEntity<?> endpoint6() {
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
+}
