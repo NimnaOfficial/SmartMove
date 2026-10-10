@@ -15,4 +15,5 @@ public class MaintenanceService {
     public Optional<Maintenance> findById(Long id) { return repository.findById(id); }
     public Maintenance save(Maintenance entity) { return repository.save(entity); }
     public void deleteById(Long id) { repository.deleteById(id); }
+    public List<Maintenance> search(String q) { return repository.search(q); }
 }

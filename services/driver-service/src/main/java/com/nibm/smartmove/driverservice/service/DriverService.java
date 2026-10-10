@@ -15,4 +15,5 @@ public class DriverService {
     public Optional<Driver> findById(Long id) { return repository.findById(id); }
     public Driver save(Driver entity) { return repository.save(entity); }
     public void deleteById(Long id) { repository.deleteById(id); }
+    public List<Driver> search(String q) { return repository.search(q); }
 }

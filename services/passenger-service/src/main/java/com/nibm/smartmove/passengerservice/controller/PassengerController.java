@@ -65,7 +65,7 @@ public class PassengerController {
      */
     @GetMapping("/api/passengers/search")
     public org.springframework.http.ResponseEntity<?> endpoint6(@RequestParam String q) {
-        return org.springframework.http.ResponseEntity.ok().build();
+        return org.springframework.http.ResponseEntity.ok(service.search(q));
     }
 
 }

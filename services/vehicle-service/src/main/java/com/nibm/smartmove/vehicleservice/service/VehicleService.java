@@ -15,4 +15,5 @@ public class VehicleService {
     public Optional<Vehicle> findById(Long id) { return repository.findById(id); }
     public Vehicle save(Vehicle entity) { return repository.save(entity); }
     public void deleteById(Long id) { repository.deleteById(id); }
+    public List<Vehicle> search(String q) { return repository.search(q); }
 }

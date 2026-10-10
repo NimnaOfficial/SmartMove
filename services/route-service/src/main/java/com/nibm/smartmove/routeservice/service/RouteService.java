@@ -15,4 +15,5 @@ public class RouteService {
     public Optional<Route> findById(Long id) { return repository.findById(id); }
     public Route save(Route entity) { return repository.save(entity); }
     public void deleteById(Long id) { repository.deleteById(id); }
+    public List<Route> search(String q) { return repository.search(q); }
 }

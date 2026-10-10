@@ -72,7 +72,7 @@ public class DriverController {
      */
     @GetMapping("/api/drivers/search")
     public org.springframework.http.ResponseEntity<?> endpoint7(@RequestParam String q) {
-        return org.springframework.http.ResponseEntity.ok().build();
+        return org.springframework.http.ResponseEntity.ok(service.search(q));
     }
 
 }

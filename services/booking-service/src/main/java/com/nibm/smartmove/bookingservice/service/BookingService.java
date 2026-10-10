@@ -15,4 +15,5 @@ public class BookingService {
     public Optional<Booking> findById(Long id) { return repository.findById(id); }
     public Booking save(Booking entity) { return repository.save(entity); }
     public void deleteById(Long id) { repository.deleteById(id); }
+    public List<Booking> search(String q) { return repository.search(q); }
 }

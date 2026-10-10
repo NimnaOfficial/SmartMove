@@ -55,8 +55,12 @@ public class TripController {
      * Searches trips by origin, destination, date, maxPrice. Public endpoint for passengers to find available trips.
      */
     @GetMapping("/api/trips/search")
-    public org.springframework.http.ResponseEntity<?> endpoint5() {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint5(
+            @RequestParam(required = false) String origin,
+            @RequestParam(required = false) String destination,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) Double maxPrice) {
+        return org.springframework.http.ResponseEntity.ok(service.search(origin, destination, date, maxPrice));
     }
 
     /**

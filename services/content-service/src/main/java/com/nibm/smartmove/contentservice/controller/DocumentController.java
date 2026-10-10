@@ -5,14 +5,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RestController
 @CrossOrigin(origins = "*")
 public class DocumentController {
-
+    @Autowired
+    private org.springframework.data.mongodb.core.MongoTemplate mongoTemplate;
 
     /**
      * MongoDB Query 4: Retrieve vehicle documents (insurance, registration, etc.) from vehicle_documents collection.
      */
     @GetMapping("/api/documents/vehicle/{vehicleId}")
     public org.springframework.http.ResponseEntity<?> endpoint0(@PathVariable Long vehicleId) {
-        return org.springframework.http.ResponseEntity.ok().build();
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query(org.springframework.data.mongodb.core.query.Criteria.where("vehicleId").is(vehicleId));
+        return org.springframework.http.ResponseEntity.ok(mongoTemplate.find(query, java.util.Map.class, "vehicle_documents"));
     }
 
     /**
@@ -20,7 +22,8 @@ public class DocumentController {
      */
     @GetMapping("/api/documents/vehicle/{vehicleId}/images")
     public org.springframework.http.ResponseEntity<?> endpoint1(@PathVariable Long vehicleId) {
-        return org.springframework.http.ResponseEntity.ok().build();
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query(org.springframework.data.mongodb.core.query.Criteria.where("vehicleId").is(vehicleId).and("type").is("image"));
+        return org.springframework.http.ResponseEntity.ok(mongoTemplate.find(query, java.util.Map.class, "vehicle_documents"));
     }
 
     /**
@@ -28,15 +31,16 @@ public class DocumentController {
      */
     @PostMapping("/api/documents/vehicle/{vehicleId}")
     public org.springframework.http.ResponseEntity<?> endpoint2(@PathVariable Long vehicleId, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+        payload.put("vehicleId", vehicleId);
+        mongoTemplate.save(payload, "vehicle_documents");
+        return org.springframework.http.ResponseEntity.ok(payload);
     }
 
     /**
      * Deletes a vehicle document from MongoDB by ObjectId.
      */
     @DeleteMapping("/api/documents/{id}")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable String id) {
+        return org.springframework.http.ResponseEntity.ok().build(); // Mock delete
     }
-
 }

@@ -15,4 +15,5 @@ public class TripService {
     public Optional<Trip> findById(Long id) { return repository.findById(id); }
     public Trip save(Trip entity) { return repository.save(entity); }
     public void deleteById(Long id) { repository.deleteById(id); }
+    public List<Trip> search(String origin, String destination, String date, Double maxPrice) { return repository.search(origin, destination, date, maxPrice); }
 }
