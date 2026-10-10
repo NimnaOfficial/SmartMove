@@ -1,6 +1,8 @@
 package com.nibm.smartmove.passengerservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.passengerservice.entity.Passenger;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -29,8 +31,8 @@ public class PassengerController {
      * Updates passenger info. Admin can update any passenger.
      */
     @PutMapping("/api/passengers/{id}")
-    public org.springframework.http.ResponseEntity<?> endpoint2(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint2(@PathVariable Long id, @RequestBody Passenger payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -38,6 +40,7 @@ public class PassengerController {
      */
     @DeleteMapping("/api/passengers/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id) {
+        service.deleteById(id);
         return org.springframework.http.ResponseEntity.ok().build();
     }
 
@@ -53,8 +56,8 @@ public class PassengerController {
      * Updates the authenticated passenger's own profile.
      */
     @PutMapping("/api/passengers/profile")
-    public org.springframework.http.ResponseEntity<?> endpoint5(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint5(@RequestBody Passenger payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.nibm.smartmove.bookingservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.bookingservice.entity.Booking;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -21,8 +23,8 @@ public class BookingController {
      * Creates a new booking. Calls PL/SQL procedure SP_CREATE_BOOKING. Checks seat availability, validates passenger/trip, creates booking record.
      */
     @PostMapping("/api/bookings")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Booking payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -37,8 +39,8 @@ public class BookingController {
      * Cancels a booking. Calls PL/SQL procedure SP_CANCEL_BOOKING. Updates booking status and releases seats.
      */
     @PutMapping("/api/bookings/{id}/cancel")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Booking payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**

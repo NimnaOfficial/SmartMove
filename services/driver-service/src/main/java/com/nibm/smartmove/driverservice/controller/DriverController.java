@@ -1,6 +1,8 @@
 package com.nibm.smartmove.driverservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.driverservice.entity.Driver;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -21,8 +23,8 @@ public class DriverController {
      * Creates a new driver record. Validates license number uniqueness, email format, phone format.
      */
     @PostMapping("/api/drivers")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Driver payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -37,8 +39,8 @@ public class DriverController {
      * Updates driver profile info (name, phone, license, status).
      */
     @PutMapping("/api/drivers/{id}")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Driver payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -53,8 +55,8 @@ public class DriverController {
      * Updates the authenticated driver's own profile.
      */
     @PutMapping("/api/drivers/profile")
-    public org.springframework.http.ResponseEntity<?> endpoint5(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint5(@RequestBody Driver payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**

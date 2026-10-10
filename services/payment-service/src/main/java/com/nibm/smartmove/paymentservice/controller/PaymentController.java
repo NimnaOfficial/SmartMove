@@ -1,6 +1,8 @@
 package com.nibm.smartmove.paymentservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.paymentservice.entity.Payment;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -21,8 +23,8 @@ public class PaymentController {
      * Processes a payment for a booking. Calls PL/SQL procedure SP_PROCESS_PAYMENT. Updates booking payment status.
      */
     @PostMapping("/api/payments")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Payment payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**

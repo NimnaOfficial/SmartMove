@@ -1,6 +1,8 @@
 package com.nibm.smartmove.feedbackservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.feedbackservice.entity.Feedback;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -21,8 +23,8 @@ public class FeedbackController {
      * Submits new feedback. Validates rating 1-5, links to passenger/route/vehicle/driver.
      */
     @PostMapping("/api/feedback")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Feedback payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**

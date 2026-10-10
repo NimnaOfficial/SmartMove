@@ -1,6 +1,8 @@
 package com.nibm.smartmove.tripservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.tripservice.entity.Trip;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -21,8 +23,8 @@ public class TripController {
      * Schedules a new trip. Calls PL/SQL procedure SP_SCHEDULE_TRIP. Validates route/vehicle/driver exist, vehicle and driver available.
      */
     @PostMapping("/api/trips")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Trip payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -37,16 +39,16 @@ public class TripController {
      * Updates trip info (date, time, fare, status). Admin/driver endpoint.
      */
     @PutMapping("/api/trips/{id}")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Trip payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
      * Updates only the trip status (SCHEDULED→IN_PROGRESS→COMPLETED or CANCELLED). Driver can update own trips.
      */
     @PatchMapping("/api/trips/{id}/status")
-    public org.springframework.http.ResponseEntity<?> endpoint4(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint4(@PathVariable Long id, @RequestBody Trip payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**

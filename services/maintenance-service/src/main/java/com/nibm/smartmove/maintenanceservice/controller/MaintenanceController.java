@@ -1,6 +1,8 @@
 package com.nibm.smartmove.maintenanceservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.maintenanceservice.entity.Maintenance;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -21,8 +23,8 @@ public class MaintenanceController {
      * Records new maintenance entry. Calls PL/SQL procedure SP_RECORD_MAINTENANCE. Links to vehicle.
      */
     @PostMapping("/api/maintenance")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Maintenance payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -37,8 +39,8 @@ public class MaintenanceController {
      * Updates maintenance record (status, cost, description, next date).
      */
     @PutMapping("/api/maintenance/{id}")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Maintenance payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.nibm.smartmove.routeservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.routeservice.entity.Route;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -21,8 +23,8 @@ public class RouteController {
      * Creates a new route. Validates origin != destination, checks for duplicate routes.
      */
     @PostMapping("/api/routes")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Route payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -37,8 +39,8 @@ public class RouteController {
      * Updates route info (origin, destination, distance, duration, status).
      */
     @PutMapping("/api/routes/{id}")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Route payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -46,6 +48,7 @@ public class RouteController {
      */
     @DeleteMapping("/api/routes/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint4(@PathVariable Long id) {
+        service.deleteById(id);
         return org.springframework.http.ResponseEntity.ok().build();
     }
 

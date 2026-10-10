@@ -1,6 +1,8 @@
 package com.nibm.smartmove.vehicleservice.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.nibm.smartmove.vehicleservice.entity.Vehicle;
+
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -21,8 +23,8 @@ public class VehicleController {
      * Creates a new vehicle record in Oracle. Calls PL/SQL procedure SP_REGISTER_VEHICLE. Validates registration uniqueness and capacity > 0.
      */
     @PostMapping("/api/vehicles")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Vehicle payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -37,8 +39,8 @@ public class VehicleController {
      * Updates an existing vehicle record. Validates registration uniqueness (excluding self). Updates status, capacity, model, etc.
      */
     @PutMapping("/api/vehicles/{id}")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build();
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Vehicle payload) {
+        return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
     /**
@@ -46,6 +48,7 @@ public class VehicleController {
      */
     @DeleteMapping("/api/vehicles/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint4(@PathVariable Long id) {
+        service.deleteById(id);
         return org.springframework.http.ResponseEntity.ok().build();
     }
 
