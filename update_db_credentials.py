@@ -1,5 +1,4 @@
 import os
-import re
 
 env_file = r"C:\Users\SANDANIMNE\Desktop\code ss\SmartMove\SmartMove\ALLmems\credentials.env"
 services_dir = r"C:\Users\SANDANIMNE\Desktop\code ss\SmartMove\SmartMove\services"
@@ -15,9 +14,11 @@ with open(env_file, 'r') as f:
             creds[key] = val.strip('"')
 
 mongo_uri = creds.get('MONGODB_URI')
+mongo_db = creds.get('MONGODB_DB_NAME')
 oracle_conn_string = creds.get('ORACLE_CONNECTION_STRING')
 oracle_user = creds.get('DATABASE_USERNAME')
 oracle_pass = creds.get('DATABASE_PASSWORD')
+oracle_db = creds.get('ORACLE_DB_NAME')
 
 # Target files
 prop_files = []
@@ -32,26 +33,44 @@ for p in prop_files:
         
     new_lines = []
     updated = False
+    has_schema = any(line.startswith('spring.jpa.properties.hibernate.default_schema=') for line in lines)
+    has_mongo_db = any(line.startswith('spring.data.mongodb.database=') for line in lines)
+    
+    is_oracle = False
     
     for line in lines:
         if line.startswith('spring.datasource.url='):
             new_lines.append(f'spring.datasource.url=jdbc:oracle:thin:@{oracle_conn_string}\n')
             updated = True
+            is_oracle = True
         elif line.startswith('spring.datasource.username='):
             new_lines.append(f'spring.datasource.username={oracle_user}\n')
             updated = True
+            is_oracle = True
         elif line.startswith('spring.datasource.password='):
             new_lines.append(f'spring.datasource.password={oracle_pass}\n')
             updated = True
+            is_oracle = True
         elif line.startswith('spring.data.mongodb.uri='):
-            new_lines.append(f'spring.data.mongodb.uri={mongo_uri}/smartmove\n')
+            new_lines.append(f'spring.data.mongodb.uri={mongo_uri}/{mongo_db}\n')
+            updated = True
+        elif line.startswith('spring.data.mongodb.database='):
+            new_lines.append(f'spring.data.mongodb.database={mongo_db}\n')
+            updated = True
+        elif line.startswith('spring.jpa.properties.hibernate.default_schema='):
+            new_lines.append(f'spring.jpa.properties.hibernate.default_schema={oracle_db}\n')
             updated = True
         else:
             new_lines.append(line)
             
+    # Inject missing ones
+    if is_oracle and not has_schema and oracle_db:
+        new_lines.append(f'spring.jpa.properties.hibernate.default_schema={oracle_db}\n')
+        updated = True
+        
     if updated:
         with open(p, 'w') as f:
             f.writelines(new_lines)
         print(f"Updated {p}")
         
-print("All DB credentials updated.")
+print("All DB configurations upgraded.")
