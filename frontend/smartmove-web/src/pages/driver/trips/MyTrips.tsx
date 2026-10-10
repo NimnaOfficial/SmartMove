@@ -22,6 +22,9 @@ const staggerContainer = {
 const tabs = ['Today', 'Upcoming', 'Completed'] as const;
 type TabType = typeof tabs[number];
 
+
+
+export default function MyTrips() {
 const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +44,6 @@ const [trips, setTrips] = useState<any[]>([]);
     fetchTrips();
   }, []);
 
-export default function MyTrips() {
   const [activeTab, setActiveTab] = useState<TabType>('Today');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
