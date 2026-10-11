@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useOutlet, useNavigate } from 'react-router-dom';
 import { 
-  Home, Map, User, Bell, LogOut, Hexagon
+  Home, Map, User, Bell, LogOut, Hexagon, Key, Lock, CheckCircle2, AlertCircle, X
 } from 'lucide-react';
 import LiveChatWidget from '@/components/chat/LiveChatWidget';
+import authService from '@/services/authService';
 
 const navLinks = [
   { name: 'Dashboard', icon: Home, path: '/driver/dashboard' },
@@ -16,6 +18,50 @@ export default function DriverLayout() {
   const location = useLocation();
   const outlet = useOutlet();
   const navigate = useNavigate();
+
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    setCurrentUser(user);
+    if (user && user.mustChangePassword) {
+      setShowPasswordModal(true);
+    }
+  }, []);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    if (newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New password and confirmation do not match.');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await authService.changePassword(newPassword);
+      setPasswordSuccess(true);
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordSuccess(false);
+      }, 1500);
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to update password.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-[#f9fafc] text-gray-900 font-sans selection:bg-black selection:text-white flex overflow-hidden">
@@ -52,7 +98,10 @@ export default function DriverLayout() {
         </div>
 
         <button 
-          onClick={() => navigate('/login')}
+          onClick={() => {
+            authService.logout();
+            navigate('/login');
+          }}
           className="w-12 h-12 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all"
           title="Logout"
         >
@@ -110,6 +159,108 @@ export default function DriverLayout() {
 
       {/* Floating Real-Time Live Chat Widget */}
       <LiveChatWidget theme="dark" defaultConversationId="conv-fleet-dispatch" />
+
+      {/* First-Login Change Temporary Password Modal */}
+      <AnimatePresence>
+        {showPasswordModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl border border-gray-100 text-gray-900 relative"
+            >
+              <button 
+                onClick={() => setShowPasswordModal(false)}
+                className="absolute top-5 right-5 text-gray-400 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-4">
+                <Key className="w-6 h-6" />
+              </div>
+
+              <h3 className="text-xl font-bold tracking-tight">Set Your Permanent Password</h3>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                Welcome to SmartMove! You signed in using the static temporary password (<code className="bg-gray-100 px-1 py-0.5 rounded font-mono text-gray-800">Driver@123</code>). Please establish your new private password below.
+              </p>
+
+              {passwordSuccess ? (
+                <div className="mt-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-3 text-emerald-800 text-sm font-semibold">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <span>Password updated successfully! Welcome aboard.</span>
+                </div>
+              ) : (
+                <form onSubmit={handlePasswordChange} className="mt-6 space-y-4">
+                  {passwordError && (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{passwordError}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 block mb-1">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="password"
+                        required
+                        placeholder="At least 6 characters"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:outline-none focus:border-black transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 block mb-1">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="password"
+                        required
+                        placeholder="Repeat your new password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:outline-none focus:border-black transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordModal(false)}
+                      className="flex-1 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      Change Later
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isUpdating}
+                      className="flex-1 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-gray-800 transition-colors shadow-md disabled:opacity-50"
+                    >
+                      {isUpdating ? 'Saving...' : 'Set Password'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

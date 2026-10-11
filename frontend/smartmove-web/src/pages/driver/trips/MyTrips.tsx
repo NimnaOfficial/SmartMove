@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Map, Calendar, MapPin, Search, 
-  Clock, ChevronRight, Car
+  Clock, ChevronRight, Car, RefreshCw, CheckCircle2, Play
 } from 'lucide-react';
 
 const fadeUp = {
@@ -19,14 +19,15 @@ const staggerContainer = {
   exit: { opacity: 0, transition: { duration: 0.2 } }
 };
 
-const tabs = ['Today', 'Upcoming', 'Completed'] as const;
+const tabs = ['All', 'Today', 'Upcoming', 'Completed'] as const;
 type TabType = typeof tabs[number];
 
-
-
 export default function MyTrips() {
-const [trips, setTrips] = useState<any[]>([]);
+  const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>('Today');
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   const fetchTrips = async () => {
     try {
@@ -44,15 +45,51 @@ const [trips, setTrips] = useState<any[]>([]);
     fetchTrips();
   }, []);
 
-  const [activeTab, setActiveTab] = useState<TabType>('Today');
-  const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
+  const handleUpdateStatus = async (tripId: number, newStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await driverService.updateTripStatus(tripId, newStatus);
+      fetchTrips();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-  const filteredTrips = trips.filter(t => 
-    t.type === activeTab && 
-    (t.route.toLowerCase().includes(searchQuery.toLowerCase()) || 
-     t.id.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const normalizedTrips = trips.map(t => {
+    const rawStatus = (t.status || 'SCHEDULED').toUpperCase();
+    const isCompleted = rawStatus === 'COMPLETED';
+    const isInProgress = rawStatus === 'IN_PROGRESS';
+    const isUpcoming = rawStatus === 'SCHEDULED';
+    
+    return {
+      ...t,
+      displayId: `TRP-${t.tripId}`,
+      route: `${t.routeOrigin || 'Colombo'} ➔ ${t.routeDestination || 'Kandy'}`,
+      from: t.routeOrigin || 'Colombo',
+      to: t.routeDestination || 'Kandy',
+      time: t.departureTime ? new Date(t.departureTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '08:30 AM',
+      date: t.departureTime ? new Date(t.departureTime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today',
+      duration: '2h 30m',
+      vehicle: t.vehicleRegistration || 'WP-ND-4521',
+      isCompleted,
+      isInProgress,
+      isUpcoming
+    };
+  });
+
+  const filteredTrips = normalizedTrips.filter(t => {
+    const matchesSearch = 
+      t.route.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      t.displayId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.vehicle.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (activeTab === 'All') return true;
+    if (activeTab === 'Completed') return t.isCompleted;
+    if (activeTab === 'Today') return t.isInProgress || t.isUpcoming;
+    if (activeTab === 'Upcoming') return t.isUpcoming;
+    return true;
+  });
 
   return (
     <div className="flex flex-col gap-8 w-full max-w-6xl mx-auto h-full pb-10">
@@ -67,20 +104,29 @@ const [trips, setTrips] = useState<any[]>([]);
             My Trips
           </h1>
           <p className="text-gray-500 mt-2 font-medium max-w-lg">
-            Manage your assigned schedules, upcoming routes, and past journeys.
+            Manage your assigned schedules, upcoming routes, and active journey status.
           </p>
         </div>
         
-        {/* Search Bar */}
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Search trips by route or ID..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm font-medium focus:outline-none focus:border-black transition-all"
-          />
+        {/* Search & Refresh */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search by route, vehicle, or ID..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm font-medium focus:outline-none focus:border-black transition-all"
+            />
+          </div>
+          <button
+            onClick={fetchTrips}
+            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 transition-colors"
+            title="Refresh trips"
+          >
+            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </motion.div>
 
@@ -118,21 +164,21 @@ const [trips, setTrips] = useState<any[]>([]);
             {filteredTrips.length > 0 ? (
               filteredTrips.map((trip) => (
                 <motion.div 
-                  key={trip.id}
+                  key={trip.tripId}
                   variants={fadeUp}
                   className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100 hover:border-gray-300 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
                 >
                   <div className="flex justify-between items-start mb-4">
                      <div>
-                       <span className="text-xs font-bold text-gray-400 tracking-widest">{trip.id}</span>
+                       <span className="text-xs font-bold text-gray-400 tracking-widest">{trip.displayId}</span>
                        <h3 className="text-xl font-bold text-gray-900 mt-1">{trip.route}</h3>
                      </div>
                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        trip.status === 'Completed' ? 'bg-gray-100 text-gray-600' :
-                        trip.status === 'Next' ? 'bg-black text-white' :
-                        'bg-blue-50 text-blue-600'
+                        trip.isCompleted ? 'bg-gray-100 text-gray-600' :
+                        trip.isInProgress ? 'bg-emerald-100 text-emerald-700 animate-pulse font-extrabold' :
+                        'bg-blue-50 text-blue-600 font-extrabold'
                      }`}>
-                        {trip.status}
+                        {trip.status || 'SCHEDULED'}
                      </span>
                   </div>
 
@@ -151,12 +197,33 @@ const [trips, setTrips] = useState<any[]>([]);
                      </div>
                   </div>
 
-                  <button 
-                    onClick={() => navigate(`/driver/trips/${trip.id}`)}
-                    className="w-full bg-gray-50 text-black py-3 rounded-xl text-sm font-bold group-hover:bg-black group-hover:text-white transition-colors flex items-center justify-center gap-2"
-                  >
-                    View Details <ChevronRight className="w-4 h-4" />
-                  </button>
+                  {/* Actions Row */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                    {trip.isUpcoming && (
+                      <button
+                        onClick={(e) => handleUpdateStatus(trip.tripId, 'IN_PROGRESS', e)}
+                        className="px-4 py-2.5 bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-gray-800 transition-colors cursor-pointer"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-white" /> Start Trip
+                      </button>
+                    )}
+
+                    {trip.isInProgress && (
+                      <button
+                        onClick={(e) => handleUpdateStatus(trip.tripId, 'COMPLETED', e)}
+                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-700 transition-colors cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Complete Trip
+                      </button>
+                    )}
+
+                    <button 
+                      onClick={() => navigate(`/driver/trips/${trip.tripId}`)}
+                      className="flex-1 bg-gray-50 text-black py-2.5 px-4 rounded-xl text-xs font-bold group-hover:bg-gray-100 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      View Details <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </motion.div>
               ))
             ) : (

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import driverService from '@/services/driverService';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Eye, Star, Search, Filter, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Eye, Star, Search, Filter, Trash2, Key, CheckCircle2, Copy, Check, ShieldCheck } from 'lucide-react';
 import { Driver, DriverFormData } from '@/types';
+import { DEFAULT_DRIVER_PASSWORD } from '@/services/mockDataStore';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -19,6 +20,8 @@ export default function AdminDrivers() {
   const [showForm, setShowForm] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [viewOnly, setViewOnly] = useState(false);
+  const [newDriverNotice, setNewDriverNotice] = useState<{ email: string; name: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   
   const [drivers, setDrivers] = useState<Driver[]>([]);
   
@@ -81,7 +84,12 @@ export default function AdminDrivers() {
       if (selectedDriver) {
         await driverService.update(selectedDriver.driverId, formData);
       } else {
-        await driverService.create(formData);
+        const created = await driverService.create(formData);
+        setNewDriverNotice({
+          email: created.email || formData.email,
+          name: `${created.firstName || formData.firstName} ${created.lastName || formData.lastName}`,
+          password: DEFAULT_DRIVER_PASSWORD
+        });
       }
       setShowForm(false);
       setSelectedDriver(null);
@@ -211,7 +219,25 @@ export default function AdminDrivers() {
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
             >
-              <h2 className="text-2xl font-bold text-white mb-6">{selectedDriver ? 'Edit Driver' : 'Add New Driver'}</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">{selectedDriver ? 'Edit Driver' : 'Add New Driver'}</h2>
+
+              {!selectedDriver && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border border-purple-500/30 flex items-start gap-3.5 mb-5 shadow-lg">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center flex-shrink-0 border border-purple-500/30">
+                    <Key className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-purple-300 uppercase tracking-wider block">Default Login Credentials</span>
+                    <p className="text-sm text-white mt-1">
+                      Static Temporary Password: <strong className="font-mono text-emerald-400 bg-black/50 px-2 py-0.5 rounded border border-emerald-500/30">{DEFAULT_DRIVER_PASSWORD}</strong>
+                    </p>
+                    <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+                      This driver can immediately sign in at the normal Login screen with their email & this temporary password. They will be prompted to change their password on first login.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -251,7 +277,7 @@ export default function AdminDrivers() {
               </div>
               <div className="flex justify-end gap-3 mt-8">
                 <button onClick={() => setShowForm(false)} className="px-5 py-2.5 rounded-xl font-semibold text-gray-300 hover:bg-white/5 transition-all">Cancel</button>
-                <button onClick={handleSave} className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all">Save</button>
+                <button onClick={handleSave} className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all">Save Driver</button>
               </div>
             </motion.div>
           </motion.div>
@@ -292,6 +318,10 @@ export default function AdminDrivers() {
                   <span className="text-white font-medium">{selectedDriver.status}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Temporary Password</span>
+                  <span className="text-emerald-400 font-mono font-bold">{DEFAULT_DRIVER_PASSWORD}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Rating</span>
                   <span className="text-white font-medium">{selectedDriver.rating || 'N/A'} ★</span>
                 </div>
@@ -299,6 +329,70 @@ export default function AdminDrivers() {
               <div className="flex justify-end mt-8">
                 <button onClick={() => setViewOnly(false)} className="px-5 py-2.5 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all">Close</button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* New Driver Created Success Dialog with Credentials */}
+      <AnimatePresence>
+        {newDriverNotice && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-[#161722] border border-purple-500/40 rounded-3xl p-7 w-full max-w-md shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative text-center"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-green-400 text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+
+              <h3 className="text-xl font-bold text-white">Driver Account Created!</h3>
+              <p className="text-xs text-gray-400 mt-1">
+                Give these credentials to <strong className="text-white">{newDriverNotice.name}</strong> to sign in:
+              </p>
+
+              <div className="my-5 p-4 rounded-2xl bg-white/5 border border-white/10 text-left space-y-3">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Login Email</span>
+                  <p className="text-sm font-bold text-white select-all">{newDriverNotice.email}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Static Temporary Password</span>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <span className="text-base font-mono font-bold text-emerald-400 bg-black/40 px-2.5 py-1 rounded-lg border border-emerald-500/30 select-all">
+                      {newDriverNotice.password}
+                    </span>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(`Email: ${newDriverNotice.email}\nPassword: ${newDriverNotice.password}`);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copied ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 text-left flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                <p>
+                  <strong>First Login Requirement:</strong> When the driver logs in, SmartMove will prompt them to replace this temporary password with their own permanent password.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setNewDriverNotice(null)}
+                className="mt-6 w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-sm shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                Done
+              </button>
             </motion.div>
           </motion.div>
         )}

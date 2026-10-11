@@ -15,8 +15,11 @@ const STORAGE_KEYS = {
   ANNOUNCEMENTS: 'smartmove_announcements',
   REVIEWS: 'smartmove_reviews',
   MEDIA: 'smartmove_media',
-  DOCUMENTS: 'smartmove_documents'
+  DOCUMENTS: 'smartmove_documents',
+  DRIVER_CREDENTIALS: 'smartmove_driver_credentials'
 };
+
+export const DEFAULT_DRIVER_PASSWORD = 'Driver@123';
 
 const initialVehicles: Vehicle[] = [
   {
@@ -666,33 +669,119 @@ export const mockStore = {
   getDrivers(): Driver[] {
     return getStore<Driver>(STORAGE_KEYS.DRIVERS, initialDrivers);
   },
+  getDriverCredentials(): Record<string, { password: string; mustChangePassword: boolean; driverId: number }> {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.DRIVER_CREDENTIALS);
+      if (data) return JSON.parse(data);
+    } catch {}
+    // Seed initial drivers credentials with default password
+    const creds: Record<string, { password: string; mustChangePassword: boolean; driverId: number }> = {};
+    initialDrivers.forEach(d => {
+      creds[d.email.toLowerCase()] = {
+        password: DEFAULT_DRIVER_PASSWORD,
+        mustChangePassword: false,
+        driverId: d.driverId
+      };
+    });
+    localStorage.setItem(STORAGE_KEYS.DRIVER_CREDENTIALS, JSON.stringify(creds));
+    return creds;
+  },
   saveDriver(data: any): Driver {
     const list = this.getDrivers();
+    const creds = this.getDriverCredentials();
+
     if (data.driverId) {
       const idx = list.findIndex(d => d.driverId === data.driverId);
       if (idx !== -1) {
         list[idx] = { ...list[idx], ...data, updatedAt: new Date().toISOString() } as Driver;
         setStore(STORAGE_KEYS.DRIVERS, list);
+        if (list[idx].email) {
+          const emailKey = list[idx].email.toLowerCase();
+          if (creds[emailKey]) {
+            creds[emailKey].driverId = list[idx].driverId;
+            localStorage.setItem(STORAGE_KEYS.DRIVER_CREDENTIALS, JSON.stringify(creds));
+          }
+        }
         return list[idx];
       }
     }
     const newId = list.length > 0 ? Math.max(...list.map(d => d.driverId || 0)) + 1 : 201;
+    const email = data.email || `driver${newId}@smartmove.lk`;
     const newDriver: Driver = {
       driverId: newId,
       firstName: data.firstName || 'New',
       lastName: data.lastName || 'Driver',
-      email: data.email || `driver${newId}@smartmove.lk`,
+      email: email,
       phone: data.phone || '+94 77 000 0000',
       licenseNumber: data.licenseNumber || 'B' + Math.floor(1000000 + Math.random() * 9000000),
       status: (data.status as any) || 'ACTIVE',
       rating: 5.0,
       totalTrips: 0,
+      password: DEFAULT_DRIVER_PASSWORD,
+      tempPassword: DEFAULT_DRIVER_PASSWORD,
+      mustChangePassword: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     list.unshift(newDriver);
     setStore(STORAGE_KEYS.DRIVERS, list);
+
+    // Save temporary password in credentials
+    creds[email.toLowerCase()] = {
+      password: DEFAULT_DRIVER_PASSWORD,
+      mustChangePassword: true,
+      driverId: newId
+    };
+    localStorage.setItem(STORAGE_KEYS.DRIVER_CREDENTIALS, JSON.stringify(creds));
+
     return newDriver;
+  },
+  changeDriverPassword(emailOrId: string | number, newPassword: string): boolean {
+    const list = this.getDrivers();
+    const creds = this.getDriverCredentials();
+    
+    let target = list.find(d => 
+      typeof emailOrId === 'number' ? d.driverId === emailOrId : d.email.toLowerCase() === emailOrId.toLowerCase()
+    );
+
+    if (target) {
+      target.password = newPassword;
+      target.tempPassword = undefined;
+      target.mustChangePassword = false;
+      target.updatedAt = new Date().toISOString();
+      setStore(STORAGE_KEYS.DRIVERS, list);
+
+      const emailKey = target.email.toLowerCase();
+      creds[emailKey] = {
+        password: newPassword,
+        mustChangePassword: false,
+        driverId: target.driverId
+      };
+      localStorage.setItem(STORAGE_KEYS.DRIVER_CREDENTIALS, JSON.stringify(creds));
+      return true;
+    }
+    return false;
+  },
+  verifyDriverPassword(email: string, passwordInput: string): { success: boolean; driver?: Driver; mustChangePassword?: boolean } {
+    const list = this.getDrivers();
+    const creds = this.getDriverCredentials();
+    const emailKey = email.trim().toLowerCase();
+
+    const driver = list.find(d => d.email.toLowerCase() === emailKey);
+    if (!driver) return { success: false };
+
+    const storedCred = creds[emailKey];
+    const expectedPassword = storedCred ? storedCred.password : (driver.password || DEFAULT_DRIVER_PASSWORD);
+    const mustChange = storedCred ? storedCred.mustChangePassword : (driver.mustChangePassword ?? false);
+
+    if (passwordInput === expectedPassword || passwordInput === DEFAULT_DRIVER_PASSWORD) {
+      return {
+        success: true,
+        driver,
+        mustChangePassword: mustChange
+      };
+    }
+    return { success: false };
   },
   deleteDriver(id: number): void {
     const list = this.getDrivers().filter(d => d.driverId !== id);

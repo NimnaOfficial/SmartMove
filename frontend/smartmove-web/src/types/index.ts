@@ -22,9 +22,12 @@ export interface AuthResponse {
   token: string;
   role: 'ADMIN' | 'DRIVER' | 'PASSENGER';
   userId: number;
+  id?: number;
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
+  mustChangePassword?: boolean;
 }
 
 // ─── Vehicle (Oracle) ────────────────────────────────────────
@@ -67,6 +70,9 @@ export interface Driver {
   totalTrips?: number;
   vehicleId?: number;
   vehicleRegistration?: string;
+  password?: string;
+  tempPassword?: string;
+  mustChangePassword?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -133,7 +139,7 @@ export interface Trip {
   vehicleRegistration?: string;
   driverId: number;
   driverName?: string;
-  departureDate: string;
+  departureDate?: string;
   departureTime: string;
   arrivalTime?: string;
   capacity: number;
@@ -141,6 +147,7 @@ export interface Trip {
   availableSeats: number;
   fare: number;
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  totalSeats?: number;
   createdAt?: string;
   updatedAt?: string;
 }
