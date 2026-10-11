@@ -7,7 +7,18 @@ const authService = {
     try {
       const res = await apiClient.post('/auth/login', data);
       if (res.data && res.data.token) {
-        return res.data;
+        const u = res.data.user || {};
+        const userId = u.PASSENGER_ID || u.DRIVER_ID || u.ADMIN_ID || u.userId || 1;
+        return {
+          token: res.data.token,
+          role: (res.data.role || u.ROLE || 'PASSENGER') as any,
+          userId: Number(userId),
+          firstName: u.FIRST_NAME || u.firstName || 'User',
+          lastName: u.LAST_NAME || u.lastName || '',
+          email: u.EMAIL || u.email || data.email,
+          phone: u.PHONE || u.phone,
+          mustChangePassword: false,
+        };
       }
     } catch {
       // Backend offline or error: fall back seamlessly to local mock store

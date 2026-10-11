@@ -7,7 +7,7 @@ const driverService = {
   getAll: async (): Promise<Driver[]> => {
     try {
       const res = await apiClient.get('/drivers');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         return res.data;
       }
       return mockStore.getDrivers();
@@ -84,7 +84,7 @@ const driverService = {
   getMyTrips: async (): Promise<any[]> => {
     try {
       const res = await apiClient.get('/drivers/my-trips');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
     } catch {}
 
     const profile = await driverService.getProfile();

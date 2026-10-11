@@ -6,7 +6,7 @@ const maintenanceService = {
   getAll: async (): Promise<Maintenance[]> => {
     try {
       const res = await apiClient.get('/maintenance');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         return res.data;
       }
       return mockStore.getMaintenance();
@@ -51,7 +51,7 @@ const maintenanceService = {
   getDueVehicles: async (): Promise<Maintenance[]> => {
     try {
       const res = await apiClient.get('/maintenance/due');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getMaintenance().filter(m => m.status === 'SCHEDULED' || m.status === 'OVERDUE');
     } catch {
       return mockStore.getMaintenance().filter(m => m.status === 'SCHEDULED' || m.status === 'OVERDUE');

@@ -6,7 +6,7 @@ const tripService = {
   getAll: async (): Promise<Trip[]> => {
     try {
       const res = await apiClient.get('/trips');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         return res.data;
       }
       return mockStore.getTrips();

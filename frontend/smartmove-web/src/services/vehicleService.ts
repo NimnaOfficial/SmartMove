@@ -6,7 +6,7 @@ const vehicleService = {
   getAll: async (): Promise<Vehicle[]> => {
     try {
       const res = await apiClient.get('/vehicles');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         return res.data;
       }
       return mockStore.getVehicles();

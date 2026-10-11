@@ -6,7 +6,7 @@ const reportService = {
   getRouteUsage: async (): Promise<RouteUsageReport[]> => {
     try {
       const res = await apiClient.get('/reports/routes');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getRouteUsageReports();
     } catch {
       return mockStore.getRouteUsageReports();
@@ -68,7 +68,7 @@ const reportService = {
   getMaintenanceDue: async (): Promise<MaintenanceDueReport[]> => {
     try {
       const res = await apiClient.get('/reports/maintenance');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getMaintenanceDueReports();
     } catch {
       return mockStore.getMaintenanceDueReports();
@@ -77,7 +77,7 @@ const reportService = {
   getTripPerformance: async (): Promise<TripPerformanceReport[]> => {
     try {
       const res = await apiClient.get('/reports/trip-performance');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getTripPerformance();
     } catch {
       return mockStore.getTripPerformance();
