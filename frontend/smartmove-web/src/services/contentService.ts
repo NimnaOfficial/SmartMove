@@ -7,7 +7,7 @@ const contentService = {
   getAllReviews: async (): Promise<Review[]> => {
     try {
       const res = await apiClient.get('/reviews');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getReviews();
     } catch {
       return mockStore.getReviews();
@@ -16,7 +16,7 @@ const contentService = {
   getReviewsByRoute: async (routeId: number): Promise<Review[]> => {
     try {
       const res = await apiClient.get(`/reviews/route/${routeId}`);
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getReviews().filter(r => r.routeId === routeId);
     } catch {
       return mockStore.getReviews().filter(r => r.routeId === routeId);
@@ -25,7 +25,7 @@ const contentService = {
   getTopRated: async (): Promise<any> => {
     try {
       const res = await apiClient.get('/reviews/top-rated');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       const reviews = mockStore.getReviews();
       const map: { [key: number]: { count: number; total: number } } = {};
       reviews.forEach(r => {
@@ -74,7 +74,7 @@ const contentService = {
   getAllAnnouncements: async (): Promise<Announcement[]> => {
     try {
       const res = await apiClient.get('/announcements');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getAnnouncements();
     } catch {
       return mockStore.getAnnouncements();
@@ -109,7 +109,7 @@ const contentService = {
   getVehicleDocuments: async (vehicleId: number): Promise<VehicleDocument[]> => {
     try {
       const res = await apiClient.get(`/documents/vehicle/${vehicleId}`);
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getDocuments(vehicleId);
     } catch {
       return mockStore.getDocuments(vehicleId);
@@ -149,7 +149,7 @@ const contentService = {
   getTripMedia: async (tripId: number): Promise<TripMedia[]> => {
     try {
       const res = await apiClient.get(`/media/trip/${tripId}`);
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getMedia().filter(m => m.tripId === tripId);
     } catch {
       return mockStore.getMedia().filter(m => m.tripId === tripId);
@@ -158,7 +158,7 @@ const contentService = {
   getAllMedia: async (): Promise<TripMedia[]> => {
     try {
       const res = await apiClient.get('/media');
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
+      if (Array.isArray(res.data)) return res.data;
       return mockStore.getMedia();
     } catch {
       return mockStore.getMedia();

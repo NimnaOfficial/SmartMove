@@ -6,7 +6,7 @@ const feedbackService = {
   getAll: async (): Promise<Feedback[]> => {
     try {
       const res = await apiClient.get('/feedback');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         return res.data;
       }
       return mockStore.getFeedback();

@@ -41,7 +41,7 @@ public class BookingController {
     @PutMapping("/api/bookings/{id}/cancel")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody(required = false) Booking payload) {
         return service.findById(id).map(b -> {
-            b.setBookingStatus("CANCELLED");
+            b.setStatus("CANCELLED");
             return org.springframework.http.ResponseEntity.ok(service.save(b));
         }).orElse(org.springframework.http.ResponseEntity.notFound().build());
     }
@@ -51,7 +51,7 @@ public class BookingController {
      */
     @GetMapping("/api/bookings/my-bookings")
     public org.springframework.http.ResponseEntity<?> endpoint4(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        if (userId == null) return org.springframework.http.ResponseEntity.status(401).build();
+        if (userId == null) return org.springframework.http.ResponseEntity.ok(java.util.Collections.emptyList());
         return org.springframework.http.ResponseEntity.ok(service.findByPassengerId(userId));
     }
 

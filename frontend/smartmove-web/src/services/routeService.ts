@@ -6,7 +6,7 @@ const routeService = {
   getAll: async (): Promise<RouteInfo[]> => {
     try {
       const res = await apiClient.get('/routes');
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         return res.data;
       }
       return mockStore.getRoutes();

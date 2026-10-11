@@ -22,9 +22,12 @@ apiClient.interceptors.request.use(
       try {
         const parsed = JSON.parse(userStr);
         const user = parsed.user || parsed; // Handle nested or flat structure
-        const userId = user.PASSENGER_ID || user.DRIVER_ID || user.ADMIN_ID;
+        const userId = user.userId || user.id || user.PASSENGER_ID || user.DRIVER_ID || user.ADMIN_ID;
         if (userId) config.headers['X-User-Id'] = userId.toString();
-        if (user.EMAIL) config.headers['X-User-Email'] = user.EMAIL;
+        const email = user.email || user.EMAIL;
+        if (email) config.headers['X-User-Email'] = email;
+        const role = user.role || user.ROLE;
+        if (role) config.headers['X-User-Role'] = role;
       } catch (e) {}
     }
     return config;
@@ -38,12 +41,20 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response) {
       const status = error.response.status;
-      if (status === 401) {
+      const url = error.config?.url || '';
+
+      // Do NOT trigger session-expired for auth calls (login/register) or public flows
+      const isAuthEndpoint = url.includes('/auth/');
+      const hadToken = !!localStorage.getItem('smartmove_token');
+      const isProtectedRoute = 
+        window.location.pathname.startsWith('/admin') ||
+        window.location.pathname.startsWith('/passenger') ||
+        window.location.pathname.startsWith('/driver');
+
+      if (status === 401 && !isAuthEndpoint && hadToken && isProtectedRoute) {
         localStorage.removeItem('smartmove_token');
         localStorage.removeItem('smartmove_user');
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/session-expired';
-        }
+        window.location.href = '/session-expired';
       } else if (status === 403) {
         window.location.href = '/403';
       }
