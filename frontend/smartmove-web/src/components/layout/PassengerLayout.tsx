@@ -5,6 +5,7 @@ import {
   Home, Navigation, Bookmark, Bell, Settings, 
   Search, MapPin, LogOut, History, MessageSquare, Image as ImageIcon
 } from 'lucide-react';
+import LiveChatWidget from '@/components/chat/LiveChatWidget';
 
 const navLinks = [
   { name: 'Dashboard', icon: Home, path: '/passenger/dashboard' },
@@ -132,6 +133,9 @@ export default function PassengerLayout() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Floating Real-Time Support Chat Widget */}
+      <LiveChatWidget theme="light" defaultConversationId="conv-support-kasun" />
 
     </div>
   );

@@ -22,9 +22,12 @@ export interface AuthResponse {
   token: string;
   role: 'ADMIN' | 'DRIVER' | 'PASSENGER';
   userId: number;
+  id?: number;
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
+  mustChangePassword?: boolean;
 }
 
 // ─── Vehicle (Oracle) ────────────────────────────────────────
@@ -67,6 +70,9 @@ export interface Driver {
   totalTrips?: number;
   vehicleId?: number;
   vehicleRegistration?: string;
+  password?: string;
+  tempPassword?: string;
+  mustChangePassword?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -133,7 +139,7 @@ export interface Trip {
   vehicleRegistration?: string;
   driverId: number;
   driverName?: string;
-  departureDate: string;
+  departureDate?: string;
   departureTime: string;
   arrivalTime?: string;
   capacity: number;
@@ -141,6 +147,7 @@ export interface Trip {
   availableSeats: number;
   fare: number;
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  totalSeats?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -392,3 +399,45 @@ export interface PaginatedResponse<T> {
   page: number;
   size: number;
 }
+
+// ─── Real-Time Chat & Texting ────────────────────────────────
+export interface ChatUser {
+  id: string | number;
+  name: string;
+  role: 'ADMIN' | 'DRIVER' | 'PASSENGER' | 'SYSTEM';
+  avatar?: string;
+  status: 'online' | 'offline' | 'away';
+  subtitle?: string;
+  phone?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string | number;
+  senderName: string;
+  senderRole: 'ADMIN' | 'DRIVER' | 'PASSENGER' | 'SYSTEM';
+  senderAvatar?: string;
+  recipientId?: string | number;
+  content: string;
+  timestamp: string;
+  status: 'sent' | 'delivered' | 'read';
+  type?: 'text' | 'location' | 'alert' | 'system';
+  meta?: {
+    location?: string;
+    tripId?: number;
+    urgency?: 'normal' | 'urgent' | 'emergency';
+  };
+}
+
+export interface ChatConversation {
+  id: string;
+  title: string;
+  type: 'direct' | 'dispatch' | 'support' | 'broadcast';
+  participants: ChatUser[];
+  lastMessage?: ChatMessage;
+  unreadCount: number;
+  updatedAt: string;
+  pinned?: boolean;
+}
+

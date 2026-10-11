@@ -21,6 +21,9 @@ const staggerContainer = {
 const tabs = ['Upcoming', 'Completed', 'Cancelled'] as const;
 type TabType = typeof tabs[number];
 
+
+
+export default function MyBookings() {
 // Mock Data following Specification
 const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +44,6 @@ const [bookings, setBookings] = useState<any[]>([]);
     fetchBookings();
   }, []);
 
-export default function MyBookings() {
   const [activeTab, setActiveTab] = useState<TabType>('Upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);

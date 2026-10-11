@@ -14,8 +14,18 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('smartmove_token');
+    const userStr = localStorage.getItem('smartmove_user');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (userStr && config.headers) {
+      try {
+        const parsed = JSON.parse(userStr);
+        const user = parsed.user || parsed; // Handle nested or flat structure
+        const userId = user.PASSENGER_ID || user.DRIVER_ID || user.ADMIN_ID;
+        if (userId) config.headers['X-User-Id'] = userId.toString();
+        if (user.EMAIL) config.headers['X-User-Email'] = user.EMAIL;
+      } catch (e) {}
     }
     return config;
   },

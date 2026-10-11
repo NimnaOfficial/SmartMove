@@ -25,7 +25,7 @@ export default function Login() {
       else if (response.role === 'DRIVER') navigate('/driver/dashboard');
       else navigate('/passenger/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid credentials');
+      setError(err.message || err.response?.data?.message || 'Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -168,8 +168,42 @@ export default function Login() {
               <X className="w-4 h-4" />
             </Link>
 
-            <form onSubmit={handleSubmit} className="space-y-8 mt-4">
+            <form onSubmit={handleSubmit} className="space-y-6 mt-4">
               
+              {error && (
+                <div className="p-3.5 bg-red-500/20 border border-red-500/30 rounded-2xl text-xs text-red-100 font-medium">
+                  {error}
+                </div>
+              )}
+
+              {/* Demo Quick-Fill Pills */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-blue-200 font-bold block">Quick Fill Test Accounts:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ email: 'kamal.perera@smartmove.lk', password: 'Driver@123' })}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 hover:bg-emerald-500/30 transition-all font-semibold"
+                  >
+                    Driver Kamal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ email: 'admin@smartmove.lk', password: 'Admin@123' })}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-400/30 hover:bg-purple-500/30 transition-all font-semibold"
+                  >
+                    Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ email: 'passenger@smartmove.lk', password: 'passenger123' })}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all font-semibold"
+                  >
+                    Passenger
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-[11px] font-semibold tracking-widest text-blue-100 uppercase">E-Mail</label>
                 <input 
@@ -194,7 +228,12 @@ export default function Login() {
                 />
               </div>
 
-              <div className="flex items-start gap-3 pt-2">
+              {/* Temporary password guide for drivers */}
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-400/20 text-[11px] text-blue-100">
+                <span className="font-bold text-amber-300">Driver Login:</span> For new drivers added by Admin, use your email & static temporary password <strong className="font-mono text-white bg-blue-900/50 px-1 py-0.5 rounded">Driver@123</strong>.
+              </div>
+
+              <div className="flex items-start gap-3">
                 <input 
                   type="checkbox" 
                   className="mt-1 w-3.5 h-3.5 rounded-sm border-white bg-transparent checked:bg-white cursor-pointer"
@@ -204,12 +243,13 @@ export default function Login() {
                 </label>
               </div>
 
-              <div className="flex items-center justify-between pt-8">
+              <div className="flex items-center justify-between pt-4">
                 <button 
                   type="submit"
-                  className="bg-white text-[#1e3f7a] font-bold px-8 py-3 rounded-full text-sm hover:bg-gray-50 transition-colors shadow-lg"
+                  disabled={loading}
+                  className="bg-white text-[#1e3f7a] font-bold px-8 py-3 rounded-full text-sm hover:bg-gray-50 transition-colors shadow-lg disabled:opacity-50"
                 >
-                  SIGN IN
+                  {loading ? 'SIGNING IN...' : 'SIGN IN'}
                 </button>
                 <Link to="/register" className="text-xs text-blue-200 hover:text-white underline decoration-blue-300/50 underline-offset-4 transition-colors">
                   I don't have account

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import feedbackService from '@/services/feedbackService';
+import { Feedback } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Search, Filter, Star, Eye } from 'lucide-react';
+import { MessageSquare, Search, Filter, Star, Eye, Trash2 } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -16,20 +17,30 @@ const staggerContainer = {
 export default function AdminFeedback() {
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
-  const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 
-  const [feedbackList, setFeedbackList] = useState<any[]>([]);
-  
+  const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchFeedback = async () => {
     try {
-      
       const data = await feedbackService.getAll();
       setFeedbackList(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      
+    } catch (e: any) {
+      console.error('Failed to fetch feedback', e);
+      setError('Failed to fetch feedback.');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Are you sure you want to remove this feedback record?')) {
+      try {
+        await feedbackService.delete(id);
+        fetchFeedback();
+      } catch (e: any) {
+        console.error('Failed to delete feedback', e);
+        alert('Failed to delete feedback');
+      }
     }
   };
 
@@ -37,15 +48,22 @@ export default function AdminFeedback() {
     fetchFeedback();
   }, []);
 
-  const filtered = feedbackList.filter(f => 
-    (activeFilter === 'All' || 
-     (activeFilter === 'Positive' && f.rating >= 4) || 
-     (activeFilter === 'Negative' && f.rating <= 2) || 
-     (activeFilter === 'Neutral' && f.rating === 3)) &&
-    (f.passenger.toLowerCase().includes(search.toLowerCase()) || 
-     f.route.toLowerCase().includes(search.toLowerCase()) ||
-     f.comment.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filtered = feedbackList.filter(f => {
+    const passengerStr = f.passengerName || '';
+    const routeStr = f.routeName || '';
+    const commentStr = f.comment || '';
+    
+    const matchSearch = passengerStr.toLowerCase().includes(search.toLowerCase()) || 
+      routeStr.toLowerCase().includes(search.toLowerCase()) ||
+      commentStr.toLowerCase().includes(search.toLowerCase());
+
+    const matchFilter = activeFilter === 'All' || 
+      (activeFilter === 'Positive' && f.rating >= 4) || 
+      (activeFilter === 'Negative' && f.rating <= 2) || 
+      (activeFilter === 'Neutral' && f.rating === 3);
+
+    return matchSearch && matchFilter;
+  });
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -85,16 +103,22 @@ export default function AdminFeedback() {
         </div>
       </motion.div>
 
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl">
+          {error}
+        </div>
+      )}
+
       <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 gap-4">
         {filtered.map((item) => (
-          <motion.div key={item.id} variants={fadeUp} className="bg-[#1a1b23] rounded-2xl p-5 border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">
+          <motion.div key={item.feedbackId} variants={fadeUp} className="bg-[#1a1b23] rounded-2xl p-5 border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">
             <div className="flex items-start gap-4 flex-1">
               <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shrink-0">
                 <MessageSquare className="w-6 h-6 text-indigo-400" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-bold text-white">{item.passenger}</h3>
+                  <h3 className="text-lg font-bold text-white">{item.passengerName || `Passenger #${item.passengerId}`}</h3>
                   <div className="flex items-center gap-1 bg-[#0a0b10] px-2 py-1 rounded-md border border-white/5">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star key={i} className={`w-3.5 h-3.5 ${i < item.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}`} />
@@ -105,8 +129,8 @@ export default function AdminFeedback() {
                   "{item.comment}"
                 </div>
                 <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-500 font-medium">
-                  <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5">{item.route}</span>
-                  <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5">{item.date}</span>
+                  {item.routeName && <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5">{item.routeName}</span>}
+                  <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5">{item.createdAt?.split('T')[0] || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -115,6 +139,9 @@ export default function AdminFeedback() {
               <button onClick={() => setSelectedFeedback(item)} className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-all flex items-center gap-2 font-medium">
                 <Eye className="w-4 h-4" />
                 View
+              </button>
+              <button onClick={() => handleDelete(item.feedbackId)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all flex items-center justify-center font-medium" title="Delete Feedback">
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </motion.div>
@@ -152,23 +179,27 @@ export default function AdminFeedback() {
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
                     <span className="text-xs text-gray-500 uppercase font-medium">Passenger</span>
-                    <p className="text-white font-medium">{selectedFeedback.passenger}</p>
+                    <p className="text-white font-medium">{selectedFeedback.passengerName || `Passenger #${selectedFeedback.passengerId}`}</p>
                   </div>
                   <div>
                     <span className="text-xs text-gray-500 uppercase font-medium">Date</span>
-                    <p className="text-white font-medium">{selectedFeedback.date}</p>
+                    <p className="text-white font-medium">{selectedFeedback.createdAt?.split('T')[0] || 'N/A'}</p>
                   </div>
                   <div>
                     <span className="text-xs text-gray-500 uppercase font-medium">Route</span>
-                    <p className="text-white font-medium">{selectedFeedback.route}</p>
+                    <p className="text-white font-medium">{selectedFeedback.routeName || `Route #${selectedFeedback.routeId}` || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-gray-500 uppercase font-medium">Vehicle</span>
-                    <p className="text-white font-medium">{selectedFeedback.vehicle}</p>
+                    <span className="text-xs text-gray-500 uppercase font-medium">Vehicle ID</span>
+                    <p className="text-white font-medium">{selectedFeedback.vehicleId || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-gray-500 uppercase font-medium">Driver</span>
-                    <p className="text-white font-medium">{selectedFeedback.driver}</p>
+                    <span className="text-xs text-gray-500 uppercase font-medium">Driver ID</span>
+                    <p className="text-white font-medium">{selectedFeedback.driverId || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-500 uppercase font-medium">Type</span>
+                    <p className="text-white font-medium">{selectedFeedback.type}</p>
                   </div>
                 </div>
               </div>
