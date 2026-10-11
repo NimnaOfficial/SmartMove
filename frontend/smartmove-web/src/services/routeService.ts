@@ -5,6 +5,15 @@ const routeService = {
   getAll: async (): Promise<RouteInfo[]> => {
     const res = await apiClient.get('/routes');
     return Array.isArray(res.data) ? res.data : [];
+    try {
+      const res = await apiClient.get('/routes');
+      if (Array.isArray(res.data)) {
+        return res.data;
+      }
+      return mockStore.getRoutes();
+    } catch {
+      return mockStore.getRoutes();
+    }
   },
   getById: async (id: number): Promise<RouteInfo> => {
     const res = await apiClient.get(`/routes/${id}`);

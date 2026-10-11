@@ -41,12 +41,20 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response) {
       const status = error.response.status;
-      if (status === 401) {
+      const url = error.config?.url || '';
+
+      // Do NOT trigger session-expired for auth calls (login/register) or public flows
+      const isAuthEndpoint = url.includes('/auth/');
+      const hadToken = !!localStorage.getItem('smartmove_token');
+      const isProtectedRoute = 
+        window.location.pathname.startsWith('/admin') ||
+        window.location.pathname.startsWith('/passenger') ||
+        window.location.pathname.startsWith('/driver');
+
+      if (status === 401 && !isAuthEndpoint && hadToken && isProtectedRoute) {
         localStorage.removeItem('smartmove_token');
         localStorage.removeItem('smartmove_user');
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/session-expired';
-        }
+        window.location.href = '/session-expired';
       } else if (status === 403) {
         window.location.href = '/403';
       }

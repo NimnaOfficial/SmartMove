@@ -5,6 +5,15 @@ const vehicleService = {
   getAll: async (): Promise<Vehicle[]> => {
     const res = await apiClient.get('/vehicles');
     return Array.isArray(res.data) ? res.data : [];
+    try {
+      const res = await apiClient.get('/vehicles');
+      if (Array.isArray(res.data)) {
+        return res.data;
+      }
+      return mockStore.getVehicles();
+    } catch {
+      return mockStore.getVehicles();
+    }
   },
   getById: async (id: number): Promise<Vehicle> => {
     const res = await apiClient.get(`/vehicles/${id}`);

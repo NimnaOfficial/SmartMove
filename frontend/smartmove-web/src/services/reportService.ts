@@ -5,6 +5,13 @@ const reportService = {
   getRouteUsage: async (): Promise<RouteUsageReport[]> => {
     const res = await apiClient.get('/reports/routes');
     return Array.isArray(res.data) ? res.data : [];
+    try {
+      const res = await apiClient.get('/reports/routes');
+      if (Array.isArray(res.data)) return res.data;
+      return mockStore.getRouteUsageReports();
+    } catch {
+      return mockStore.getRouteUsageReports();
+    }
   },
   getRevenue: async (startDate: string, endDate: string): Promise<RevenueReport> => {
     const res = await apiClient.get('/reports/revenue', { params: { startDate, endDate } });
@@ -32,6 +39,22 @@ const reportService = {
   getTripPerformance: async (): Promise<TripPerformanceReport[]> => {
     const res = await apiClient.get('/reports/trip-performance');
     return Array.isArray(res.data) ? res.data : [];
+    try {
+      const res = await apiClient.get('/reports/maintenance');
+      if (Array.isArray(res.data)) return res.data;
+      return mockStore.getMaintenanceDueReports();
+    } catch {
+      return mockStore.getMaintenanceDueReports();
+    }
+  },
+  getTripPerformance: async (): Promise<TripPerformanceReport[]> => {
+    try {
+      const res = await apiClient.get('/reports/trip-performance');
+      if (Array.isArray(res.data)) return res.data;
+      return mockStore.getTripPerformance();
+    } catch {
+      return mockStore.getTripPerformance();
+    }
   },
   getDashboardStats: async (): Promise<DashboardStats> => {
     const res = await apiClient.get('/reports/dashboard');

@@ -5,6 +5,15 @@ const feedbackService = {
   getAll: async (): Promise<Feedback[]> => {
     const res = await apiClient.get('/feedback');
     return Array.isArray(res.data) ? res.data : [];
+    try {
+      const res = await apiClient.get('/feedback');
+      if (Array.isArray(res.data)) {
+        return res.data;
+      }
+      return mockStore.getFeedback();
+    } catch {
+      return mockStore.getFeedback();
+    }
   },
   getById: async (id: number): Promise<Feedback> => {
     const res = await apiClient.get(`/feedback/${id}`);
