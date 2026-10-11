@@ -3,6 +3,7 @@ import { Link, useLocation, useOutlet, useNavigate } from 'react-router-dom';
 import { 
   Home, Map, User, Bell, LogOut, Hexagon
 } from 'lucide-react';
+import LiveChatWidget from '@/components/chat/LiveChatWidget';
 
 const navLinks = [
   { name: 'Dashboard', icon: Home, path: '/driver/dashboard' },
@@ -106,6 +107,9 @@ export default function DriverLayout() {
            );
          })}
       </div>
+
+      {/* Floating Real-Time Live Chat Widget */}
+      <LiveChatWidget theme="dark" defaultConversationId="conv-fleet-dispatch" />
 
     </div>
   );

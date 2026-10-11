@@ -39,6 +39,8 @@ public class MediaController {
      */
     @DeleteMapping("/api/media/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable String id) {
-        return org.springframework.http.ResponseEntity.ok().build(); // Mock delete
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query(org.springframework.data.mongodb.core.query.Criteria.where("_id").is(id));
+        mongoTemplate.remove(query, "trip_media");
+        return org.springframework.http.ResponseEntity.ok().build();
     }
 }

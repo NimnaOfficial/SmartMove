@@ -59,4 +59,13 @@ public class MaintenanceController {
         return org.springframework.http.ResponseEntity.ok(service.search(q));
     }
 
+    /**
+     * Deletes a maintenance record by maintenanceId.
+     */
+    @DeleteMapping("/api/maintenance/{id}")
+    public org.springframework.http.ResponseEntity<?> deleteMaintenance(@PathVariable Long id) {
+        service.deleteById(id);
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
 }

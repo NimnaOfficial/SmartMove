@@ -51,4 +51,13 @@ public class FeedbackController {
         return org.springframework.http.ResponseEntity.ok(service.search(q));
     }
 
+    /**
+     * Deletes a feedback item by feedbackId.
+     */
+    @DeleteMapping("/api/feedback/{id}")
+    public org.springframework.http.ResponseEntity<?> deleteFeedback(@PathVariable Long id) {
+        service.deleteById(id);
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
 }

@@ -71,4 +71,13 @@ public class TripController {
         return org.springframework.http.ResponseEntity.ok().build();
     }
 
+    /**
+     * Deletes a trip by tripId.
+     */
+    @DeleteMapping("/api/trips/{id}")
+    public org.springframework.http.ResponseEntity<?> deleteTrip(@PathVariable Long id) {
+        service.deleteById(id);
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
 }

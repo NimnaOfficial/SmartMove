@@ -75,4 +75,13 @@ public class DriverController {
         return org.springframework.http.ResponseEntity.ok(service.search(q));
     }
 
+    /**
+     * Deletes a driver by driverId.
+     */
+    @DeleteMapping("/api/drivers/{id}")
+    public org.springframework.http.ResponseEntity<?> deleteDriver(@PathVariable Long id) {
+        service.deleteById(id);
+        return org.springframework.http.ResponseEntity.ok().build();
+    }
+
 }

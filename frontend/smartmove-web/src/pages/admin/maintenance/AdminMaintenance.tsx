@@ -117,13 +117,13 @@ export default function AdminMaintenance() {
   const handleDelete = async () => {
     if (!selectedItem) return;
     try {
-      // Assuming a delete method exists on backend, though it's not in the service explicitly, usually we would have it.
-      // If it doesn't exist, we might get 404/405. We'll simulate by updating status to CANCELLED/DELETED if delete fails?
-      // Wait, let's just make the API call and if it fails, show error. Actually there is no delete in service.
-      alert('Delete functionality is not implemented on the backend for maintenance.');
+      await maintenanceService.delete(selectedItem.maintenanceId);
       setShowDelete(false);
+      setSelectedItem(null);
+      fetchData();
     } catch (e: any) {
-      alert('Failed to delete');
+      console.error('Failed to delete maintenance record', e);
+      alert('Failed to delete maintenance record: ' + (e.response?.data?.message || e.message));
     }
   };
 

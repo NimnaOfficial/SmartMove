@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import driverService from '@/services/driverService';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Eye, Star, Search, Filter } from 'lucide-react';
+import { Plus, Edit2, Eye, Star, Search, Filter, Trash2 } from 'lucide-react';
 import { Driver, DriverFormData } from '@/types';
 
 const fadeUp = {
@@ -91,6 +91,17 @@ export default function AdminDrivers() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    if (window.confirm("Are you sure you want to delete this driver?")) {
+      try {
+        await driverService.delete(id);
+        fetchDrivers();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   const filtered = drivers.filter(d => {
     const name = `${d.firstName} ${d.lastName}`.toLowerCase();
     return name.includes(search.toLowerCase()) || 
@@ -172,6 +183,9 @@ export default function AdminDrivers() {
                     </button>
                     <button onClick={() => handleOpenForm(d)} className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
                       <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(d.driverId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
                 </motion.tr>

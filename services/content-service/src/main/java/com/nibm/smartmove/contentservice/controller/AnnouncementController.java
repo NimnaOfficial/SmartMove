@@ -30,7 +30,9 @@ public class AnnouncementController {
      */
     @PutMapping("/api/announcements/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint2(@PathVariable String id, @RequestBody java.util.Map<String, Object> payload) {
-        return org.springframework.http.ResponseEntity.ok().build(); // Mock update
+        payload.put("_id", id);
+        mongoTemplate.save(payload, "announcements");
+        return org.springframework.http.ResponseEntity.ok(payload);
     }
 
     /**
@@ -38,6 +40,8 @@ public class AnnouncementController {
      */
     @DeleteMapping("/api/announcements/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable String id) {
-        return org.springframework.http.ResponseEntity.ok().build(); // Mock delete
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query(org.springframework.data.mongodb.core.query.Criteria.where("_id").is(id));
+        mongoTemplate.remove(query, "announcements");
+        return org.springframework.http.ResponseEntity.ok().build();
     }
 }

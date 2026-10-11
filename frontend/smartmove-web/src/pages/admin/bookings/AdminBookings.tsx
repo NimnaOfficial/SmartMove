@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import bookingService from '@/services/bookingService';
 import { Booking } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Eye, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Filter, Eye, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -43,6 +43,17 @@ export default function AdminBookings() {
     } catch (e: any) {
       console.error('Failed to cancel booking', e);
       alert('Failed to cancel booking: ' + (e.response?.data?.message || e.message));
+    }
+  };
+
+  const handleDeleteBooking = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this booking record?')) return;
+    try {
+      await bookingService.delete(id);
+      fetchBookings();
+    } catch (e: any) {
+      console.error('Failed to delete booking', e);
+      alert('Failed to delete booking: ' + (e.response?.data?.message || e.message));
     }
   };
 
@@ -134,10 +145,13 @@ export default function AdminBookings() {
                       <Eye className="w-4 h-4" />
                     </button>
                     {b.bookingStatus !== 'CANCELLED' && (
-                      <button onClick={() => handleCancelBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
+                      <button onClick={() => handleCancelBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 transition-colors" title="Cancel Booking">
                         <XCircle className="w-4 h-4" />
                       </button>
                     )}
+                    <button onClick={() => handleDeleteBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors" title="Delete Booking">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </motion.tr>
               ))}

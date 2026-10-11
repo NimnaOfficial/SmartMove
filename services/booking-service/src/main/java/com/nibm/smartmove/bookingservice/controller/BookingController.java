@@ -39,8 +39,11 @@ public class BookingController {
      * Cancels a booking. Calls PL/SQL procedure SP_CANCEL_BOOKING. Updates booking status and releases seats.
      */
     @PutMapping("/api/bookings/{id}/cancel")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Booking payload) {
-        return org.springframework.http.ResponseEntity.ok(service.save(payload));
+    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody(required = false) Booking payload) {
+        return service.findById(id).map(b -> {
+            b.setBookingStatus("CANCELLED");
+            return org.springframework.http.ResponseEntity.ok(service.save(b));
+        }).orElse(org.springframework.http.ResponseEntity.notFound().build());
     }
 
     /**
@@ -58,6 +61,15 @@ public class BookingController {
     @GetMapping("/api/bookings/search")
     public org.springframework.http.ResponseEntity<?> endpoint5(@RequestParam String q) {
         return org.springframework.http.ResponseEntity.ok(service.search(q));
+    }
+
+    /**
+     * Deletes a booking by bookingId.
+     */
+    @DeleteMapping("/api/bookings/{id}")
+    public org.springframework.http.ResponseEntity<?> deleteBooking(@PathVariable Long id) {
+        service.deleteById(id);
+        return org.springframework.http.ResponseEntity.ok().build();
     }
 
 }

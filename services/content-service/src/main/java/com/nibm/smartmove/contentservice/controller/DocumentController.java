@@ -41,6 +41,8 @@ public class DocumentController {
      */
     @DeleteMapping("/api/documents/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable String id) {
-        return org.springframework.http.ResponseEntity.ok().build(); // Mock delete
+        org.springframework.data.mongodb.core.query.Query query = new org.springframework.data.mongodb.core.query.Query(org.springframework.data.mongodb.core.query.Criteria.where("_id").is(id));
+        mongoTemplate.remove(query, "vehicle_documents");
+        return org.springframework.http.ResponseEntity.ok().build();
     }
 }

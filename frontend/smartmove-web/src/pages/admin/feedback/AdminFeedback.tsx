@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import feedbackService from '@/services/feedbackService';
 import { Feedback } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Search, Filter, Star, Eye } from 'lucide-react';
+import { MessageSquare, Search, Filter, Star, Eye, Trash2 } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -29,6 +29,18 @@ export default function AdminFeedback() {
     } catch (e: any) {
       console.error('Failed to fetch feedback', e);
       setError('Failed to fetch feedback.');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('Are you sure you want to remove this feedback record?')) {
+      try {
+        await feedbackService.delete(id);
+        fetchFeedback();
+      } catch (e: any) {
+        console.error('Failed to delete feedback', e);
+        alert('Failed to delete feedback');
+      }
     }
   };
 
@@ -127,6 +139,9 @@ export default function AdminFeedback() {
               <button onClick={() => setSelectedFeedback(item)} className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-all flex items-center gap-2 font-medium">
                 <Eye className="w-4 h-4" />
                 View
+              </button>
+              <button onClick={() => handleDelete(item.feedbackId)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all flex items-center justify-center font-medium" title="Delete Feedback">
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </motion.div>
