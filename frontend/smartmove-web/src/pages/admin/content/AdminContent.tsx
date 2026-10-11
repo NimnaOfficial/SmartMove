@@ -98,7 +98,7 @@ export default function AdminContent() {
       setAnnForm({
         title: ann.title,
         message: ann.message,
-        targetAudience: ann.targetAudience,
+        targetAudience: ann.targetAudience || 'ALL',
         priority: ann.priority
       });
     } else {

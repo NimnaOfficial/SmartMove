@@ -3,7 +3,8 @@ import driverService from '@/services/driverService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Eye, Star, Search, Filter, Trash2, Key, CheckCircle2, Copy, Check, ShieldCheck } from 'lucide-react';
 import { Driver, DriverFormData } from '@/types';
-import { DEFAULT_DRIVER_PASSWORD } from '@/services/mockDataStore';
+
+const DEFAULT_DRIVER_PASSWORD = 'Driver@123';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },

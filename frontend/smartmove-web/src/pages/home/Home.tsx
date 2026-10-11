@@ -73,7 +73,7 @@ export default function Home() {
 
             {/* Spec: Primary Actions -> Search Trips, Login/Register */}
             <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-6 mt-2">
-              <Link to="/passenger/trips" className="group flex items-center gap-3 bg-blue-600 text-white px-8 py-4 rounded-full font-medium hover:bg-blue-500 transition-all duration-500 shadow-[0_8px_30px_rgba(37,99,235,0.4)] hover:shadow-[0_8px_40px_rgba(37,99,235,0.6)]">
+              <Link to="/trips" className="group flex items-center gap-3 bg-blue-600 text-white px-8 py-4 rounded-full font-medium hover:bg-blue-500 transition-all duration-500 shadow-[0_8px_30px_rgba(37,99,235,0.4)] hover:shadow-[0_8px_40px_rgba(37,99,235,0.6)]">
                 Search Trips
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -173,7 +173,7 @@ export default function Home() {
               </div>
               <h4 className="text-2xl font-medium text-gray-900 mb-4">Mountain Pass Express Detour</h4>
               <p className="text-gray-500 font-light leading-relaxed mb-6">Due to heavy snowfall, all trips on the Mountain Pass route will experience a 45-minute delay. Safety is our priority.</p>
-              <Link to="/passenger/announcements" className="text-blue-600 font-medium hover:text-blue-700 flex items-center gap-2">
+              <Link to="/announcements" className="text-blue-600 font-medium hover:text-blue-700 flex items-center gap-2">
                 Read full announcement <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -188,7 +188,7 @@ export default function Home() {
               Stay informed with our dynamic announcement feed. Powered by MongoDB to deliver rich media and high-priority alerts straight to your dashboard.
             </motion.p>
             <motion.div variants={fadeUp}>
-              <Link to="/passenger/announcements" className="inline-flex items-center gap-3 text-gray-900 font-medium pb-2 border-b-2 border-gray-900 hover:text-blue-600 hover:border-blue-600 transition-colors">
+              <Link to="/announcements" className="inline-flex items-center gap-3 text-gray-900 font-medium pb-2 border-b-2 border-gray-900 hover:text-blue-600 hover:border-blue-600 transition-colors">
                 View all announcements <ArrowRight className="w-5 h-5" />
               </Link>
             </motion.div>

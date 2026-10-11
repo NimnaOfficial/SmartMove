@@ -56,15 +56,12 @@ export default function AdminDashboard() {
         });
         setAvgOccupancy(Math.round(totalOccupancy / tripPerf.length));
         setOccupancyData([
-          { name: 'Booked', value: booked > 0 ? booked : 142, color: '#a855f7' },
-          { name: 'Available', value: available > 0 ? available : 46, color: '#fb923c' }
+          { name: 'Booked', value: booked, color: '#a855f7' },
+          { name: 'Available', value: available, color: '#fb923c' }
         ]);
       } else {
-        setOccupancyData([
-          { name: 'Booked', value: 142, color: '#a855f7' },
-          { name: 'Available', value: 46, color: '#fb923c' }
-        ]);
-        setAvgOccupancy(76);
+        setOccupancyData([]);
+        setAvgOccupancy(0);
       }
 
       const today = new Date();
@@ -83,16 +80,12 @@ export default function AdminDashboard() {
           value: d.revenue,
           tickets: d.tickets
         })));
-      } else if (rev) {
+      } else if (rev && rev.totalRevenue) {
         setRevenueData([
-          { name: 'Mon', value: 14200 },
-          { name: 'Tue', value: 16800 },
-          { name: 'Wed', value: 15500 },
-          { name: 'Thu', value: 18900 },
-          { name: 'Fri', value: 21400 },
-          { name: 'Sat', value: 24500 },
-          { name: 'Today', value: rev.totalRevenue || 22800 }
+          { name: 'Total', value: rev.totalRevenue, tickets: rev.ticketsSold || 0 }
         ]);
+      } else {
+        setRevenueData([]);
       }
 
     } catch (e) {

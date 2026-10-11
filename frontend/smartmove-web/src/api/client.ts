@@ -7,7 +7,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: 300000, // 5 minutes timeout
 });
 
 // ─── Request Interceptor: Attach JWT Token ───────────────────
@@ -22,9 +22,12 @@ apiClient.interceptors.request.use(
       try {
         const parsed = JSON.parse(userStr);
         const user = parsed.user || parsed; // Handle nested or flat structure
-        const userId = user.PASSENGER_ID || user.DRIVER_ID || user.ADMIN_ID;
+        const userId = user.userId || user.id || user.PASSENGER_ID || user.DRIVER_ID || user.ADMIN_ID;
         if (userId) config.headers['X-User-Id'] = userId.toString();
-        if (user.EMAIL) config.headers['X-User-Email'] = user.EMAIL;
+        const email = user.email || user.EMAIL;
+        if (email) config.headers['X-User-Email'] = email;
+        const role = user.role || user.ROLE;
+        if (role) config.headers['X-User-Role'] = role;
       } catch (e) {}
     }
     return config;
