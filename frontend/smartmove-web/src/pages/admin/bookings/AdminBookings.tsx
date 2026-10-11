@@ -122,7 +122,7 @@ export default function AdminBookings() {
                     <p className="text-xs text-gray-500 mt-1">Trip #{b.tripId} • {b.departureDate} {b.departureTime}</p>
                   </td>
                   <td className="p-5 text-sm font-bold text-purple-400">
-                    ${b.totalAmount.toFixed(2)}
+                    ${((b.totalAmount ?? b.totalFare ?? b.amount ?? 0)).toFixed(2)}
                   </td>
                   <td className="p-5">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
@@ -206,7 +206,7 @@ export default function AdminBookings() {
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Total Amount</span>
-                  <span className="text-white font-medium">${selectedBooking.totalAmount.toFixed(2)}</span>
+                  <span className="text-white font-medium">${((selectedBooking.totalAmount ?? selectedBooking.totalFare ?? selectedBooking.amount ?? 0)).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Booking Status</span>

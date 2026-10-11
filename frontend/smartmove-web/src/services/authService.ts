@@ -1,6 +1,5 @@
 import apiClient from '@/api/client';
 import { LoginRequest, RegisterRequest, AuthResponse } from '@/types';
-import { mockStore, DEFAULT_DRIVER_PASSWORD } from './mockDataStore';
 
 const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -60,66 +59,61 @@ const authService = {
       };
     }
 
-    // 3. Check if user is a Passenger
-    if (
-      email === 'passenger@smartmove.lk' ||
-      email.includes('passenger') ||
-      email.includes('kasun') ||
-      password === 'passenger' ||
-      password === 'passenger123'
-    ) {
-      return {
-        token: `mock-passenger-jwt-${Date.now()}`,
-        role: 'PASSENGER',
-        userId: 101,
-        firstName: 'Kasun',
-        lastName: 'Jayawardena',
-        email: data.email || 'passenger@smartmove.lk',
-        mustChangePassword: false
-      };
+    const raw = res.data;
+    if (!raw || !raw.token) {
+      throw new Error('Authentication failed: No token received');
     }
 
-    // If driver email exists but password was wrong
-    const existingDriver = mockStore.getDrivers().find(d => d.email.toLowerCase() === email);
-    if (existingDriver) {
-      throw new Error(`Invalid password for driver account. New drivers must use temporary password '${DEFAULT_DRIVER_PASSWORD}'.`);
-    }
+    const u = raw.user || {};
+    const authData: AuthResponse = {
+      token: raw.token,
+      role: raw.role || u.ROLE || 'PASSENGER',
+      userId: u.PASSENGER_ID || u.DRIVER_ID || u.ADMIN_ID || u.userId || u.id || 1,
+      firstName: u.FIRST_NAME || u.firstName || '',
+      lastName: u.LAST_NAME || u.lastName || '',
+      email: u.EMAIL || u.email || data.email,
+      phone: u.PHONE || u.phone || '',
+      mustChangePassword: false
+    };
 
-    throw new Error('Invalid email or password. Please check your credentials.');
+    localStorage.setItem('smartmove_token', authData.token);
+    localStorage.setItem('smartmove_user', JSON.stringify(authData));
+    return authData;
   },
 
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    try {
-      const res = await apiClient.post('/auth/register', data);
-      return res.data;
-    } catch {
-      return {
-        token: `mock-reg-token-${Date.now()}`,
-        role: data.role || 'PASSENGER',
-        userId: Math.floor(1000 + Math.random() * 9000),
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        mustChangePassword: false
-      };
+    const res = await apiClient.post('/auth/register', data, {
+      timeout: 300000 // 5 minutes (300,000 ms)
+    });
+    const raw = res.data;
+    const u = raw.user || {};
+    const authData: AuthResponse = {
+      token: raw.token || '',
+      role: raw.role || (data.role as any) || 'PASSENGER',
+      userId: u.PASSENGER_ID || u.DRIVER_ID || u.id || 1,
+      firstName: u.FIRST_NAME || data.firstName,
+      lastName: u.LAST_NAME || data.lastName,
+      email: u.EMAIL || data.email,
+      phone: u.PHONE || data.phone || '',
+      mustChangePassword: false
+    };
+
+    if (authData.token) {
+      localStorage.setItem('smartmove_token', authData.token);
+      localStorage.setItem('smartmove_user', JSON.stringify(authData));
     }
+    return authData;
   },
 
   changePassword: async (newPassword: string): Promise<boolean> => {
-    try {
-      await apiClient.put('/auth/change-password', { newPassword });
-    } catch {}
-
+    await apiClient.put('/auth/change-password', { newPassword });
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
-      if (currentUser.role === 'DRIVER') {
-        mockStore.changeDriverPassword(currentUser.email || currentUser.userId, newPassword);
-      }
       currentUser.mustChangePassword = false;
       localStorage.setItem('smartmove_user', JSON.stringify(currentUser));
       return true;
     }
-    return false;
+    return true;
   },
 
   logout: () => {
@@ -132,8 +126,13 @@ const authService = {
     return user ? JSON.parse(user) : null;
   },
 
-  isAuthenticated: () => !!localStorage.getItem('smartmove_token'),
-  getToken: () => localStorage.getItem('smartmove_token'),
+  isAuthenticated: (): boolean => {
+    return !!localStorage.getItem('smartmove_token');
+  },
+
+  getToken: (): string | null => {
+    return localStorage.getItem('smartmove_token');
+  },
 };
 
 export default authService;

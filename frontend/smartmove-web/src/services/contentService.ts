@@ -1,10 +1,19 @@
 import apiClient from '@/api/client';
 import { Review, Announcement, AnnouncementFormData, VehicleDocument, VehicleImage, TripMedia } from '@/types';
-import { mockStore } from './mockDataStore';
 
 const contentService = {
   // ─── Reviews (MongoDB) ───────────────────────────────────
   getAllReviews: async (): Promise<Review[]> => {
+    const res = await apiClient.get('/reviews');
+    return Array.isArray(res.data) ? res.data : [];
+  },
+  getReviewsByRoute: async (routeId: number): Promise<Review[]> => {
+    const res = await apiClient.get(`/reviews/route/${routeId}`);
+    return Array.isArray(res.data) ? res.data : [];
+  },
+  getTopRated: async (): Promise<any> => {
+    const res = await apiClient.get('/reviews/top-rated');
+    return Array.isArray(res.data) ? res.data : [];
     try {
       const res = await apiClient.get('/reviews');
       if (Array.isArray(res.data)) return res.data;
@@ -49,29 +58,18 @@ const contentService = {
     }
   },
   searchReviews: async (keyword: string): Promise<Review[]> => {
-    try {
-      const res = await apiClient.get(`/reviews/search?keyword=${encodeURIComponent(keyword)}`);
-      return res.data;
-    } catch {
-      const q = keyword.toLowerCase();
-      return mockStore.getReviews().filter(r =>
-        (r.comment || '').toLowerCase().includes(q) ||
-        (r.tags || []).some(t => t.toLowerCase().includes(q))
-      );
-    }
+    const res = await apiClient.get(`/reviews/search?keyword=${encodeURIComponent(keyword)}`);
+    return Array.isArray(res.data) ? res.data : [];
   },
   submitReview: async (data: Partial<Review>): Promise<Review> => {
-    try {
-      const res = await apiClient.post('/reviews', data);
-      mockStore.saveReview(res.data || data);
-      return res.data;
-    } catch {
-      return mockStore.saveReview(data);
-    }
+    const res = await apiClient.post('/reviews', data);
+    return res.data;
   },
 
   // ─── Announcements (MongoDB) ─────────────────────────────
   getAllAnnouncements: async (): Promise<Announcement[]> => {
+    const res = await apiClient.get('/announcements');
+    return Array.isArray(res.data) ? res.data : [];
     try {
       const res = await apiClient.get('/announcements');
       if (Array.isArray(res.data)) return res.data;
@@ -81,32 +79,21 @@ const contentService = {
     }
   },
   createAnnouncement: async (data: AnnouncementFormData): Promise<Announcement> => {
-    try {
-      const res = await apiClient.post('/announcements', data);
-      mockStore.saveAnnouncement(res.data || data);
-      return res.data;
-    } catch {
-      return mockStore.saveAnnouncement(data);
-    }
+    const res = await apiClient.post('/announcements', data);
+    return res.data;
   },
   updateAnnouncement: async (id: string, data: AnnouncementFormData): Promise<Announcement> => {
-    try {
-      const res = await apiClient.put(`/announcements/${id}`, data);
-      mockStore.saveAnnouncement({ ...data, _id: id });
-      return res.data;
-    } catch {
-      return mockStore.saveAnnouncement({ ...data, _id: id });
-    }
+    const res = await apiClient.put(`/announcements/${id}`, data);
+    return res.data;
   },
   deleteAnnouncement: async (id: string): Promise<void> => {
-    try {
-      await apiClient.delete(`/announcements/${id}`);
-    } catch {}
-    mockStore.deleteAnnouncement(id);
+    await apiClient.delete(`/announcements/${id}`);
   },
 
   // ─── Vehicle Documents (MongoDB) ─────────────────────────
   getVehicleDocuments: async (vehicleId: number): Promise<VehicleDocument[]> => {
+    const res = await apiClient.get(`/documents/vehicle/${vehicleId}`);
+    return Array.isArray(res.data) ? res.data : [];
     try {
       const res = await apiClient.get(`/documents/vehicle/${vehicleId}`);
       if (Array.isArray(res.data)) return res.data;
@@ -116,37 +103,27 @@ const contentService = {
     }
   },
   getVehicleImages: async (vehicleId: number): Promise<VehicleImage[]> => {
-    try {
-      const res = await apiClient.get(`/documents/vehicle/${vehicleId}/images`);
-      return res.data;
-    } catch {
-      return [
-        { _id: 'img_1', vehicleId, url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600', caption: 'Exterior View' },
-        { _id: 'img_2', vehicleId, url: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?w=600', caption: 'Interior Seating' }
-      ];
-    }
+    const res = await apiClient.get(`/documents/vehicle/${vehicleId}/images`);
+    return Array.isArray(res.data) ? res.data : [];
   },
   uploadDocument: async (vehicleId: number, formData: FormData): Promise<VehicleDocument> => {
-    try {
-      const res = await apiClient.post(`/documents/vehicle/${vehicleId}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return res.data;
-    } catch {
-      const file = formData.get('file') as File | null;
-      const docType = (formData.get('documentType') as string) || 'Document';
-      return mockStore.saveDocument(vehicleId, file?.name || 'Document.pdf', docType);
-    }
+    const res = await apiClient.post(`/documents/vehicle/${vehicleId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
   },
   deleteDocument: async (id: string): Promise<void> => {
-    try {
-      await apiClient.delete(`/documents/${id}`);
-    } catch {}
-    mockStore.deleteDocument(id);
+    await apiClient.delete(`/documents/${id}`);
   },
 
   // ─── Trip Media (MongoDB) ────────────────────────────────
   getTripMedia: async (tripId: number): Promise<TripMedia[]> => {
+    const res = await apiClient.get(`/media/trip/${tripId}`);
+    return Array.isArray(res.data) ? res.data : [];
+  },
+  getAllMedia: async (): Promise<TripMedia[]> => {
+    const res = await apiClient.get('/media');
+    return Array.isArray(res.data) ? res.data : [];
     try {
       const res = await apiClient.get(`/media/trip/${tripId}`);
       if (Array.isArray(res.data)) return res.data;
@@ -165,22 +142,13 @@ const contentService = {
     }
   },
   uploadMedia: async (formData: FormData): Promise<TripMedia> => {
-    try {
-      const res = await apiClient.post('/media', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return res.data;
-    } catch {
-      const caption = (formData.get('caption') as string) || 'Trip Photo';
-      const tripId = Number(formData.get('tripId')) || 401;
-      return mockStore.saveMedia({ caption, tripId });
-    }
+    const res = await apiClient.post('/media', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
   },
   deleteMedia: async (id: string): Promise<void> => {
-    try {
-      await apiClient.delete(`/media/${id}`);
-    } catch {}
-    mockStore.deleteMedia(id);
+    await apiClient.delete(`/media/${id}`);
   },
 };
 

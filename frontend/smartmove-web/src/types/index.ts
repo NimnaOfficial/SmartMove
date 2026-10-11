@@ -173,12 +173,18 @@ export interface Booking {
   routeDestination?: string;
   departureDate?: string;
   departureTime?: string;
-  ticketQuantity: number;
-  totalAmount: number;
-  bookingStatus: 'CONFIRMED' | 'CANCELLED' | 'PENDING' | 'COMPLETED';
-  paymentStatus: 'PAID' | 'UNPAID' | 'REFUNDED';
+  ticketQuantity?: number;
+  seatsBooked?: number;
+  totalAmount?: number;
+  totalFare?: number;
+  amount?: number;
+  status?: string;
+  bookingStatus?: 'CONFIRMED' | 'CANCELLED' | 'PENDING' | 'COMPLETED' | string;
+  paymentStatus?: 'PAID' | 'UNPAID' | 'REFUNDED' | string;
+  bookingDate?: string;
   createdAt?: string;
   updatedAt?: string;
+  seatNumber?: string;
 }
 
 export interface BookingFormData {
@@ -277,12 +283,14 @@ export interface Review {
 // ─── MongoDB Content: Announcements ──────────────────────────
 export interface Announcement {
   _id?: string;
+  id?: string;
   title: string;
   message: string;
-  publishedAt: string;
-  targetAudience: 'ALL' | 'PASSENGERS' | 'DRIVERS' | 'ADMIN';
-  priority: 'HIGH' | 'MEDIUM' | 'LOW';
-  status: 'ACTIVE' | 'ARCHIVED';
+  publishedAt?: string;
+  category?: string;
+  targetAudience?: 'ALL' | 'PASSENGERS' | 'DRIVERS' | 'ADMIN' | string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW' | string;
+  status?: 'ACTIVE' | 'ARCHIVED' | string;
   createdAt?: string;
   updatedAt?: string;
 }

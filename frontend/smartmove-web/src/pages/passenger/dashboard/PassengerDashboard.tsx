@@ -28,13 +28,16 @@ export default function PassengerDashboard() {
   
   const userStr = localStorage.getItem('smartmove_user');
   const user = userStr ? JSON.parse(userStr) : null;
-  const firstName = user?.FIRST_NAME || 'Passenger';
+  const firstName = user?.firstName || user?.FIRST_NAME || user?.name || 'Passenger';
 
   useEffect(() => {
     bookingService.getMyBookings().then(data => {
       if (Array.isArray(data)) {
         setAllBookings(data);
-        const upcoming = data.filter(b => b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'PENDING').sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        const upcoming = data.filter(b => {
+          const s = (b.status || b.bookingStatus || '').toUpperCase();
+          return s === 'CONFIRMED' || s === 'PENDING' || s === 'PAID';
+        }).sort((a, b) => new Date(b.bookingDate || b.createdAt || 0).getTime() - new Date(a.bookingDate || a.createdAt || 0).getTime());
         setUpcomingBookings(upcoming.slice(0, 3));
       }
     }).catch(e => console.error(e));
@@ -54,8 +57,11 @@ export default function PassengerDashboard() {
 
   const nextBooking = upcomingBookings.length > 0 ? upcomingBookings[0] : null;
   const totalTrips = allBookings.length;
-  const completedTrips = allBookings.filter(b => b.bookingStatus === 'COMPLETED').length;
-  const activeTripsCount = allBookings.filter(b => b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'PENDING').length;
+  const completedTrips = allBookings.filter(b => (b.status || b.bookingStatus || '').toUpperCase() === 'COMPLETED').length;
+  const activeTripsCount = allBookings.filter(b => {
+    const s = (b.status || b.bookingStatus || '').toUpperCase();
+    return s === 'CONFIRMED' || s === 'PENDING' || s === 'PAID';
+  }).length;
 
   return (
     <div className="max-w-7xl mx-auto h-full flex flex-col gap-8 w-full pb-10">
@@ -201,23 +207,23 @@ export default function PassengerDashboard() {
                  <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-bold inline-block mb-2 text-sm tracking-wide">
                    UPCOMING
                  </div>
-                 <p className="text-3xl font-bold text-gray-900">Seat {nextBooking.seatNumber || 'Any'}</p>
+                 <p className="text-3xl font-bold text-gray-900">{nextBooking.seatsBooked ? `${nextBooking.seatsBooked} Seat(s)` : (nextBooking.seatNumber || 'Confirmed')}</p>
                  <p className="text-gray-500 font-medium">Booking #{nextBooking.bookingId}</p>
               </div>
               <div className="flex-1 w-full bg-gray-50 rounded-xl p-5 border border-gray-100">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-bold text-gray-900">Total Paid</span>
-                  <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full uppercase tracking-wider">${nextBooking.amount || 0}</span>
+                  <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full uppercase tracking-wider">LKR {(nextBooking.totalFare || nextBooking.amount || 0).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <p className="text-xs text-gray-500 uppercase font-semibold">Status</p>
-                    <p className="font-medium text-gray-900">{nextBooking.bookingStatus}</p>
+                    <p className="font-medium text-gray-900">{nextBooking.status || nextBooking.bookingStatus || 'CONFIRMED'}</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-gray-400" />
                   <div className="flex-1 text-right">
                     <p className="text-xs text-gray-500 uppercase font-semibold">Date</p>
-                    <p className="font-medium text-gray-900">{nextBooking.createdAt ? new Date(nextBooking.createdAt).toLocaleDateString() : 'N/A'}</p>
+                    <p className="font-medium text-gray-900">{nextBooking.bookingDate ? new Date(nextBooking.bookingDate).toLocaleDateString() : (nextBooking.createdAt ? new Date(nextBooking.createdAt).toLocaleDateString() : 'N/A')}</p>
                   </div>
                 </div>
               </div>
@@ -249,11 +255,11 @@ export default function PassengerDashboard() {
                     </div>
                     <div className="flex-1 text-center sm:text-left min-w-0">
                       <h4 className="text-base font-bold text-gray-900 truncate">Booking #{trip.bookingId}</h4>
-                      <p className="text-sm text-gray-500 truncate">Status: {trip.bookingStatus}</p>
+                      <p className="text-sm text-gray-500 truncate">Status: {trip.status || trip.bookingStatus || 'CONFIRMED'}</p>
                     </div>
                     <div className="text-center sm:text-right">
-                      <p className="font-semibold text-gray-900">${trip.amount}</p>
-                      <p className="text-sm text-gray-500">{trip.createdAt ? new Date(trip.createdAt).toLocaleDateString() : 'N/A'}</p>
+                      <p className="font-semibold text-gray-900">LKR {(trip.totalFare || trip.amount || 0).toLocaleString()}</p>
+                      <p className="text-sm text-gray-500">{trip.bookingDate ? new Date(trip.bookingDate).toLocaleDateString() : (trip.createdAt ? new Date(trip.createdAt).toLocaleDateString() : 'N/A')}</p>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors sm:ml-2">
                       <ChevronRight className="w-4 h-4" />

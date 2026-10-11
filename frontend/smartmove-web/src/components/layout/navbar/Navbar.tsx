@@ -1,13 +1,33 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, MapPin, X } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Menu, MapPin, X, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import authService from '@/services/authService';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
+
+  useEffect(() => {
+    setCurrentUser(authService.getCurrentUser());
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    authService.logout();
+    setCurrentUser(null);
+    navigate('/');
+  };
+
+  const getDashboardLink = () => {
+    if (!currentUser) return '/login';
+    if (currentUser.role === 'ADMIN') return '/admin/dashboard';
+    if (currentUser.role === 'DRIVER') return '/driver/dashboard';
+    return '/passenger/dashboard';
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,8 +45,8 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'Home', href: '/' },
-    { name: 'Trips', href: '/passenger/trips' },
-    { name: 'Announcements', href: '/passenger/announcements' },
+    { name: 'Trips', href: '/trips' },
+    { name: 'Announcements', href: '/announcements' },
     { name: 'About', href: '/about' },
   ];
 
@@ -100,21 +120,47 @@ export default function Navbar() {
 
           {/* Right Controls */}
           <div className="flex items-center gap-4 md:gap-6">
-            <Link 
-              to="/login"
-              className={cn(
-                "hidden sm:block text-sm font-medium transition-colors duration-500 tracking-wide",
-                scrolled || mobileMenuOpen ? "text-gray-700 hover:text-blue-600" : "text-white hover:text-blue-300"
-              )}
-            >
-              Login
-            </Link>
-            <Link 
-              to="/register"
-              className="hidden sm:flex bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-blue-500 transition-all shadow-[0_4px_14px_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] tracking-wide"
-            >
-              Register
-            </Link>
+            {currentUser ? (
+              <div className="hidden sm:flex items-center gap-3">
+                <Link
+                  to={getDashboardLink()}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-full text-xs font-semibold hover:bg-blue-500 transition-all shadow-md tracking-wide"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Dashboard ({currentUser.role})</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-full transition-all border",
+                    scrolled || mobileMenuOpen
+                      ? "text-red-600 border-red-200 hover:bg-red-50"
+                      : "text-white border-white/30 hover:bg-white/10"
+                  )}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link 
+                  to="/login"
+                  className={cn(
+                    "hidden sm:block text-sm font-medium transition-colors duration-500 tracking-wide",
+                    scrolled || mobileMenuOpen ? "text-gray-700 hover:text-blue-600" : "text-white hover:text-blue-300"
+                  )}
+                >
+                  Login
+                </Link>
+                <Link 
+                  to="/register"
+                  className="hidden sm:flex bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-blue-500 transition-all shadow-[0_4px_14px_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] tracking-wide"
+                >
+                  Register
+                </Link>
+              </>
+            )}
             
             {/* Mobile Menu Toggle Button */}
             <button 
@@ -184,18 +230,37 @@ export default function Navbar() {
                 transition={{ delay: (navLinks.length + 1) * 0.1 }}
                 className="flex flex-col gap-4"
               >
-                <Link 
-                  to="/login"
-                  className="text-xl font-medium text-gray-600 hover:text-blue-600"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  to="/register"
-                  className="bg-blue-600 text-white px-8 py-4 rounded-full text-center text-lg font-medium hover:bg-blue-500 shadow-lg shadow-blue-600/30"
-                >
-                  Create Account
-                </Link>
+                {currentUser ? (
+                  <>
+                    <Link 
+                      to={getDashboardLink()}
+                      className="bg-blue-600 text-white px-8 py-4 rounded-full text-center text-lg font-medium hover:bg-blue-500 shadow-lg shadow-blue-600/30"
+                    >
+                      Dashboard ({currentUser.role})
+                    </Link>
+                    <button 
+                      onClick={handleLogout}
+                      className="text-xl font-medium text-red-600 hover:text-red-700 text-left py-2"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link 
+                      to="/login"
+                      className="text-xl font-medium text-gray-600 hover:text-blue-600"
+                    >
+                      Sign In
+                    </Link>
+                    <Link 
+                      to="/register"
+                      className="bg-blue-600 text-white px-8 py-4 rounded-full text-center text-lg font-medium hover:bg-blue-500 shadow-lg shadow-blue-600/30"
+                    >
+                      Create Account
+                    </Link>
+                  </>
+                )}
               </motion.div>
             </div>
           </motion.div>

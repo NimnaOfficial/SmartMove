@@ -48,7 +48,9 @@ export default function DriverDashboard() {
 
   const nextTrip = trips.find(t => t.status === 'IN_PROGRESS' || t.status === 'SCHEDULED') || trips[0];
 
-  const completedTripsCount = trips.filter(t => t.status === 'COMPLETED').length + (profile?.totalTrips || 12);
+  const currentUser = authService.getCurrentUser();
+  const driverName = profile?.firstName || profile?.FIRST_NAME || currentUser?.firstName || 'Captain';
+  const completedTripsCount = trips.filter(t => t.status === 'COMPLETED').length + (profile?.totalTrips || profile?.TOTAL_TRIPS || 0);
   const upcomingTripsCount = trips.filter(t => t.status === 'SCHEDULED').length;
 
   const filteredSchedule = trips.filter(t => {
@@ -82,7 +84,7 @@ export default function DriverDashboard() {
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Captain On Duty</span>
             </div>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">
-              Hello {profile?.firstName || 'Captain'}!
+              Hello {driverName}!
             </h1>
             <p className="text-gray-500 mt-2 font-medium">
               You have <strong className="text-gray-900">{trips.length} active trips</strong> assigned to your manifest.

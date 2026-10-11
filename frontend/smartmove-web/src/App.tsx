@@ -2,11 +2,14 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect } from 'react';
 import Lenis from '@studio-freight/lenis';
 import Home from '@/pages/home/Home';
+import GuestTrips from '@/pages/public/GuestTrips';
+import GuestAnnouncements from '@/pages/public/GuestAnnouncements';
 import SearchTrips from '@/pages/passenger/trips/SearchTrips';
 import Announcements from '@/pages/passenger/announcements/Announcements';
 import About from '@/pages/about/About';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import PassengerDashboard from '@/pages/passenger/dashboard/PassengerDashboard';
 import PassengerLayout from '@/components/layout/PassengerLayout';
 import MyBookings from '@/pages/passenger/bookings/MyBookings';
@@ -70,46 +73,55 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public / Guest Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
+        <Route path="/trips" element={<GuestTrips />} />
+        <Route path="/announcements" element={<GuestAnnouncements />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        {/* Passenger Routes using Shared Layout */}
-        <Route path="/passenger" element={<PassengerLayout />}>
-          <Route path="dashboard" element={<PassengerDashboard />} />
-          <Route path="trips" element={<SearchTrips />} />
-          <Route path="bookings" element={<MyBookings />} />
-          <Route path="travel-history" element={<TravelHistory />} />
-          <Route path="feedback" element={<Feedback />} />
-          <Route path="media" element={<Media />} />
-          <Route path="announcements" element={<Announcements />} />
-          <Route path="profile" element={<Profile />} />
+        {/* Protected Passenger Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['PASSENGER', 'ADMIN']} />}>
+          <Route path="/passenger" element={<PassengerLayout />}>
+            <Route path="dashboard" element={<PassengerDashboard />} />
+            <Route path="trips" element={<SearchTrips />} />
+            <Route path="bookings" element={<MyBookings />} />
+            <Route path="travel-history" element={<TravelHistory />} />
+            <Route path="feedback" element={<Feedback />} />
+            <Route path="media" element={<Media />} />
+            <Route path="announcements" element={<Announcements />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
         </Route>
 
-        {/* Admin Routes using Shared Ethereal Layout */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="vehicles" element={<AdminVehicles />} />
-          <Route path="drivers" element={<AdminDrivers />} />
-          <Route path="routes" element={<AdminRoutes />} />
-          <Route path="trips" element={<AdminTrips />} />
-          <Route path="bookings" element={<AdminBookings />} />
-          <Route path="maintenance" element={<AdminMaintenance />} />
-          <Route path="messages" element={<AdminMessages />} />
-          <Route path="feedback" element={<AdminFeedback />} />
-          <Route path="reports" element={<AdminReports />} />
-          <Route path="content" element={<AdminContent />} />
-          <Route path="profile" element={<AdminProfile />} />
+        {/* Protected Admin Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="vehicles" element={<AdminVehicles />} />
+            <Route path="drivers" element={<AdminDrivers />} />
+            <Route path="routes" element={<AdminRoutes />} />
+            <Route path="trips" element={<AdminTrips />} />
+            <Route path="bookings" element={<AdminBookings />} />
+            <Route path="maintenance" element={<AdminMaintenance />} />
+            <Route path="messages" element={<AdminMessages />} />
+            <Route path="feedback" element={<AdminFeedback />} />
+            <Route path="reports" element={<AdminReports />} />
+            <Route path="content" element={<AdminContent />} />
+            <Route path="profile" element={<AdminProfile />} />
+          </Route>
         </Route>
 
-        {/* Driver Routes */}
-        <Route path="/driver" element={<DriverLayout />}>
-          <Route path="dashboard" element={<DriverDashboard />} />
-          <Route path="trips" element={<MyTrips />} />
-          <Route path="trips/:tripId" element={<TripDetails />} />
-          <Route path="profile" element={<DriverProfile />} />
-          <Route path="notifications" element={<DriverNotifications />} />
+        {/* Protected Driver Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['DRIVER', 'ADMIN']} />}>
+          <Route path="/driver" element={<DriverLayout />}>
+            <Route path="dashboard" element={<DriverDashboard />} />
+            <Route path="trips" element={<MyTrips />} />
+            <Route path="trips/:tripId" element={<TripDetails />} />
+            <Route path="profile" element={<DriverProfile />} />
+            <Route path="notifications" element={<DriverNotifications />} />
+          </Route>
         </Route>
 
         {/* Error Pages */}

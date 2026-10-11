@@ -1,10 +1,15 @@
 import apiClient from '@/api/client';
 import { Driver, DriverFormData } from '@/types';
-import { mockStore } from './mockDataStore';
 import authService from './authService';
+import tripService from './tripService';
 
 const driverService = {
+  updateTripStatus: async (tripId: number, status: string): Promise<any> => {
+    return tripService.updateStatus(tripId, status);
+  },
   getAll: async (): Promise<Driver[]> => {
+    const res = await apiClient.get('/drivers');
+    return Array.isArray(res.data) ? res.data : [];
     try {
       const res = await apiClient.get('/drivers');
       if (Array.isArray(res.data)) {
@@ -16,72 +21,39 @@ const driverService = {
     }
   },
   getById: async (id: number): Promise<Driver> => {
-    try {
-      const res = await apiClient.get(`/drivers/${id}`);
-      return res.data;
-    } catch {
-      const found = mockStore.getDrivers().find(d => d.driverId === id);
-      if (found) return found;
-      throw new Error('Driver not found');
-    }
+    const res = await apiClient.get(`/drivers/${id}`);
+    return res.data;
   },
   create: async (data: DriverFormData): Promise<Driver> => {
-    try {
-      const res = await apiClient.post('/drivers', data);
-      mockStore.saveDriver(res.data || data);
-      return res.data;
-    } catch {
-      return mockStore.saveDriver(data);
-    }
+    const res = await apiClient.post('/drivers', data);
+    return res.data;
   },
   update: async (id: number, data: DriverFormData): Promise<Driver> => {
-    try {
-      const res = await apiClient.put(`/drivers/${id}`, data);
-      mockStore.saveDriver({ ...data, driverId: id });
-      return res.data;
-    } catch {
-      return mockStore.saveDriver({ ...data, driverId: id });
-    }
+    const res = await apiClient.put(`/drivers/${id}`, data);
+    return res.data;
   },
   delete: async (id: number): Promise<void> => {
-    try {
-      await apiClient.delete(`/drivers/${id}`);
-    } catch {}
-    mockStore.deleteDriver(id);
+    await apiClient.delete(`/drivers/${id}`);
   },
   getProfile: async (): Promise<Driver> => {
-    try {
-      const res = await apiClient.get('/drivers/profile');
-      if (res.data) return res.data;
-    } catch {}
-
-    const currentUser = authService.getCurrentUser();
-    const drivers = mockStore.getDrivers();
-    if (currentUser) {
-      const byId = drivers.find(d => d.driverId === currentUser.userId);
-      if (byId) return byId;
-      const byEmail = drivers.find(d => d.email.toLowerCase() === (currentUser.email || '').toLowerCase());
-      if (byEmail) return byEmail;
+    const res = await apiClient.get('/drivers/profile');
+    if (res.data && res.data.driverId) return res.data;
+    
+    // Fallback to fetch by current authenticated user ID
+    const user = authService.getCurrentUser();
+    if (user && user.userId) {
+      const driverRes = await apiClient.get(`/drivers/${user.userId}`);
+      return driverRes.data;
     }
-    return drivers[0] || {
-      driverId: 201,
-      firstName: 'Kamal',
-      lastName: 'Perera',
-      email: 'kamal.perera@smartmove.lk',
-      phone: '+94 77 123 4567',
-      licenseNumber: 'B8291041',
-      status: 'ACTIVE'
-    };
+    return res.data;
   },
   updateProfile: async (data: Partial<DriverFormData>): Promise<Driver> => {
-    try {
-      const res = await apiClient.put('/drivers/profile', data);
-      if (res.data) return res.data;
-    } catch {}
-    const profile = await driverService.getProfile();
-    return mockStore.saveDriver({ ...profile, ...data });
+    const res = await apiClient.put('/drivers/profile', data);
+    return res.data;
   },
   getMyTrips: async (): Promise<any[]> => {
+    const res = await apiClient.get('/drivers/my-trips');
+    return Array.isArray(res.data) ? res.data : [];
     try {
       const res = await apiClient.get('/drivers/my-trips');
       if (Array.isArray(res.data)) return res.data;
@@ -151,17 +123,11 @@ const driverService = {
     return { tripId, status };
   },
   search: async (query: string): Promise<Driver[]> => {
-    try {
-      const res = await apiClient.get(`/drivers/search?q=${encodeURIComponent(query)}`);
-      return res.data;
-    } catch {
-      const q = query.toLowerCase();
-      return mockStore.getDrivers().filter(d =>
-        `${d.firstName} ${d.lastName}`.toLowerCase().includes(q) ||
-        (d.licenseNumber || '').toLowerCase().includes(q) ||
-        (d.email || '').toLowerCase().includes(q)
-      );
-    }
+    const res = await apiClient.get(`/drivers/search?q=${encodeURIComponent(query)}`);
+    return Array.isArray(res.data) ? res.data : [];
+  },
+  changePassword: async (newPassword: string): Promise<boolean> => {
+    return authService.changePassword(newPassword);
   },
 };
 
