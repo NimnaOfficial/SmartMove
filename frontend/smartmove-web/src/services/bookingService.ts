@@ -5,15 +5,6 @@ const bookingService = {
   getAll: async (): Promise<Booking[]> => {
     const res = await apiClient.get('/bookings');
     return Array.isArray(res.data) ? res.data : [];
-    try {
-      const res = await apiClient.get('/bookings');
-      if (Array.isArray(res.data)) {
-        return res.data;
-      }
-      return mockStore.getBookings();
-    } catch {
-      return mockStore.getBookings();
-    }
   },
   getById: async (id: number): Promise<Booking> => {
     const res = await apiClient.get(`/bookings/${id}`);
