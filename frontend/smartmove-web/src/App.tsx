@@ -16,7 +16,6 @@ import MyBookings from '@/pages/passenger/bookings/MyBookings';
 import Profile from '@/pages/passenger/profile/Profile';
 import Feedback from '@/pages/passenger/feedback/Feedback';
 import TravelHistory from '@/pages/passenger/history/TravelHistory';
-import Media from '@/pages/passenger/media/Media';
 
 // Admin Imports
 import AdminLayout from '@/components/layout/AdminLayout';
@@ -88,7 +87,6 @@ function App() {
             <Route path="bookings" element={<MyBookings />} />
             <Route path="travel-history" element={<TravelHistory />} />
             <Route path="feedback" element={<Feedback />} />
-            <Route path="media" element={<Media />} />
             <Route path="announcements" element={<Announcements />} />
             <Route path="profile" element={<Profile />} />
           </Route>

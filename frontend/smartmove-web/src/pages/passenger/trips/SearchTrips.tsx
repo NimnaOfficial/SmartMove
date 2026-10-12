@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Calendar, Clock, ShieldCheck, Users, ArrowRight, Filter, ChevronDown, Check, X } from 'lucide-react';
+import { Search, MapPin, Calendar, Clock, ShieldCheck, Users, ArrowRight, Filter, ChevronDown, Check, X, CreditCard, RefreshCw } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import tripService from '@/services/tripService';
 import bookingService from '@/services/bookingService';
+import routeService from '@/services/routeService';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -86,38 +87,62 @@ export default function SearchTrips() {
   };
 
   const [trips, setTrips] = useState<any[]>([]);
+  const [routesList, setRoutesList] = useState<any[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
   useEffect(() => {
-    const fetchTrips = async () => {
-       try {
-          const hasCriteria = Boolean(searchCriteria.origin || searchCriteria.destination || searchCriteria.date);
-          const data = hasCriteria 
-            ? await tripService.search({
-                origin: searchCriteria.origin || undefined,
-                destination: searchCriteria.destination || undefined,
-                date: searchCriteria.date || undefined
-              })
-            : await tripService.getAll();
+    routeService.getAll().then(data => {
+      if (Array.isArray(data)) setRoutesList(data);
+    }).catch(() => {});
+  }, []);
+
+  const fetchTrips = async () => {
+     try {
+        const hasCriteria = Boolean(searchCriteria.origin || searchCriteria.destination || searchCriteria.date);
+        const data = hasCriteria 
+          ? await tripService.search({
+              origin: searchCriteria.origin || undefined,
+              destination: searchCriteria.destination || undefined,
+              date: searchCriteria.date || undefined
+            })
+          : await tripService.getAll();
+        setTrips(Array.isArray(data) ? data : []);
+        setLastUpdated(new Date());
+     } catch(e) {
+        console.error(e);
+        try {
+          const data = await tripService.getAll();
           setTrips(Array.isArray(data) ? data : []);
-       } catch(e) {
-          console.error(e);
-          try {
-            const data = await tripService.getAll();
-            setTrips(Array.isArray(data) ? data : []);
-          } catch {}
-       }
-    };
+          setLastUpdated(new Date());
+        } catch {}
+     }
+  };
+
+  useEffect(() => {
     fetchTrips();
+    const timer = setInterval(() => {
+      fetchTrips();
+    }, 5000);
+    return () => clearInterval(timer);
   }, [searchCriteria]);
   
   const filteredAndSortedTrips = useMemo(() => {
     let result = [...trips];
 
+    // Real-time filter: only show scheduled/active bookable trips with seats
+    result = result.filter(t => {
+      const s = (t.status || 'SCHEDULED').toUpperCase();
+      return s !== 'COMPLETED' && s !== 'CANCELLED';
+    });
+
     // Search Criteria
     if (searchCriteria.origin) {
-      result = result.filter(t => (t.origin || t.routeOrigin || '').toLowerCase().includes(searchCriteria.origin.toLowerCase()));
+      const q = searchCriteria.origin.toLowerCase().trim();
+      result = result.filter(t => (t.origin || t.routeOrigin || t.route || '').toLowerCase().includes(q));
     }
     if (searchCriteria.destination) {
-      result = result.filter(t => (t.destination || t.routeDestination || '').toLowerCase().includes(searchCriteria.destination.toLowerCase()));
+      const q = searchCriteria.destination.toLowerCase().trim();
+      result = result.filter(t => (t.destination || t.routeDestination || t.route || '').toLowerCase().includes(q));
     }
     if (searchCriteria.date) {
       result = result.filter(t => (t.date || t.departureDate || (t.departureTime ? t.departureTime.split('T')[0] : '')) === searchCriteria.date);
@@ -192,10 +217,23 @@ export default function SearchTrips() {
       <div className="max-w-7xl mx-auto h-full flex flex-col gap-8 w-full pb-10">
         
         {/* Header Section */}
-        <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex items-end justify-between">
+        <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Search Trips</h1>
-            <p className="text-gray-500 mt-2 font-light">Find and book your next journey across the network.</p>
+            <p className="text-gray-500 mt-2 font-light">Find and book your next journey across the network in real-time.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full text-emerald-700 text-xs font-bold shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>100% Real-Time Live Feed</span>
+            </div>
+            <button 
+              onClick={fetchTrips} 
+              title="Refresh available trips"
+              className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700 transition-colors shadow-sm cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
         </motion.div>
 
@@ -219,10 +257,16 @@ export default function SearchTrips() {
                 <input 
                   type="text" 
                   value={origin}
+                  list="origins-list"
                   onChange={(e) => setOrigin(e.target.value)}
                   placeholder="Where are you leaving from?" 
                   className="bg-transparent border-none outline-none text-white placeholder-white/40 w-full font-medium"
                 />
+                <datalist id="origins-list">
+                  {Array.from(new Set(routesList.map(r => r.origin).concat(trips.map(t => t.origin)).filter(Boolean))).map((city: any) => (
+                    <option key={city} value={city} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
@@ -239,10 +283,16 @@ export default function SearchTrips() {
                 <input 
                   type="text" 
                   value={destination}
+                  list="destinations-list"
                   onChange={(e) => setDestination(e.target.value)}
                   placeholder="Where are you heading to?" 
                   className="bg-transparent border-none outline-none text-white placeholder-white/40 w-full font-medium"
                 />
+                <datalist id="destinations-list">
+                  {Array.from(new Set(routesList.map(r => r.destination).concat(trips.map(t => t.destination)).filter(Boolean))).map((city: any) => (
+                    <option key={city} value={city} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
@@ -549,10 +599,14 @@ export default function SearchTrips() {
                          </div>
                          <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700">Payment Method</label>
-                            <div className="grid grid-cols-2 gap-3">
-                               <button type="button" className="py-3 border-2 border-[#1e3f7a] bg-blue-50 text-[#1e3f7a] font-bold rounded-xl">Credit Card</button>
-                               <button type="button" className="py-3 border-2 border-gray-100 bg-white text-gray-500 font-bold rounded-xl hover:bg-gray-50">Cash / Branch</button>
+                            <div className="py-3 px-4 border-2 border-[#1e3f7a] bg-blue-50/70 text-[#1e3f7a] font-bold rounded-xl flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <CreditCard className="w-5 h-5 text-[#1e3f7a]" />
+                                <span className="text-sm">Credit / Debit Card (Visa, Mastercard)</span>
+                              </div>
+                              <span className="text-[10px] font-black tracking-wider uppercase bg-[#1e3f7a] text-white px-2 py-0.5 rounded-md">Card Only</span>
                             </div>
+                            <p className="text-xs text-gray-500 font-medium">Cash is not accepted. Payment will be processed via card after booking is confirmed.</p>
                          </div>
                       </div>
 
@@ -566,7 +620,7 @@ export default function SearchTrips() {
                            disabled={isBooking}
                            className="px-8 py-3.5 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/30 flex items-center gap-2 disabled:opacity-50"
                          >
-                           <ShieldCheck className="w-5 h-5" /> {isBooking ? 'Processing...' : 'Confirm Payment'}
+                           <ShieldCheck className="w-5 h-5" /> {isBooking ? 'Processing...' : 'Request Booking'}
                          </button>
                       </div>
                     </div>

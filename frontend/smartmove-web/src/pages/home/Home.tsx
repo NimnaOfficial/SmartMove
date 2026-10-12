@@ -185,7 +185,7 @@ export default function Home() {
               <span className="font-serif italic text-blue-600">Travel Updates</span>
             </motion.h2>
             <motion.p variants={fadeUp} className="text-xl text-gray-500 font-light leading-relaxed">
-              Stay informed with our dynamic announcement feed. Powered by MongoDB to deliver rich media and high-priority alerts straight to your dashboard.
+              Stay informed with our dynamic announcement feed. Powered by MongoDB to deliver rich operational updates and high-priority alerts straight to your dashboard.
             </motion.p>
             <motion.div variants={fadeUp}>
               <Link to="/announcements" className="inline-flex items-center gap-3 text-gray-900 font-medium pb-2 border-b-2 border-gray-900 hover:text-blue-600 hover:border-blue-600 transition-colors">

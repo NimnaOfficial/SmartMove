@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useOutlet, useNavigate } from 'react-router-dom';
 import { 
   Home, Navigation, Bookmark, Settings, 
-  Search, MapPin, LogOut, History, MessageSquare, Image as ImageIcon,
+  Search, MapPin, LogOut, History, MessageSquare,
   Bell
 } from 'lucide-react';
 import authService from '@/services/authService';
@@ -16,7 +16,6 @@ const navLinks = [
   { name: 'Travel History', icon: History, path: '/passenger/travel-history' },
   { name: 'Feedback', icon: MessageSquare, path: '/passenger/feedback' },
   { name: 'Announcements', icon: Bell, path: '/passenger/announcements' },
-  { name: 'Media', icon: ImageIcon, path: '/passenger/media' },
   { name: 'Profile & Settings', icon: Settings, path: '/passenger/profile' },
 ];
 

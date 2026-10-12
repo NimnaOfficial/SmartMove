@@ -24,6 +24,7 @@ const staggerContainer = {
 export default function DriverDashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [trips, setTrips] = useState<any[]>([]);
+  const [availableTrips, setAvailableTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterTab, setFilterTab] = useState<'All' | 'Today' | 'Upcoming' | 'Completed'>('All');
   const navigate = useNavigate();
@@ -31,10 +32,14 @@ export default function DriverDashboard() {
   const fetchDashboard = async () => {
     try {
       setLoading(true);
-      const pData = await driverService.getProfile();
+      const [pData, tData, openData] = await Promise.all([
+        driverService.getProfile(),
+        driverService.getMyTrips(),
+        driverService.getAvailableTrips()
+      ]);
       setProfile(pData);
-      const tData = await driverService.getMyTrips();
       setTrips(Array.isArray(tData) ? tData : []);
+      setAvailableTrips(Array.isArray(openData) ? openData : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -146,6 +151,34 @@ export default function DriverDashboard() {
         </motion.div>
 
       </div>
+
+      {/* Available Trips Alert Banner */}
+      {availableTrips.length > 0 && (
+        <motion.div 
+          variants={fadeUp} 
+          initial="hidden" 
+          animate="visible"
+          className="bg-amber-500/10 border border-amber-500/30 rounded-[1.75rem] p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
+        >
+          <div className="flex items-center gap-3.5">
+            <span className="w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+            <div>
+              <h4 className="font-extrabold text-amber-950 text-base">
+                {availableTrips.length} Open Trip Request{availableTrips.length > 1 ? 's' : ''} Ready to Claim
+              </h4>
+              <p className="text-xs text-amber-800 font-medium mt-0.5">
+                New passenger bookings confirmed by dispatch require driver scheduling and vehicle assignment.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => navigate('/driver/trips')} 
+            className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl transition-all shadow-md cursor-pointer whitespace-nowrap self-stretch sm:self-auto text-center"
+          >
+            Review & Claim Requests
+          </button>
+        </motion.div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

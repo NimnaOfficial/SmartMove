@@ -159,6 +159,8 @@ export interface Trip {
   fare: number;
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   totalSeats?: number;
+  isPaid?: boolean;
+  paymentStatus?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -212,7 +214,7 @@ export interface Payment {
   passengerId?: number;
   passengerName?: string;
   amount: number;
-  paymentMethod: 'CARD' | 'CASH' | 'BANK_TRANSFER' | 'MOBILE';
+  paymentMethod: 'CARD';
   paymentDate: string;
   status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'REFUNDED';
   transactionRef?: string;
@@ -377,6 +379,16 @@ export interface PassengerHistoryReport {
     bookingId: number;
     paymentStatus: string;
   }[];
+}
+
+export interface PassengerAnalyticsReport {
+  passengerId: number;
+  passengerName: string;
+  email: string;
+  phone: string;
+  totalTrips: number;
+  lifetimeSpent: number;
+  lastActiveDate: string;
 }
 
 export interface MaintenanceDueReport {

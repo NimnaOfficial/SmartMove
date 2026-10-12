@@ -69,7 +69,9 @@ export default function TripDetails() {
       maintenance: 'Cleared & Inspected'
     },
     passengers: bookedCount,
-    status: tripStatus
+    status: tripStatus,
+    isPaid: (tripData as any)?.isPaid !== false && (tripData as any)?.paymentStatus !== 'UNPAID',
+    paymentStatus: (tripData as any)?.paymentStatus || 'PAID'
   };
 
   const handleAcceptTrip = async () => {
@@ -84,11 +86,12 @@ export default function TripDetails() {
 
   const handleUpdateStatus = async (newStatus: string) => {
     try {
-      setTripStatus(newStatus);
       await driverService.updateTripStatus(rawId, newStatus);
+      setTripStatus(newStatus);
       await fetchTrip();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.message || err.response?.data || 'Failed to update trip status');
     }
   };
 
@@ -183,7 +186,24 @@ export default function TripDetails() {
 
           {/* Action Buttons */}
           <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100">
-             <h3 className="text-lg font-bold text-gray-900 mb-4">Trip Controls</h3>
+             <div className="flex items-center justify-between mb-4">
+               <h3 className="text-lg font-bold text-gray-900">Trip Controls</h3>
+               {tripStatus !== 'COMPLETED' && (
+                 <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider ${
+                   trip.isPaid ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
+                 }`}>
+                   {trip.isPaid ? 'Card Paid' : 'Card Payment Pending'}
+                 </span>
+               )}
+             </div>
+
+             {tripStatus === 'IN_PROGRESS' && !trip.isPaid && (
+               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                 <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                 <span>Passenger card payment is pending. This trip cannot be completed until the passenger completes payment by card.</span>
+               </div>
+             )}
+
              <div className="flex flex-wrap gap-3">
                {tripStatus === 'PENDING' && (
                  <button 
@@ -202,10 +222,11 @@ export default function TripDetails() {
                </button>
                <button 
                  onClick={() => handleUpdateStatus('COMPLETED')}
-                 disabled={tripStatus !== 'IN_PROGRESS'}
+                 disabled={tripStatus !== 'IN_PROGRESS' || !trip.isPaid}
+                 title={!trip.isPaid ? "Passenger card payment is pending" : "Complete Trip"}
                  className="flex-1 bg-emerald-600 text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md"
                >
-                 Complete Trip
+                 {tripStatus === 'IN_PROGRESS' && !trip.isPaid ? 'Awaiting Card Payment' : 'Complete Trip'}
                </button>
                <button 
                  onClick={() => setShowIssueModal(true)}

@@ -473,13 +473,14 @@ export default function MyBookings() {
                            Cancel
                          </button>
                          <button 
-                           onClick={() => {
+                           onClick={async () => {
+                             const target = selectedBooking;
                              setSelectedBooking(null);
-                             // Handle success mock here
+                             await handlePayBooking(target);
                            }}
-                           className="flex-1 py-3.5 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 flex items-center justify-center gap-2"
+                           className="flex-1 py-3.5 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 flex items-center justify-center gap-2 cursor-pointer"
                          >
-                           <CheckCircle2 className="w-5 h-5" /> Pay LKR {Number(selectedBooking.amount || 0).toLocaleString()}
+                           <CheckCircle2 className="w-5 h-5" /> Pay LKR {Number(selectedBooking.amount || 0).toLocaleString()} (Card)
                          </button>
                       </div>
                     </div>

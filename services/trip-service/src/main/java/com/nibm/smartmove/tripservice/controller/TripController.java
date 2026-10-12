@@ -48,6 +48,19 @@ public class TripController {
                 driverMap.put(did, ((fn != null ? fn : "") + " " + (ln != null ? ln : "")).trim());
             });
 
+            Map<Long, List<Map<String, Object>>> tripBookingsMap = new HashMap<>();
+            try {
+                jdbcTemplate.query("SELECT TRIP_ID, STATUS, PAYMENT_STATUS FROM BOOKING WHERE STATUS NOT IN ('CANCELLED')", rs -> {
+                    long tId = rs.getLong("TRIP_ID");
+                    if (tId > 0) {
+                        Map<String, Object> bRow = new HashMap<>();
+                        bRow.put("status", rs.getString("STATUS"));
+                        bRow.put("paymentStatus", rs.getString("PAYMENT_STATUS"));
+                        tripBookingsMap.computeIfAbsent(tId, k -> new java.util.ArrayList<>()).add(bRow);
+                    }
+                });
+            } catch (Exception ignored) {}
+
             for (Trip t : list) {
                 t.setId(t.getTripId());
                 if (t.getRouteId() != null && routeMap.containsKey(t.getRouteId())) {
@@ -82,13 +95,13 @@ public class TripController {
                     }
                     t.setVehicle(vehDesc);
                 } else {
-                    t.setVehicle("Luxury Coach");
+                    t.setVehicle("Vehicle Pending Assignment");
                 }
 
                 if (t.getDriverId() != null && driverMap.containsKey(t.getDriverId())) {
                     t.setDriverName(driverMap.get(t.getDriverId()));
                 } else {
-                    t.setDriverName("Assigned Driver");
+                    t.setDriverName("Unassigned Driver");
                 }
 
                 if (t.getDepartureTime() != null) {
@@ -96,6 +109,23 @@ public class TripController {
                     String datePart = dtStr.contains("T") ? dtStr.split("T")[0] : dtStr;
                     t.setDate(datePart);
                     t.setDepartureDate(datePart);
+                }
+
+                List<Map<String, Object>> activeBookings = tripBookingsMap.get(t.getTripId());
+                if (activeBookings == null || activeBookings.isEmpty()) {
+                    t.setIsPaid(true);
+                    t.setPaymentStatus("PAID");
+                } else {
+                    boolean allPaid = true;
+                    for (Map<String, Object> b : activeBookings) {
+                        String pStatus = (String) b.get("paymentStatus");
+                        if (pStatus == null || !"PAID".equalsIgnoreCase(pStatus.trim())) {
+                            allPaid = false;
+                            break;
+                        }
+                    }
+                    t.setIsPaid(allPaid);
+                    t.setPaymentStatus(allPaid ? "PAID" : "UNPAID");
                 }
             }
         } catch (Exception e) {
@@ -159,6 +189,22 @@ public class TripController {
      */
     @PutMapping("/api/trips/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Trip payload) {
+        if (payload.getStatus() != null && "COMPLETED".equalsIgnoreCase(payload.getStatus().trim())) {
+            try {
+                Integer unpaidCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM BOOKING WHERE TRIP_ID = ? AND STATUS NOT IN ('CANCELLED') AND (PAYMENT_STATUS IS NULL OR UPPER(PAYMENT_STATUS) != 'PAID')",
+                    Integer.class,
+                    id
+                );
+                if (unpaidCount != null && unpaidCount > 0) {
+                    return org.springframework.http.ResponseEntity.badRequest().body(
+                        Map.of("message", "Cannot mark trip as COMPLETED: Passenger card payment is pending. Please wait for passenger to pay.")
+                    );
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
         return service.findById(id).map(existing -> {
             if (payload.getRouteId() != null) existing.setRouteId(payload.getRouteId());
             if (payload.getVehicleId() != null) existing.setVehicleId(payload.getVehicleId());
@@ -194,6 +240,22 @@ public class TripController {
             Object statusObj = payload.get("status");
             if (statusObj != null && !statusObj.toString().trim().isEmpty()) {
                 String newStatus = statusObj.toString().trim().toUpperCase();
+                if ("COMPLETED".equalsIgnoreCase(newStatus)) {
+                    try {
+                        Integer unpaidCount = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM BOOKING WHERE TRIP_ID = ? AND STATUS NOT IN ('CANCELLED') AND (PAYMENT_STATUS IS NULL OR UPPER(PAYMENT_STATUS) != 'PAID')",
+                            Integer.class,
+                            id
+                        );
+                        if (unpaidCount != null && unpaidCount > 0) {
+                            return org.springframework.http.ResponseEntity.badRequest().body(
+                                Map.of("message", "Cannot mark trip as COMPLETED: Passenger card payment is pending. Please wait for passenger to pay.")
+                            );
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
                 existing.setStatus(newStatus);
                 try {
                     if ("IN_PROGRESS".equalsIgnoreCase(newStatus)) {
@@ -216,20 +278,102 @@ public class TripController {
         }).orElse(org.springframework.http.ResponseEntity.notFound().build());
     }
 
+    private Long findAvailableVehicle() {
+        try {
+            List<Long> freeVehicles = jdbcTemplate.query(
+                "SELECT VEHICLE_ID FROM VEHICLE WHERE UPPER(STATUS) = 'ACTIVE' " +
+                "AND VEHICLE_ID NOT IN (SELECT VEHICLE_ID FROM TRIP WHERE UPPER(STATUS) = 'IN_PROGRESS' AND VEHICLE_ID IS NOT NULL) " +
+                "ORDER BY VEHICLE_ID ASC",
+                (rs, rowNum) -> rs.getLong("VEHICLE_ID")
+            );
+            if (!freeVehicles.isEmpty()) {
+                return freeVehicles.get(0);
+            }
+            List<Long> activeVehicles = jdbcTemplate.query(
+                "SELECT VEHICLE_ID FROM VEHICLE WHERE UPPER(STATUS) = 'ACTIVE' ORDER BY VEHICLE_ID ASC",
+                (rs, rowNum) -> rs.getLong("VEHICLE_ID")
+            );
+            if (!activeVehicles.isEmpty()) {
+                return activeVehicles.get(0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 1L;
+    }
+
     /**
-     * Driver or Admin accepts a trip schedule and all associated pending bookings.
+     * Retrieves all unscheduled/pending trips available for drivers to claim.
      */
-    @RequestMapping(value = "/api/trips/{id}/accept", method = {RequestMethod.POST, RequestMethod.PUT})
-    public org.springframework.http.ResponseEntity<?> acceptTrip(@PathVariable Long id) {
-        return service.findById(id).map(existing -> {
-            existing.setStatus("CONFIRMED");
-            existing.setUpdatedAt(java.time.LocalDateTime.now());
+    @GetMapping("/api/trips/available")
+    public org.springframework.http.ResponseEntity<?> getAvailableTrips() {
+        List<Trip> all = service.findAll();
+        enrichTrips(all);
+        List<Trip> available = all.stream().filter(t -> 
+            t.getDriverId() == null && ("PENDING".equalsIgnoreCase(t.getStatus()) || "REQUESTED".equalsIgnoreCase(t.getStatus()))
+        ).collect(Collectors.toList());
+        return org.springframework.http.ResponseEntity.ok(available);
+    }
+
+    /**
+     * Retrieves trips assigned to a specific driver.
+     */
+    @GetMapping("/api/trips/driver/{driverId}")
+    public org.springframework.http.ResponseEntity<?> getTripsByDriver(@PathVariable Long driverId) {
+        List<Trip> all = service.findAll();
+        enrichTrips(all);
+        List<Trip> driverTrips = all.stream().filter(t -> 
+            t.getDriverId() != null && t.getDriverId().equals(driverId)
+        ).collect(Collectors.toList());
+        return org.springframework.http.ResponseEntity.ok(driverTrips);
+    }
+
+    /**
+     * Driver claims or accepts an available trip.
+     * Assigns the driver and an available active vehicle, sets STATUS to SCHEDULED, and confirms associated bookings.
+     */
+    @RequestMapping(value = {"/api/trips/{id}/claim", "/api/trips/{id}/accept"}, method = {RequestMethod.POST, RequestMethod.PUT})
+    public org.springframework.http.ResponseEntity<?> claimOrAcceptTrip(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @RequestBody(required = false) Map<String, Object> body) {
+        
+        Long driverId = null;
+        if (body != null && body.get("driverId") != null) {
             try {
-                jdbcTemplate.update("UPDATE BOOKING SET STATUS = 'CONFIRMED', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS IN ('PENDING', 'SCHEDULED')", id);
+                driverId = Long.parseLong(body.get("driverId").toString());
+            } catch (Exception ignored) {}
+        }
+        if (driverId == null && userIdHeader != null && !userIdHeader.isBlank()) {
+            try {
+                driverId = Long.parseLong(userIdHeader.trim());
+            } catch (Exception ignored) {}
+        }
+        if (driverId == null) {
+            driverId = 1L;
+        }
+        final Long claimingDriverId = driverId;
+
+        return service.findById(id).map(existing -> {
+            if (existing.getDriverId() != null && !existing.getDriverId().equals(claimingDriverId) && !"PENDING".equalsIgnoreCase(existing.getStatus())) {
+                return org.springframework.http.ResponseEntity.status(409).body(
+                    Map.of("message", "This trip has already been claimed by another driver.")
+                );
+            }
+
+            existing.setDriverId(claimingDriverId);
+            Long assignedVehId = findAvailableVehicle();
+            existing.setVehicleId(assignedVehId);
+            existing.setStatus("SCHEDULED");
+            existing.setUpdatedAt(java.time.LocalDateTime.now());
+
+            Trip updated = service.save(existing);
+            try {
+                jdbcTemplate.update("UPDATE BOOKING SET STATUS = 'CONFIRMED', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS NOT IN ('CANCELLED')", id);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            Trip updated = service.save(existing);
+
             enrichTrips(List.of(updated));
             return org.springframework.http.ResponseEntity.ok(updated);
         }).orElse(org.springframework.http.ResponseEntity.notFound().build());

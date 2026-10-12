@@ -10,6 +10,9 @@ public class DriverController {
     @Autowired
     private com.nibm.smartmove.driverservice.service.DriverService service;
 
+    @Autowired(required = false)
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
 
     /**
      * Retrieves all drivers from Oracle DRIVER table. Includes rating and trip count aggregations.
@@ -225,7 +228,45 @@ public class DriverController {
      * Returns all trips assigned to the authenticated driver. Joins TRIP, ROUTE, VEHICLE tables.
      */
     @GetMapping("/api/drivers/my-trips")
-    public org.springframework.http.ResponseEntity<?> endpoint6() {
+    public org.springframework.http.ResponseEntity<?> endpoint6(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @RequestParam(value = "driverId", required = false) Long driverIdParam) {
+        Long targetDriverId = driverIdParam;
+        if (targetDriverId == null && userIdHeader != null && !userIdHeader.isBlank()) {
+            try { targetDriverId = Long.parseLong(userIdHeader.trim()); } catch (Exception ignored) {}
+        }
+        if (targetDriverId == null) targetDriverId = 1L;
+
+        if (jdbcTemplate != null) {
+            try {
+                String sql = "SELECT t.TRIP_ID, t.ROUTE_ID, t.VEHICLE_ID, t.DRIVER_ID, t.DEPARTURE_TIME, t.ARRIVAL_TIME, " +
+                             "t.AVAILABLE_SEATS, t.STATUS, r.ORIGIN, r.DESTINATION, r.BASE_FARE, " +
+                             "v.REGISTRATION_NUMBER, v.TYPE as VEHICLE_TYPE, v.MODEL as VEHICLE_MODEL " +
+                             "FROM TRIP t " +
+                             "LEFT JOIN ROUTE r ON t.ROUTE_ID = r.ROUTE_ID " +
+                             "LEFT JOIN VEHICLE v ON t.VEHICLE_ID = v.VEHICLE_ID " +
+                             "WHERE t.DRIVER_ID = ? ORDER BY t.DEPARTURE_TIME ASC";
+                java.util.List<java.util.Map<String, Object>> rows = jdbcTemplate.queryForList(sql, targetDriverId);
+                java.util.List<java.util.Map<String, Object>> list = new java.util.ArrayList<>();
+                for (java.util.Map<String, Object> r : rows) {
+                    java.util.Map<String, Object> m = new java.util.HashMap<>();
+                    for (java.util.Map.Entry<String, Object> entry : r.entrySet()) {
+                        m.put(entry.getKey().toLowerCase(), entry.getValue());
+                    }
+                    m.put("tripId", r.get("TRIP_ID"));
+                    m.put("id", r.get("TRIP_ID"));
+                    m.put("routeOrigin", r.get("ORIGIN"));
+                    m.put("routeDestination", r.get("DESTINATION"));
+                    m.put("vehicleRegistration", r.get("REGISTRATION_NUMBER"));
+                    m.put("departureTime", r.get("DEPARTURE_TIME") != null ? r.get("DEPARTURE_TIME").toString() : null);
+                    m.put("arrivalTime", r.get("ARRIVAL_TIME") != null ? r.get("ARRIVAL_TIME").toString() : null);
+                    list.add(m);
+                }
+                return org.springframework.http.ResponseEntity.ok(list);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         return org.springframework.http.ResponseEntity.ok(java.util.Collections.emptyList());
     }
 
