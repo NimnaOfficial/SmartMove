@@ -46,17 +46,17 @@ export default function DriverDashboard() {
     fetchDashboard();
   }, []);
 
-  const nextTrip = trips.find(t => t.status === 'IN_PROGRESS' || t.status === 'SCHEDULED') || trips[0];
+  const nextTrip = trips.find(t => t.status === 'IN_PROGRESS' || t.status === 'SCHEDULED' || t.status === 'CONFIRMED' || t.status === 'PENDING') || trips[0];
 
   const currentUser = authService.getCurrentUser();
   const driverName = profile?.firstName || profile?.FIRST_NAME || currentUser?.firstName || 'Captain';
   const completedTripsCount = trips.filter(t => t.status === 'COMPLETED').length + (profile?.totalTrips || profile?.TOTAL_TRIPS || 0);
-  const upcomingTripsCount = trips.filter(t => t.status === 'SCHEDULED').length;
+  const upcomingTripsCount = trips.filter(t => t.status === 'SCHEDULED' || t.status === 'CONFIRMED' || t.status === 'PENDING').length;
 
   const filteredSchedule = trips.filter(t => {
     if (filterTab === 'All') return true;
     if (filterTab === 'Completed') return t.status === 'COMPLETED';
-    if (filterTab === 'Upcoming') return t.status === 'SCHEDULED';
+    if (filterTab === 'Upcoming') return t.status === 'SCHEDULED' || t.status === 'CONFIRMED' || t.status === 'PENDING';
     return true; // Today
   });
 
@@ -205,6 +205,7 @@ export default function DriverDashboard() {
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
                             t.status === 'COMPLETED' ? 'bg-gray-100 text-gray-600' :
                             t.status === 'IN_PROGRESS' ? 'bg-emerald-100 text-emerald-700 animate-pulse' :
+                            t.status === 'PENDING' ? 'bg-orange-100 text-orange-700 font-extrabold' :
                             'bg-blue-100 text-blue-700'
                           }`}>
                             {t.status || 'SCHEDULED'}

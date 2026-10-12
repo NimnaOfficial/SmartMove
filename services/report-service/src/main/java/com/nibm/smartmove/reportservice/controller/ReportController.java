@@ -61,7 +61,9 @@ public class ReportController {
                          "       v.registration_number, " +
                          "       COALESCE(v.model, v.type, 'Luxury Coach') || ' (' || v.registration_number || ')' AS vehicle, " +
                          "       b.status as booking_status, " +
-                         "       COALESCE(pay.status, b.payment_status, 'SUCCESS') as payment_status " +
+                         "       b.status as status, " +
+                         "       t.status as trip_status, " +
+                         "       COALESCE(pay.status, b.payment_status, 'UNPAID') as payment_status " +
                          "FROM PASSENGER p " +
                          "JOIN BOOKING b ON p.passenger_id = b.passenger_id " +
                          "JOIN TRIP t ON b.trip_id = t.trip_id " +
@@ -69,11 +71,10 @@ public class ReportController {
                          "JOIN VEHICLE v ON t.vehicle_id = v.vehicle_id " +
                          "LEFT JOIN PAYMENT pay ON b.booking_id = pay.booking_id " +
                          "WHERE p.passenger_id = ? " +
+                         "  AND (UPPER(b.status) = 'COMPLETED' OR UPPER(t.status) = 'COMPLETED') " +
+                         "  AND (UPPER(b.payment_status) = 'PAID' OR UPPER(pay.status) = 'SUCCESS') " +
                          "ORDER BY t.departure_time DESC";
             java.util.List<java.util.Map<String, Object>> results = jdbcTemplate.queryForList(sql, pId);
-            if (results.isEmpty() && pId != 1L) {
-                results = jdbcTemplate.queryForList(sql, 1L);
-            }
             return org.springframework.http.ResponseEntity.ok(results);
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.ok(java.util.Collections.emptyList());

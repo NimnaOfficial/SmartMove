@@ -55,11 +55,22 @@ export default function MyTrips() {
     }
   };
 
+  const handleAcceptTrip = async (tripId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await driverService.acceptTrip(tripId);
+      fetchTrips();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const normalizedTrips = trips.map(t => {
     const rawStatus = (t.status || 'SCHEDULED').toUpperCase();
     const isCompleted = rawStatus === 'COMPLETED';
     const isInProgress = rawStatus === 'IN_PROGRESS';
-    const isUpcoming = rawStatus === 'SCHEDULED';
+    const isPending = rawStatus === 'PENDING';
+    const isUpcoming = rawStatus === 'SCHEDULED' || rawStatus === 'CONFIRMED';
     
     return {
       ...t,
@@ -73,6 +84,7 @@ export default function MyTrips() {
       vehicle: t.vehicleRegistration || 'WP-ND-4521',
       isCompleted,
       isInProgress,
+      isPending,
       isUpcoming
     };
   });
@@ -86,8 +98,8 @@ export default function MyTrips() {
     if (!matchesSearch) return false;
     if (activeTab === 'All') return true;
     if (activeTab === 'Completed') return t.isCompleted;
-    if (activeTab === 'Today') return t.isInProgress || t.isUpcoming;
-    if (activeTab === 'Upcoming') return t.isUpcoming;
+    if (activeTab === 'Today') return t.isInProgress || t.isUpcoming || t.isPending;
+    if (activeTab === 'Upcoming') return t.isUpcoming || t.isPending;
     return true;
   });
 
@@ -176,6 +188,7 @@ export default function MyTrips() {
                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                         trip.isCompleted ? 'bg-gray-100 text-gray-600' :
                         trip.isInProgress ? 'bg-emerald-100 text-emerald-700 animate-pulse font-extrabold' :
+                        trip.isPending ? 'bg-orange-100 text-orange-700 font-extrabold' :
                         'bg-blue-50 text-blue-600 font-extrabold'
                      }`}>
                         {trip.status || 'SCHEDULED'}
@@ -199,10 +212,19 @@ export default function MyTrips() {
 
                   {/* Actions Row */}
                   <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                    {trip.isPending && (
+                      <button
+                        onClick={(e) => handleAcceptTrip(trip.tripId, e)}
+                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-blue-700 transition-colors cursor-pointer shadow-sm"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Accept Trip
+                      </button>
+                    )}
+
                     {trip.isUpcoming && (
                       <button
                         onClick={(e) => handleUpdateStatus(trip.tripId, 'IN_PROGRESS', e)}
-                        className="px-4 py-2.5 bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-gray-800 transition-colors cursor-pointer"
+                        className="px-4 py-2.5 bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-gray-800 transition-colors cursor-pointer shadow-sm"
                       >
                         <Play className="w-3.5 h-3.5 fill-white" /> Start Trip
                       </button>
@@ -211,7 +233,7 @@ export default function MyTrips() {
                     {trip.isInProgress && (
                       <button
                         onClick={(e) => handleUpdateStatus(trip.tripId, 'COMPLETED', e)}
-                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-700 transition-colors cursor-pointer"
+                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-700 transition-colors cursor-pointer shadow-sm"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" /> Complete Trip
                       </button>

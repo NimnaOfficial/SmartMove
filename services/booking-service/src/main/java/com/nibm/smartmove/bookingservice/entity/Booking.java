@@ -113,7 +113,7 @@ public class Booking {
 
     public String getBookingStatus() {
         if (this.bookingStatus != null) return this.bookingStatus;
-        return this.status != null ? this.status : "CONFIRMED";
+        return this.status != null ? this.status : "PENDING";
     }
 
     @com.fasterxml.jackson.annotation.JsonProperty("ticketQuantity")

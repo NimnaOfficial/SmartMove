@@ -46,6 +46,16 @@ export default function AdminBookings() {
     }
   };
 
+  const handleAcceptBooking = async (id: number) => {
+    try {
+      await bookingService.acceptBooking(id);
+      fetchBookings();
+    } catch (e: any) {
+      console.error('Failed to accept booking', e);
+      alert('Failed to accept booking: ' + (e.response?.data?.message || e.message));
+    }
+  };
+
   const handleDeleteBooking = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this booking record?')) return;
     try {
@@ -112,8 +122,8 @@ export default function AdminBookings() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {filtered.map((b) => {
-                const bStatus = (b.status || b.bookingStatus || 'CONFIRMED').toUpperCase();
-                const pStatus = (b.paymentStatus || 'PAID').toUpperCase();
+                const bStatus = (b.status || b.bookingStatus || 'PENDING').toUpperCase();
+                const pStatus = (b.paymentStatus || 'UNPAID').toUpperCase();
                 const fareAmt = Number(b.totalFare ?? b.totalAmount ?? b.amount ?? 0);
                 const seats = b.seatsBooked ?? b.ticketQuantity ?? 1;
 
@@ -132,7 +142,9 @@ export default function AdminBookings() {
                     </td>
                     <td className="p-5">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
-                        ${bStatus === 'CONFIRMED' || bStatus === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 
+                        ${bStatus === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 
+                          bStatus === 'CONFIRMED' ? 'bg-blue-500/20 text-blue-400' :
+                          bStatus === 'IN_PROGRESS' ? 'bg-purple-500/20 text-purple-400 animate-pulse' :
                           bStatus === 'PENDING' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
                         {(bStatus === 'CONFIRMED' || bStatus === 'COMPLETED') && <CheckCircle2 className="w-3.5 h-3.5" />}
                         {bStatus === 'CANCELLED' && <XCircle className="w-3.5 h-3.5" />}
@@ -141,15 +153,20 @@ export default function AdminBookings() {
                     </td>
                     <td className="p-5">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
-                        ${pStatus === 'PAID' || pStatus === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' : 
-                          pStatus === 'UNPAID' || pStatus === 'PENDING' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                        ${pStatus === 'PAID' || pStatus === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400 font-extrabold' : 
+                          'bg-orange-500/20 text-orange-400 font-extrabold'}`}>
                         {pStatus}
                       </span>
                     </td>
                     <td className="p-5 pr-8 flex items-center justify-end gap-2">
-                      <button onClick={() => setSelectedBooking(b)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                      <button onClick={() => setSelectedBooking(b)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors" title="View Booking">
                         <Eye className="w-4 h-4" />
                       </button>
+                      {bStatus === 'PENDING' && (
+                        <button onClick={() => handleAcceptBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 transition-colors" title="Accept Booking">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                      )}
                       {bStatus !== 'CANCELLED' && (
                         <button onClick={() => handleCancelBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 transition-colors" title="Cancel Booking">
                           <XCircle className="w-4 h-4" />
