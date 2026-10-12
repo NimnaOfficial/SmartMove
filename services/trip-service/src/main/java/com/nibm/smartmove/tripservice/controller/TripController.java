@@ -16,7 +16,12 @@ public class TripController {
      */
     @GetMapping("/api/trips")
     public org.springframework.http.ResponseEntity<?> endpoint0() {
-        return org.springframework.http.ResponseEntity.ok(service.findAll());
+        try {
+            return org.springframework.http.ResponseEntity.ok(service.findAll());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return org.springframework.http.ResponseEntity.status(500).body("Trip error: " + e.getMessage());
+        }
     }
 
     /**

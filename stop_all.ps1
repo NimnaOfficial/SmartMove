@@ -33,3 +33,16 @@ if ($processes) {
 } else {
     Write-Host "No running Java or Node processes found." -ForegroundColor Gray
 }
+
+# Close any open service PowerShell windows
+$serviceNames = @(
+    "service-registry", "api-gateway", "auth-service", "passenger-service",
+    "driver-service", "vehicle-service", "route-service", "trip-service",
+    "booking-service", "payment-service", "maintenance-service", "feedback-service",
+    "content-service", "report-service", "smartmove-web"
+)
+$psWins = Get-Process powershell -ErrorAction SilentlyContinue | Where-Object { $serviceNames -contains $_.MainWindowTitle }
+if ($psWins) {
+    $psWins | Stop-Process -Force -ErrorAction SilentlyContinue
+    Write-Host "Closed all SmartMove service windows." -ForegroundColor Green
+}

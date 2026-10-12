@@ -24,15 +24,36 @@ type TabType = typeof tabs[number];
 
 
 export default function MyBookings() {
-// Mock Data following Specification
-const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
       const data = await bookingService.getMyBookings();
-      setBookings(Array.isArray(data) ? data : []);
+      const mapped = (Array.isArray(data) ? data : []).map((b: any) => {
+        const statusUpper = (b.status || b.bookingStatus || 'CONFIRMED').toUpperCase();
+        let tabType: TabType = 'Upcoming';
+        if (statusUpper === 'COMPLETED') tabType = 'Completed';
+        else if (statusUpper === 'CANCELLED' || statusUpper === 'CANCELED') tabType = 'Cancelled';
+
+        return {
+          ...b,
+          id: b.id || (b.bookingId ? `BK-${b.bookingId}` : 'BK-000'),
+          bookingId: b.bookingId || (b.id ? parseInt(String(b.id).replace('BK-', '')) : null),
+          type: b.type || tabType,
+          route: b.route || `Trip Route #${b.tripId || b.bookingId || 1}`,
+          trip: b.trip || `Trip #${b.tripId || b.bookingId || 1}`,
+          bookingStatus: b.bookingStatus || (statusUpper.charAt(0) + statusUpper.slice(1).toLowerCase()),
+          paymentStatus: b.paymentStatus || 'Paid',
+          date: b.date || (b.bookingDate ? new Date(b.bookingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today'),
+          time: b.time || (b.bookingDate ? new Date(b.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '08:00 AM'),
+          fare: b.fare || `LKR ${(b.totalFare || b.fare || 0).toLocaleString()}`,
+          amount: b.amount || b.totalFare || 0,
+          seats: b.seats || b.seatsBooked || 1,
+        };
+      });
+      setBookings(mapped);
     } catch (e) {
       console.error(e);
     } finally {
@@ -49,11 +70,28 @@ const [bookings, setBookings] = useState<any[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [modalMode, setModalMode] = useState<'view' | 'cancel' | 'pay' | 'feedback'>('view');
 
-  const filteredBookings = bookings.filter(b => 
-    b.type === activeTab && 
-    (b.route.toLowerCase().includes(searchQuery.toLowerCase()) || 
-     b.id.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const handleCancelBooking = async (booking: any) => {
+    if (!booking) return;
+    try {
+      const bId = booking.bookingId || (booking.id ? parseInt(String(booking.id).replace('BK-', '')) : null);
+      if (bId) {
+        await bookingService.cancel(bId);
+        await fetchBookings();
+      }
+    } catch (err) {
+      console.error('Failed to cancel booking:', err);
+    } finally {
+      setSelectedBooking(null);
+    }
+  };
+
+  const filteredBookings = bookings.filter(b => {
+    const matchesTab = b.type === activeTab;
+    const r = (b.route || '').toLowerCase();
+    const id = (b.id || '').toLowerCase();
+    const q = searchQuery.toLowerCase();
+    return matchesTab && (r.includes(q) || id.includes(q));
+  });
 
   return (
     <div className="max-w-7xl mx-auto h-full flex flex-col w-full pb-10">
@@ -409,7 +447,7 @@ const [bookings, setBookings] = useState<any[]>([]);
                            Keep Booking
                          </button>
                          <button 
-                           onClick={() => setSelectedBooking(null)}
+                           onClick={() => handleCancelBooking(selectedBooking)}
                            className="flex-1 py-3.5 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
                          >
                            Yes, Cancel

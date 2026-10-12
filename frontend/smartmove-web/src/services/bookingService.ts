@@ -22,8 +22,12 @@ const bookingService = {
     await apiClient.delete(`/bookings/${id}`);
   },
   getMyBookings: async (): Promise<Booking[]> => {
-    const res = await apiClient.get('/bookings/my-bookings');
-    return Array.isArray(res.data) ? res.data : [];
+    try {
+      const res = await apiClient.get('/bookings/my-bookings');
+      return Array.isArray(res.data) ? res.data : [];
+    } catch {
+      return [];
+    }
   },
   search: async (query: string): Promise<Booking[]> => {
     const res = await apiClient.get(`/bookings/search?q=${encodeURIComponent(query)}`);

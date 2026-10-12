@@ -47,6 +47,16 @@ const authService = {
         return adminData;
       }
       throw err;
+    const res = await apiClient.post('/auth/login', {
+      email: (data.email || '').trim(),
+      password: data.password || ''
+    }, {
+      timeout: 300000 // 5 minutes (300,000 ms)
+    });
+
+    const raw = res.data;
+    if (!raw || !raw.token) {
+      throw new Error('Authentication failed: No token received');
     }
   },
 

@@ -43,9 +43,6 @@ const driverService = {
     const res = await apiClient.get('/drivers/my-trips');
     return Array.isArray(res.data) ? res.data : [];
   },
-  updateTripStatus: async (tripId: number, status: string): Promise<any> => {
-    return tripService.updateStatus(tripId, status);
-  },
   search: async (query: string): Promise<Driver[]> => {
     const res = await apiClient.get(`/drivers/search?q=${encodeURIComponent(query)}`);
     return Array.isArray(res.data) ? res.data : [];
