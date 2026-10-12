@@ -25,8 +25,9 @@ export default function AdminRoutes() {
     origin: '',
     destination: '',
     status: 'ACTIVE',
-    distance: 0,
-    duration: '0h 0m'
+    distance: 50,
+    duration: '1h 30m',
+    baseFare: 350
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export default function AdminRoutes() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'distance' ? Number(value) : value
+      [name]: (name === 'distance' || name === 'baseFare') ? Number(value) : value
     }));
   };
 
@@ -59,8 +60,9 @@ export default function AdminRoutes() {
         origin: selectedRoute.origin,
         destination: selectedRoute.destination,
         status: selectedRoute.status,
-        distance: selectedRoute.distance || 0,
-        duration: selectedRoute.duration || '0h 0m',
+        distance: selectedRoute.distanceKm ?? selectedRoute.distance ?? 50,
+        duration: selectedRoute.estimatedDuration ?? selectedRoute.duration ?? '1h 30m',
+        baseFare: selectedRoute.baseFare ?? 350,
         description: selectedRoute.description
       });
     } else {
@@ -68,8 +70,9 @@ export default function AdminRoutes() {
         origin: '',
         destination: '',
         status: 'ACTIVE',
-        distance: 0,
-        duration: '0h 0m'
+        distance: 50,
+        duration: '1h 30m',
+        baseFare: 350
       });
     }
     setViewMode(false);
@@ -98,10 +101,16 @@ export default function AdminRoutes() {
     setIsSubmitting(true);
     setError(null);
     try {
+      const payload: RouteFormData = {
+        ...formData,
+        distanceKm: Number(formData.distance) || 50,
+        estimatedDuration: formData.duration || '1h 30m',
+        baseFare: Number(formData.baseFare) || 350
+      };
       if (selectedRoute) {
-        await routeService.update(selectedRoute.routeId, formData);
+        await routeService.update(selectedRoute.routeId, payload);
       } else {
-        await routeService.create(formData);
+        await routeService.create(payload);
       }
       setShowForm(false);
       setSelectedRoute(null);
@@ -183,7 +192,7 @@ export default function AdminRoutes() {
                     </div>
                   </td>
                   <td className="p-5 text-gray-400 text-sm">
-                    {r.distance ? `${r.distance}km` : 'N/A'} <br/> {r.duration || 'N/A'}
+                    {(r.distanceKm ?? r.distance) ? `${r.distanceKm ?? r.distance} km` : 'N/A'} <br/> {r.estimatedDuration || r.duration || 'N/A'}
                   </td>
                   <td className="p-5">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
@@ -246,11 +255,15 @@ export default function AdminRoutes() {
                   </div>
                   <div className="flex justify-between border-b border-white/5 pb-2">
                     <span className="text-gray-400">Distance</span>
-                    <span className="text-white font-medium">{selectedRoute.distance ? `${selectedRoute.distance}km` : 'N/A'}</span>
+                    <span className="text-white font-medium">{(selectedRoute.distanceKm ?? selectedRoute.distance) ? `${selectedRoute.distanceKm ?? selectedRoute.distance} km` : 'N/A'}</span>
                   </div>
                   <div className="flex justify-between border-b border-white/5 pb-2">
                     <span className="text-gray-400">Duration</span>
-                    <span className="text-white font-medium">{selectedRoute.duration || 'N/A'}</span>
+                    <span className="text-white font-medium">{selectedRoute.estimatedDuration || selectedRoute.duration || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-white/5 pb-2">
+                    <span className="text-gray-400">Base Fare</span>
+                    <span className="text-emerald-400 font-medium font-mono">{selectedRoute.baseFare != null ? `LKR ${selectedRoute.baseFare.toFixed(2)}` : 'N/A'}</span>
                   </div>
                   <div className="flex justify-between border-b border-white/5 pb-2">
                     <span className="text-gray-400">Status</span>
@@ -288,12 +301,18 @@ export default function AdminRoutes() {
                       <input type="text" name="duration" value={formData.duration} onChange={handleInputChange} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. 3h 30m" />
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-400 block mb-1">Status</label>
-                    <select name="status" value={formData.status} onChange={handleInputChange} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="INACTIVE">INACTIVE</option>
-                    </select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-400 block mb-1">Base Fare (LKR / $)</label>
+                      <input type="number" min="0" step="10" name="baseFare" value={formData.baseFare || ''} onChange={handleInputChange} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. 350" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-400 block mb-1">Status</label>
+                      <select name="status" value={formData.status} onChange={handleInputChange} className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-400 block mb-1">Description</label>

@@ -21,20 +21,21 @@ export default function DriverProfile() {
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
+  const currentUser = authService.getCurrentUser();
   const [driver, setDriver] = useState({
-    name: 'Kamal Perera',
-    firstName: 'Kamal',
-    lastName: 'Perera',
-    id: 'DRV-201',
-    driverId: 201,
-    status: 'ACTIVE',
-    contact: '+94 77 123 4567',
-    email: 'kamal.perera@smartmove.lk',
-    license: 'B, C, CE (Heavy Vehicle)',
-    experience: '8 Years',
-    rating: 4.9,
-    reviews: 124,
-    totalTrips: 184,
+    name: `${currentUser?.firstName || 'Driver'} ${currentUser?.lastName || ''}`.trim(),
+    firstName: currentUser?.firstName || 'Driver',
+    lastName: currentUser?.lastName || '',
+    id: `DRV-${currentUser?.userId || 1}`,
+    driverId: currentUser?.userId || 1,
+    status: (currentUser as any)?.status || 'ACTIVE',
+    contact: currentUser?.phone || '',
+    email: currentUser?.email || '',
+    license: (currentUser as any)?.licenseNumber || `B${1000000 + (currentUser?.userId || 1)}`,
+    experience: '5 Years',
+    rating: Number((currentUser as any)?.rating ?? 5.0),
+    reviews: 16,
+    totalTrips: Number((currentUser as any)?.totalTrips ?? 0),
     performance: 'Exceptional'
   });
 
@@ -47,14 +48,14 @@ export default function DriverProfile() {
           name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || prev.name,
           firstName: data.firstName || prev.firstName,
           lastName: data.lastName || prev.lastName,
-          id: `DRV-${data.driverId}`,
-          driverId: data.driverId,
+          id: `DRV-${data.driverId || prev.driverId}`,
+          driverId: data.driverId || prev.driverId,
           status: data.status || prev.status,
           contact: data.phone || prev.contact,
           email: data.email || prev.email,
           license: data.licenseNumber || prev.license,
-          rating: data.rating || prev.rating,
-          totalTrips: data.totalTrips || prev.totalTrips
+          rating: data.rating !== undefined ? data.rating : prev.rating,
+          totalTrips: data.totalTrips !== undefined ? data.totalTrips : prev.totalTrips
         }));
       }
     } catch (e) {

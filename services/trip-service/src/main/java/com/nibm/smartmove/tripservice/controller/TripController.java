@@ -29,6 +29,21 @@ public class TripController {
      */
     @PostMapping("/api/trips")
     public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Trip payload) {
+        if (payload.getDepartureTime() == null) {
+            payload.setDepartureTime(java.time.LocalDateTime.now().plusDays(1).withHour(8).withMinute(0).withSecond(0));
+        }
+        if (payload.getArrivalTime() == null) {
+            payload.setArrivalTime(payload.getDepartureTime().plusHours(3));
+        }
+        if (payload.getAvailableSeats() == null || payload.getAvailableSeats() <= 0) {
+            payload.setAvailableSeats(45.0);
+        }
+        if (payload.getStatus() == null || payload.getStatus().trim().isEmpty()) {
+            payload.setStatus("SCHEDULED");
+        }
+        if (payload.getCreatedAt() == null) {
+            payload.setCreatedAt(java.time.LocalDateTime.now());
+        }
         return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
@@ -45,15 +60,41 @@ public class TripController {
      */
     @PutMapping("/api/trips/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Trip payload) {
-        return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        return service.findById(id).map(existing -> {
+            if (payload.getRouteId() != null) existing.setRouteId(payload.getRouteId());
+            if (payload.getVehicleId() != null) existing.setVehicleId(payload.getVehicleId());
+            if (payload.getDriverId() != null) existing.setDriverId(payload.getDriverId());
+            if (payload.getDepartureTime() != null) existing.setDepartureTime(payload.getDepartureTime());
+            if (payload.getArrivalTime() != null) existing.setArrivalTime(payload.getArrivalTime());
+            if (payload.getAvailableSeats() != null) existing.setAvailableSeats(payload.getAvailableSeats());
+            if (payload.getStatus() != null && !payload.getStatus().trim().isEmpty()) existing.setStatus(payload.getStatus());
+            existing.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(existing));
+        }).orElseGet(() -> {
+            payload.setTripId(id);
+            if (payload.getDepartureTime() == null) payload.setDepartureTime(java.time.LocalDateTime.now().plusDays(1).withHour(8).withMinute(0).withSecond(0));
+            if (payload.getArrivalTime() == null) payload.setArrivalTime(payload.getDepartureTime().plusHours(3));
+            if (payload.getAvailableSeats() == null) payload.setAvailableSeats(45.0);
+            if (payload.getStatus() == null) payload.setStatus("SCHEDULED");
+            if (payload.getCreatedAt() == null) payload.setCreatedAt(java.time.LocalDateTime.now());
+            payload.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        });
     }
 
     /**
      * Updates only the trip status (SCHEDULED→IN_PROGRESS→COMPLETED or CANCELLED). Driver can update own trips.
      */
     @PatchMapping("/api/trips/{id}/status")
-    public org.springframework.http.ResponseEntity<?> endpoint4(@PathVariable Long id, @RequestBody Trip payload) {
-        return org.springframework.http.ResponseEntity.ok(service.save(payload));
+    public org.springframework.http.ResponseEntity<?> endpoint4(@PathVariable Long id, @RequestBody java.util.Map<String, Object> payload) {
+        return service.findById(id).map(existing -> {
+            Object statusObj = payload.get("status");
+            if (statusObj != null && !statusObj.toString().trim().isEmpty()) {
+                existing.setStatus(statusObj.toString().trim());
+            }
+            existing.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(existing));
+        }).orElse(org.springframework.http.ResponseEntity.notFound().build());
     }
 
     /**

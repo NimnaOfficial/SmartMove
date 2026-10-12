@@ -73,6 +73,7 @@ export interface Driver {
   password?: string;
   tempPassword?: string;
   mustChangePassword?: boolean;
+  role?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -92,7 +93,10 @@ export interface RouteInfo {
   origin: string;
   destination: string;
   distance?: number;
+  distanceKm?: number;
   duration?: string;
+  estimatedDuration?: string;
+  baseFare?: number;
   description?: string;
   status: 'ACTIVE' | 'INACTIVE';
   tripCount?: number;
@@ -104,7 +108,10 @@ export interface RouteFormData {
   origin: string;
   destination: string;
   distance?: number;
+  distanceKm?: number;
   duration?: string;
+  estimatedDuration?: string;
+  baseFare?: number;
   description?: string;
   status: string;
 }
@@ -156,10 +163,11 @@ export interface TripFormData {
   routeId: number;
   vehicleId: number;
   driverId: number;
-  departureDate: string;
+  departureDate?: string;
   departureTime: string;
   arrivalTime?: string;
-  fare: number;
+  availableSeats?: number;
+  fare?: number;
   status?: string;
 }
 

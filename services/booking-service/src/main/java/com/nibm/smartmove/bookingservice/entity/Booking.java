@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 @Table(name = "BOOKING")
 public class Booking {
@@ -39,5 +40,24 @@ public class Booking {
     @Column(name = "UPDATED_AT")
     private java.time.LocalDateTime updatedAt;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("ticketQuantity")
+    public void setTicketQuantity(Double qty) {
+        if (this.seatsBooked == null) {
+            this.seatsBooked = qty;
+        }
+    }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("totalAmount")
+    public void setTotalAmount(Double amt) {
+        if (this.totalFare == null) {
+            this.totalFare = amt;
+        }
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("amount")
+    public void setAmount(Double amt) {
+        if (this.totalFare == null) {
+            this.totalFare = amt;
+        }
+    }
 }

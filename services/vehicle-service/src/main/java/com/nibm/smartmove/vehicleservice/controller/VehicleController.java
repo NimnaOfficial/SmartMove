@@ -24,6 +24,21 @@ public class VehicleController {
      */
     @PostMapping("/api/vehicles")
     public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Vehicle payload) {
+        if (payload.getCapacity() == null || payload.getCapacity() <= 0) {
+            payload.setCapacity(45.0);
+        }
+        if (payload.getYear() == null || payload.getYear() <= 0) {
+            payload.setYear(2024.0);
+        }
+        if (payload.getType() == null || payload.getType().trim().isEmpty()) {
+            payload.setType("Standard");
+        }
+        if (payload.getStatus() == null || payload.getStatus().trim().isEmpty()) {
+            payload.setStatus("ACTIVE");
+        }
+        if (payload.getCreatedAt() == null) {
+            payload.setCreatedAt(java.time.LocalDateTime.now());
+        }
         return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
@@ -40,7 +55,25 @@ public class VehicleController {
      */
     @PutMapping("/api/vehicles/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Vehicle payload) {
-        return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        return service.findById(id).map(existing -> {
+            if (payload.getRegistrationNumber() != null) existing.setRegistrationNumber(payload.getRegistrationNumber());
+            if (payload.getType() != null) existing.setType(payload.getType());
+            if (payload.getModel() != null) existing.setModel(payload.getModel());
+            if (payload.getYear() != null) existing.setYear(payload.getYear());
+            if (payload.getCapacity() != null) existing.setCapacity(payload.getCapacity());
+            if (payload.getStatus() != null && !payload.getStatus().trim().isEmpty()) existing.setStatus(payload.getStatus());
+            existing.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(existing));
+        }).orElseGet(() -> {
+            payload.setVehicleId(id);
+            if (payload.getCapacity() == null) payload.setCapacity(45.0);
+            if (payload.getYear() == null) payload.setYear(2024.0);
+            if (payload.getType() == null) payload.setType("Standard");
+            if (payload.getStatus() == null) payload.setStatus("ACTIVE");
+            if (payload.getCreatedAt() == null) payload.setCreatedAt(java.time.LocalDateTime.now());
+            payload.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        });
     }
 
     /**
