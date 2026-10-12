@@ -127,13 +127,21 @@ export default function AdminMaintenance() {
     }
   };
 
+  const getVehicleReg = (m: Maintenance) => {
+    if (m.vehicleRegistration) return m.vehicleRegistration;
+    const v = vehicles.find(veh => veh.vehicleId === m.vehicleId);
+    return v?.registrationNumber || `Vehicle #${m.vehicleId}`;
+  };
+
   const filtered = maintenanceRecords.filter(m => {
-    const vReg = m.vehicleRegistration || '';
+    const vReg = getVehicleReg(m);
     const mType = m.type || '';
-    const matchSearch = vReg.toLowerCase().includes(search.toLowerCase()) || mType.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = vReg.toLowerCase().includes(search.toLowerCase()) || 
+      mType.toLowerCase().includes(search.toLowerCase()) ||
+      m.maintenanceId.toString().includes(search);
     
     // mapping statuses to tabs
-    const statusLower = m.status.toLowerCase();
+    const statusLower = (m.status || '').toLowerCase();
     if (activeTab === 'Due') return matchSearch && (statusLower === 'overdue' || statusLower === 'scheduled');
     if (activeTab === 'Upcoming') return matchSearch && statusLower === 'scheduled';
     if (activeTab === 'Completed') return matchSearch && statusLower === 'completed';
@@ -192,15 +200,17 @@ export default function AdminMaintenance() {
       )}
 
       <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 gap-4">
-        {filtered.map((item) => (
-          <motion.div key={item.maintenanceId} variants={fadeUp} className="bg-[#1a1b23] rounded-2xl p-5 border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-all">
-                <PenTool className="w-6 h-6 text-indigo-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-bold text-white">{item.vehicleRegistration || `Vehicle #${item.vehicleId}`}</h3>
+        {filtered.map((item) => {
+          const vReg = getVehicleReg(item);
+          return (
+            <motion.div key={item.maintenanceId} variants={fadeUp} className="bg-[#1a1b23] rounded-2xl p-5 border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-all">
+                  <PenTool className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-bold text-white">{vReg}</h3>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${item.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : item.status === 'OVERDUE' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
                     {item.status}
                   </span>
@@ -237,7 +247,8 @@ export default function AdminMaintenance() {
               </button>
             </div>
           </motion.div>
-        ))}
+        );
+      })}
         {filtered.length === 0 && (
           <div className="text-center py-10 bg-[#1a1b23] rounded-2xl border border-white/5">
             <p className="text-gray-400 font-medium">No maintenance records found.</p>
@@ -345,7 +356,7 @@ export default function AdminMaintenance() {
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Vehicle</span>
-                  <span className="text-white font-medium">{selectedItem.vehicleRegistration || `Vehicle #${selectedItem.vehicleId}`}</span>
+                  <span className="text-white font-medium">{getVehicleReg(selectedItem)}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Type</span>

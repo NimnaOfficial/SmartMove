@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation, useOutlet } from 'react-router-dom';
+import { Link, useLocation, useOutlet, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Car, Users, Map, CalendarCheck, 
   CreditCard, Wrench, MessageSquare, FileText, Bell, Database,
-  Search, Hexagon, X, CheckCircle, Radio
+  Search, Hexagon, X, CheckCircle, LogOut
 } from 'lucide-react';
-import LiveChatWidget from '@/components/chat/LiveChatWidget';
+import authService from '@/services/authService';
 
 const navLinks = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
@@ -16,7 +16,6 @@ const navLinks = [
   { name: 'Trips', icon: CalendarCheck, path: '/admin/trips' },
   { name: 'Bookings', icon: CreditCard, path: '/admin/bookings' },
   { name: 'Maintenance', icon: Wrench, path: '/admin/maintenance' },
-  { name: 'Live Chat', icon: Radio, path: '/admin/messages' },
   { name: 'Feedback', icon: MessageSquare, path: '/admin/feedback' },
   { name: 'Content', icon: Database, path: '/admin/content' },
   { name: 'Reports', icon: FileText, path: '/admin/reports' },
@@ -25,8 +24,14 @@ const navLinks = [
 export default function AdminLayout() {
   const location = useLocation();
   const outlet = useOutlet();
+  const navigate = useNavigate();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'All' | 'Unread'>('Unread');
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
 
   const notifications: any[] = [];
 
@@ -82,20 +87,11 @@ export default function AdminLayout() {
           })}
         </div>
 
-        {/* Right: Search, Live Chat, Notifications, Profile */}
+        {/* Right: Search, Live Chat, Notifications, Profile, Logout */}
         <div className="flex items-center gap-4 relative">
            <button className="w-10 h-10 rounded-full bg-[#1a1b23]/80 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:border-white/20 transition-all relative">
              <Search className="w-4 h-4" />
            </button>
-
-           <Link 
-             to="/admin/messages"
-             title="Live Dispatch Messaging"
-             className={`w-10 h-10 rounded-full bg-[#1a1b23]/80 backdrop-blur-md border ${location.pathname === '/admin/messages' ? 'border-purple-500 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)]' : 'border-white/10 text-gray-400'} flex items-center justify-center hover:text-white hover:border-white/20 transition-all relative`}
-           >
-             <Radio className="w-4 h-4" />
-             <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
-           </Link>
            
            <button 
              onClick={() => setIsNotifOpen(!isNotifOpen)}
@@ -105,13 +101,21 @@ export default function AdminLayout() {
              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
            </button>
 
-           <Link to="/admin/profile" className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[2px] cursor-pointer hover:scale-105 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+           <Link to="/admin/profile" title="Admin Profile & Settings" className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-[2px] cursor-pointer hover:scale-105 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.4)]">
              <img 
                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" 
                alt="Admin" 
                className="w-full h-full rounded-full border-2 border-[#0a0b10] object-cover"
              />
            </Link>
+
+           <button 
+             onClick={handleLogout}
+             className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all shadow-sm cursor-pointer"
+             title="Logout"
+           >
+             <LogOut className="w-4 h-4" />
+           </button>
 
            {/* Notifications Dropdown Panel */}
            <AnimatePresence>
@@ -194,9 +198,6 @@ export default function AdminLayout() {
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* Floating Real-Time Chat Widget */}
-      <LiveChatWidget theme="dark" defaultConversationId="conv-fleet-dispatch" />
 
     </div>
   );

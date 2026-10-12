@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import tripService from '@/services/tripService';
 import driverService from '@/services/driverService';
-import chatService from '@/services/chatService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -66,12 +65,6 @@ export default function TripDetails() {
     try {
       setTripStatus(newStatus);
       await driverService.updateTripStatus(rawId, newStatus);
-      // Broadcast real-time message to dispatch
-      await chatService.sendMessage(
-        'conv-fleet-dispatch',
-        `Unit status update: Trip #${trip.id} is now ${newStatus}.`,
-        newStatus === 'IN_PROGRESS' ? 'text' : 'alert'
-      );
     } catch (err) {
       console.error(err);
     }
@@ -80,12 +73,6 @@ export default function TripDetails() {
   const handleReportIssue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!issueText.trim()) return;
-
-    await chatService.sendMessage(
-      'conv-fleet-dispatch',
-      `[${issueCategory.toUpperCase()} ALERT] Trip #${trip.id} (${trip.route}): ${issueText}`,
-      'alert'
-    );
 
     setIssueSubmitted(true);
     setTimeout(() => {
@@ -328,7 +315,7 @@ export default function TripDetails() {
               {issueSubmitted ? (
                 <div className="py-8 text-center text-emerald-600 font-bold space-y-2">
                   <CheckCircle2 className="w-12 h-12 mx-auto animate-bounce" />
-                  <p>Alert transmitted to Central Dispatch in real time!</p>
+                  <p>Issue reported successfully!</p>
                 </div>
               ) : (
                 <form onSubmit={handleReportIssue} className="my-4 space-y-4">

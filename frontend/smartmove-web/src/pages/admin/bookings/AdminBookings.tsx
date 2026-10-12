@@ -111,50 +111,57 @@ export default function AdminBookings() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filtered.map((b) => (
-                <motion.tr variants={fadeUp} key={b.bookingId} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="p-5 pl-8 font-semibold text-white">#{b.bookingId}</td>
-                  <td className="p-5 text-sm font-medium text-gray-300">{b.passengerName || `Passenger #${b.passengerId}`}</td>
-                  <td className="p-5">
-                    <p className="text-sm font-bold text-gray-200">
-                      {b.routeOrigin} &rarr; {b.routeDestination}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Trip #{b.tripId} • {b.departureDate} {b.departureTime}</p>
-                  </td>
-                  <td className="p-5 text-sm font-bold text-purple-400">
-                    ${((b.totalAmount ?? b.totalFare ?? b.amount ?? 0)).toFixed(2)}
-                  </td>
-                  <td className="p-5">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
-                      ${b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 
-                        b.bookingStatus === 'PENDING' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {(b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED') && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      {b.bookingStatus === 'CANCELLED' && <XCircle className="w-3.5 h-3.5" />}
-                      {b.bookingStatus}
-                    </span>
-                  </td>
-                  <td className="p-5">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
-                      ${b.paymentStatus === 'PAID' ? 'bg-emerald-500/20 text-emerald-400' : 
-                        b.paymentStatus === 'UNPAID' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                      {b.paymentStatus}
-                    </span>
-                  </td>
-                  <td className="p-5 pr-8 flex items-center justify-end gap-2">
-                    <button onClick={() => setSelectedBooking(b)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    {b.bookingStatus !== 'CANCELLED' && (
-                      <button onClick={() => handleCancelBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 transition-colors" title="Cancel Booking">
-                        <XCircle className="w-4 h-4" />
+              {filtered.map((b) => {
+                const bStatus = (b.status || b.bookingStatus || 'CONFIRMED').toUpperCase();
+                const pStatus = (b.paymentStatus || 'PAID').toUpperCase();
+                const fareAmt = Number(b.totalFare ?? b.totalAmount ?? b.amount ?? 0);
+                const seats = b.seatsBooked ?? b.ticketQuantity ?? 1;
+
+                return (
+                  <motion.tr variants={fadeUp} key={b.bookingId} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="p-5 pl-8 font-semibold text-white">#{b.bookingId}</td>
+                    <td className="p-5 text-sm font-medium text-gray-300">{b.passengerName || `Passenger #${b.passengerId}`}</td>
+                    <td className="p-5">
+                      <p className="text-sm font-bold text-gray-200">
+                        {b.routeOrigin ? `${b.routeOrigin} → ${b.routeDestination}` : `Trip #${b.tripId}`}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Trip #{b.tripId} • {seats} seat(s) • {b.bookingDate ? b.bookingDate.split('T')[0] : (b.departureDate || 'Standard')}</p>
+                    </td>
+                    <td className="p-5 text-sm font-bold text-purple-400">
+                      ${fareAmt.toFixed(2)}
+                    </td>
+                    <td className="p-5">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
+                        ${bStatus === 'CONFIRMED' || bStatus === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 
+                          bStatus === 'PENDING' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {(bStatus === 'CONFIRMED' || bStatus === 'COMPLETED') && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        {bStatus === 'CANCELLED' && <XCircle className="w-3.5 h-3.5" />}
+                        {bStatus}
+                      </span>
+                    </td>
+                    <td className="p-5">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
+                        ${pStatus === 'PAID' || pStatus === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' : 
+                          pStatus === 'UNPAID' || pStatus === 'PENDING' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                        {pStatus}
+                      </span>
+                    </td>
+                    <td className="p-5 pr-8 flex items-center justify-end gap-2">
+                      <button onClick={() => setSelectedBooking(b)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                        <Eye className="w-4 h-4" />
                       </button>
-                    )}
-                    <button onClick={() => handleDeleteBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors" title="Delete Booking">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </motion.tr>
-              ))}
+                      {bStatus !== 'CANCELLED' && (
+                        <button onClick={() => handleCancelBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 hover:text-orange-300 hover:bg-orange-500/20 transition-colors" title="Cancel Booking">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button onClick={() => handleDeleteBooking(b.bookingId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors" title="Delete Booking">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </motion.tr>
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-gray-500">No bookings found.</td>
@@ -193,28 +200,30 @@ export default function AdminBookings() {
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Route</span>
                   <span className="text-white font-medium">
-                    {selectedBooking.routeOrigin} &rarr; {selectedBooking.routeDestination}
+                    {selectedBooking.routeOrigin ? `${selectedBooking.routeOrigin} → ${selectedBooking.routeDestination}` : `Trip #${selectedBooking.tripId}`}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Date</span>
-                  <span className="text-white font-medium">{selectedBooking.departureDate} {selectedBooking.departureTime}</span>
+                  <span className="text-white font-medium">
+                    {selectedBooking.bookingDate ? selectedBooking.bookingDate.split('T')[0] : (selectedBooking.departureDate || 'Standard')}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Tickets</span>
-                  <span className="text-white font-medium">{selectedBooking.ticketQuantity}</span>
+                  <span className="text-white font-medium">{selectedBooking.seatsBooked ?? selectedBooking.ticketQuantity ?? 1}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Total Amount</span>
-                  <span className="text-white font-medium">${((selectedBooking.totalAmount ?? selectedBooking.totalFare ?? selectedBooking.amount ?? 0)).toFixed(2)}</span>
+                  <span className="text-white font-medium">${((selectedBooking.totalFare ?? selectedBooking.totalAmount ?? selectedBooking.amount ?? 0)).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Booking Status</span>
-                  <span className="text-white font-medium">{selectedBooking.bookingStatus}</span>
+                  <span className="text-white font-medium">{selectedBooking.status || selectedBooking.bookingStatus || 'CONFIRMED'}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Payment Status</span>
-                  <span className="text-white font-medium">{selectedBooking.paymentStatus}</span>
+                  <span className="text-white font-medium">{selectedBooking.paymentStatus || 'PAID'}</span>
                 </div>
               </div>
               <div className="flex justify-end mt-8">

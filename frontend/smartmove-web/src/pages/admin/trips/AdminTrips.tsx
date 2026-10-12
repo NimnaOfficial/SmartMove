@@ -119,13 +119,48 @@ export default function AdminTrips() {
     }
   };
 
-  const filtered = trips.filter(t => 
-    (t.tripId?.toString() || '').includes(search.toLowerCase()) || 
-    (t.routeOrigin || '').toLowerCase().includes(search.toLowerCase()) ||
-    (t.routeDestination || '').toLowerCase().includes(search.toLowerCase()) ||
-    (t.vehicleRegistration || '').toLowerCase().includes(search.toLowerCase()) ||
-    (t.driverName || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const getRouteDetails = (t: Trip) => {
+    const r = routes.find(item => item.routeId === t.routeId);
+    const origin = t.routeOrigin || r?.origin || `Route #${t.routeId}`;
+    const destination = t.routeDestination || r?.destination || '';
+    return { origin, destination, label: destination ? `${origin} → ${destination}` : origin };
+  };
+
+  const getVehicleDetails = (t: Trip) => {
+    const v = vehicles.find(item => item.vehicleId === t.vehicleId);
+    const reg = t.vehicleRegistration || v?.registrationNumber || `Vehicle #${t.vehicleId}`;
+    const cap = t.capacity || v?.capacity || 45;
+    return { reg, capacity: cap };
+  };
+
+  const getDriverDetails = (t: Trip) => {
+    const d = drivers.find(item => item.driverId === t.driverId);
+    const name = t.driverName || (d ? `${d.firstName} ${d.lastName}` : `Driver #${t.driverId}`);
+    return { name };
+  };
+
+  const formatSchedule = (t: Trip) => {
+    let date = t.departureDate ? t.departureDate.split('T')[0] : '';
+    let time = t.departureTime || '';
+    if (time.includes('T')) {
+      const parts = time.split('T');
+      if (!date) date = parts[0];
+      time = parts[1].substring(0, 5);
+    }
+    return { date, time };
+  };
+
+  const filtered = trips.filter(t => {
+    const { origin, destination } = getRouteDetails(t);
+    const { reg } = getVehicleDetails(t);
+    const { name } = getDriverDetails(t);
+    const q = search.toLowerCase();
+    return (t.tripId?.toString() || '').includes(q) || 
+      origin.toLowerCase().includes(q) ||
+      destination.toLowerCase().includes(q) ||
+      reg.toLowerCase().includes(q) ||
+      name.toLowerCase().includes(q);
+  });
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -175,46 +210,55 @@ export default function AdminTrips() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filtered.map((t) => (
-                <motion.tr variants={fadeUp} key={t.tripId} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="p-5 pl-8 font-semibold text-white">{t.tripId}</td>
-                  <td className="p-5 text-sm font-medium text-gray-200">{t.routeOrigin} &rarr; {t.routeDestination}</td>
-                  <td className="p-5">
-                    <p className="text-sm font-bold text-gray-200 flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-purple-400" /> {t.departureTime}</p>
-                    <p className="text-xs text-gray-500 mt-1">{t.departureDate ? t.departureDate.substring(0, 10) : ''}</p>
-                  </td>
-                  <td className="p-5">
-                    <p className="text-sm text-gray-300 font-medium flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> {t.vehicleRegistration}</p>
-                    <p className="text-xs text-gray-500 mt-1">{t.driverName}</p>
-                  </td>
-                  <td className="p-5">
-                    <div className="flex items-center gap-2">
-                       <Users className="w-4 h-4 text-emerald-400" />
-                       <span className="text-sm font-bold text-gray-200">{t.bookedSeats} <span className="text-gray-500 font-medium">/ {t.capacity}</span></span>
-                    </div>
-                  </td>
-                  <td className="p-5">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
-                      ${t.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400' : 
-                        t.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
-                        t.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' :
-                        'bg-yellow-500/20 text-yellow-400'}`}>
-                      {t.status}
-                    </span>
-                  </td>
-                  <td className="p-5 pr-8 flex items-center justify-end gap-2">
-                    <button onClick={() => handleView(t)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleOpenForm(t)} className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(t.tripId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </motion.tr>
-              ))}
+              {filtered.map((t) => {
+                const route = getRouteDetails(t);
+                const vehicle = getVehicleDetails(t);
+                const driver = getDriverDetails(t);
+                const sched = formatSchedule(t);
+                const capacity = vehicle.capacity;
+                const booked = t.bookedSeats ?? Math.max(0, capacity - (t.availableSeats ?? capacity));
+
+                return (
+                  <motion.tr variants={fadeUp} key={t.tripId} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="p-5 pl-8 font-semibold text-white">#{t.tripId}</td>
+                    <td className="p-5 text-sm font-medium text-gray-200">{route.origin} &rarr; {route.destination}</td>
+                    <td className="p-5">
+                      <p className="text-sm font-bold text-gray-200 flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-purple-400" /> {sched.time}</p>
+                      <p className="text-xs text-gray-500 mt-1">{sched.date}</p>
+                    </td>
+                    <td className="p-5">
+                      <p className="text-sm text-gray-300 font-medium flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> {vehicle.reg}</p>
+                      <p className="text-xs text-gray-500 mt-1">{driver.name}</p>
+                    </td>
+                    <td className="p-5">
+                      <div className="flex items-center gap-2">
+                         <Users className="w-4 h-4 text-emerald-400" />
+                         <span className="text-sm font-bold text-gray-200">{booked} <span className="text-gray-500 font-medium">/ {capacity}</span></span>
+                      </div>
+                    </td>
+                    <td className="p-5">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
+                        ${t.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400' : 
+                          t.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
+                          t.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' :
+                          'bg-yellow-500/20 text-yellow-400'}`}>
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="p-5 pr-8 flex items-center justify-end gap-2">
+                      <button onClick={() => handleView(t)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleOpenForm(t)} className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(t.tripId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </motion.tr>
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-5 text-center text-gray-500">No trips found.</td>
@@ -336,23 +380,25 @@ export default function AdminTrips() {
               <div className="space-y-4">
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Trip ID</span>
-                  <span className="text-white font-medium">{selectedTrip.tripId}</span>
+                  <span className="text-white font-medium">#{selectedTrip.tripId}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Route</span>
-                  <span className="text-white font-medium">{selectedTrip.routeOrigin} &rarr; {selectedTrip.routeDestination}</span>
+                  <span className="text-white font-medium">{getRouteDetails(selectedTrip).label}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Schedule</span>
-                  <span className="text-white font-medium">{selectedTrip.departureDate ? selectedTrip.departureDate.substring(0, 10) : ''} @ {selectedTrip.departureTime}</span>
+                  <span className="text-white font-medium">{formatSchedule(selectedTrip).date} @ {formatSchedule(selectedTrip).time}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Vehicle / Driver</span>
-                  <span className="text-white font-medium">{selectedTrip.vehicleRegistration} / {selectedTrip.driverName}</span>
+                  <span className="text-white font-medium">{getVehicleDetails(selectedTrip).reg} / {getDriverDetails(selectedTrip).name}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Occupancy</span>
-                  <span className="text-white font-medium">{selectedTrip.bookedSeats} / {selectedTrip.capacity}</span>
+                  <span className="text-white font-medium">
+                    {selectedTrip.bookedSeats ?? Math.max(0, getVehicleDetails(selectedTrip).capacity - (selectedTrip.availableSeats ?? getVehicleDetails(selectedTrip).capacity))} / {getVehicleDetails(selectedTrip).capacity}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Fare</span>
