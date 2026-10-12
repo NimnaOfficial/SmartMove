@@ -63,8 +63,25 @@ const tripService = {
     const res = await apiClient.get('/trips/upcoming');
     return Array.isArray(res.data) ? res.data : [];
   },
-  acceptTrip: async (id: number): Promise<Trip> => {
-    const res = await apiClient.post(`/trips/${id}/accept`, {});
+  getAvailable: async (): Promise<Trip[]> => {
+    try {
+      const res = await apiClient.get('/trips/available');
+      return Array.isArray(res.data) ? res.data : [];
+    } catch {
+      const all = await tripService.getAll();
+      return all.filter((t: any) => !t.driverId && (t.status === 'PENDING' || t.status === 'REQUESTED'));
+    }
+  },
+  claimTrip: async (id: number, driverId?: number): Promise<Trip> => {
+    const res = await apiClient.post(`/trips/${id}/claim`, { driverId }, {
+      headers: driverId ? { 'X-User-Id': String(driverId) } : {}
+    });
+    return res.data;
+  },
+  acceptTrip: async (id: number, driverId?: number): Promise<Trip> => {
+    const res = await apiClient.post(`/trips/${id}/accept`, { driverId }, {
+      headers: driverId ? { 'X-User-Id': String(driverId) } : {}
+    });
     return res.data;
   },
 };

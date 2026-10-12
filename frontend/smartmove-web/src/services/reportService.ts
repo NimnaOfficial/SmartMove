@@ -1,5 +1,5 @@
 import apiClient from '@/api/client';
-import { RouteUsageReport, RevenueReport, PassengerHistoryReport, MaintenanceDueReport, TripPerformanceReport, DashboardStats } from '@/types';
+import { RouteUsageReport, RevenueReport, PassengerHistoryReport, PassengerAnalyticsReport, MaintenanceDueReport, TripPerformanceReport, DashboardStats } from '@/types';
 
 const reportService = {
   getRouteUsage: async (): Promise<RouteUsageReport[]> => {
@@ -31,6 +31,19 @@ const reportService = {
   getPassengerHistory: async (passengerId: number): Promise<any> => {
     const res = await apiClient.get(`/reports/passenger-history/${passengerId}`);
     return res.data;
+  },
+  getPassengerAnalytics: async (): Promise<PassengerAnalyticsReport[]> => {
+    const res = await apiClient.get('/reports/passengers');
+    const list = Array.isArray(res.data) ? res.data : [];
+    return list.map((p: any) => ({
+      passengerId: Number(p.passengerId ?? p.PASSENGER_ID ?? p.passenger_id ?? 0),
+      passengerName: String(p.passengerName ?? p.PASSENGER_NAME ?? p.passenger_name ?? 'Passenger'),
+      email: String(p.email ?? p.EMAIL ?? 'N/A'),
+      phone: String(p.phone ?? p.PHONE ?? 'N/A'),
+      totalTrips: Number(p.totalTrips ?? p.TOTAL_TRIPS ?? p.total_trips ?? 0),
+      lifetimeSpent: Number(p.lifetimeSpent ?? p.LIFETIME_SPENT ?? p.lifetime_spent ?? 0),
+      lastActiveDate: String(p.lastActiveDate ?? p.LAST_ACTIVE_DATE ?? p.last_active_date ?? 'N/A'),
+    }));
   },
   getMaintenanceDue: async (): Promise<MaintenanceDueReport[]> => {
     const res = await apiClient.get('/reports/maintenance');

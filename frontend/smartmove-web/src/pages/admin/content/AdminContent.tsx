@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Database, Search, Star, MessageSquare, Image as ImageIcon, 
+  Database, Search, Star, MessageSquare, 
   Bell, Plus, Edit2, Trash2, X, Eye, FileText, CheckCircle2,
-  Filter, Tag, Calendar, AlertTriangle
+  Filter, Tag, Calendar, AlertTriangle, FileCheck
 } from 'lucide-react';
 import contentService from '@/services/contentService';
-import { Announcement, AnnouncementFormData, Review, TripMedia, VehicleDocument } from '@/types';
+import { Announcement, AnnouncementFormData, Review, VehicleDocument } from '@/types';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -19,13 +19,12 @@ const staggerContainer = {
 };
 
 export default function AdminContent() {
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Announcements' | 'Reviews' | 'Top Rated' | 'Media'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Announcements' | 'Reviews' | 'Top Rated' | 'Documents'>('Overview');
   
   // Data states
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [topRated, setTopRated] = useState<any[]>([]);
-  const [mediaList, setMediaList] = useState<TripMedia[]>([]);
   const [documents, setDocuments] = useState<VehicleDocument[]>([]);
   
   // Announcement Form Modal State
@@ -38,15 +37,6 @@ export default function AdminContent() {
     priority: 'MEDIUM'
   });
 
-  // Media Modal State
-  const [showMediaModal, setShowMediaModal] = useState(false);
-  const [mediaForm, setMediaForm] = useState({
-    caption: '',
-    url: '',
-    tripId: 401,
-    mediaType: 'IMAGE' as 'IMAGE' | 'VIDEO'
-  });
-
   // Search keyword state for Reviews
   const [keyword, setKeyword] = useState('');
   const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
@@ -54,18 +44,16 @@ export default function AdminContent() {
   // Load all initial content
   const loadAllContent = async () => {
     try {
-      const [annData, revData, topData, medData, docData] = await Promise.all([
+      const [annData, revData, topData, docData] = await Promise.all([
         contentService.getAllAnnouncements(),
         contentService.getAllReviews(),
         contentService.getTopRated(),
-        contentService.getAllMedia(),
         contentService.getVehicleDocuments(101)
       ]);
       setAnnouncements(Array.isArray(annData) ? annData : []);
       setReviews(Array.isArray(revData) ? revData : []);
       setFilteredReviews(Array.isArray(revData) ? revData : []);
       setTopRated(Array.isArray(topData) ? topData : []);
-      setMediaList(Array.isArray(medData) ? medData : []);
       setDocuments(Array.isArray(docData) ? docData : []);
     } catch (e) {
       console.error('Failed to load content', e);
@@ -144,38 +132,8 @@ export default function AdminContent() {
   };
 
   // Media Handlers
-  const handleSaveMedia = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const fd = new FormData();
-      fd.append('caption', mediaForm.caption);
-      fd.append('tripId', mediaForm.tripId.toString());
-      fd.append('url', mediaForm.url);
-      await contentService.uploadMedia(fd);
-      setShowMediaModal(false);
-      setMediaForm({ caption: '', url: '', tripId: 401, mediaType: 'IMAGE' });
-      const data = await contentService.getAllMedia();
-      setMediaList(data);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleDeleteMedia = async (id?: string) => {
-    if (!id) return;
-    if (window.confirm('Delete this multimedia capture?')) {
-      try {
-        await contentService.deleteMedia(id);
-        const data = await contentService.getAllMedia();
-        setMediaList(data);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  };
-
-  const tabs: Array<'Overview' | 'Announcements' | 'Reviews' | 'Top Rated' | 'Media'> = [
-    'Overview', 'Announcements', 'Reviews', 'Top Rated', 'Media'
+  const tabs: Array<'Overview' | 'Announcements' | 'Reviews' | 'Top Rated' | 'Documents'> = [
+    'Overview', 'Announcements', 'Reviews', 'Top Rated', 'Documents'
   ];
 
   return (
@@ -189,7 +147,7 @@ export default function AdminContent() {
               MongoDB Store
             </span>
           </h1>
-          <p className="text-gray-400 mt-2 font-medium">Manage unstructured publications, customer sentiment, and multimedia.</p>
+          <p className="text-gray-400 mt-2 font-medium">Manage unstructured publications, customer sentiment, and operational records.</p>
         </div>
         {activeTab === 'Announcements' && (
           <button 
@@ -197,14 +155,6 @@ export default function AdminContent() {
             className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-5 py-2.5 rounded-full font-bold shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" /> New Announcement
-          </button>
-        )}
-        {activeTab === 'Media' && (
-          <button 
-            onClick={() => setShowMediaModal(true)}
-            className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-5 py-2.5 rounded-full font-bold shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Add Media
           </button>
         )}
       </motion.div>
@@ -237,7 +187,7 @@ export default function AdminContent() {
                 { title: 'Announcements', count: announcements.length, desc: 'Public broadcasts', icon: Bell, color: 'purple', tab: 'Announcements' as const },
                 { title: 'Passenger Reviews', count: reviews.length, desc: 'Ratings & complaints', icon: MessageSquare, color: 'blue', tab: 'Reviews' as const },
                 { title: 'Top Rated Aggregates', count: topRated.length, desc: 'Aggregation pipeline', icon: Star, color: 'amber', tab: 'Top Rated' as const },
-                { title: 'Media Captures', count: mediaList.length, desc: 'Trip galleries', icon: ImageIcon, color: 'emerald', tab: 'Media' as const },
+                { title: 'Vehicle Documents', count: documents.length, desc: 'Compliance certificates', icon: FileCheck, color: 'emerald', tab: 'Documents' as const },
               ].map((card, idx) => {
                 const Icon = card.icon;
                 return (
@@ -487,28 +437,51 @@ export default function AdminContent() {
           </div>
         )}
 
-        {/* MEDIA & DOCUMENTS TAB */}
-        {activeTab === 'Media' && (
+        {/* DOCUMENTS TAB */}
+        {activeTab === 'Documents' && (
           <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mediaList.map((m) => (
-                <motion.div key={m._id} variants={fadeUp} className="bg-[#1a1b23] border border-white/5 rounded-2xl overflow-hidden group">
-                  <div className="h-44 w-full relative overflow-hidden bg-black/40">
-                    <img src={m.url} alt={m.caption} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    <button 
-                      onClick={() => handleDeleteMedia(m._id)}
-                      className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/60 hover:bg-red-500 text-white flex items-center justify-center transition-colors cursor-pointer"
-                      title="Delete Media"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+            <div className="bg-[#1a1b23] border border-white/5 rounded-2xl p-6">
+              <h2 className="text-xl font-bold text-white mb-2">Fleet Compliance & Vehicle Documents</h2>
+              <p className="text-sm text-gray-400 mb-6">Document repositories, insurance policies, and fitness certifications stored in MongoDB.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {documents.map((doc, idx) => (
+                  <motion.div key={doc._id || idx} variants={fadeUp} className="bg-[#0a0b10] border border-white/5 rounded-xl p-5 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
+                          {doc.documentType || 'CERTIFICATE'}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                          doc.status === 'VALID' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                        }`}>
+                          {doc.status || 'VALID'}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-bold text-white mb-1">
+                        {doc.fileName || `Document #${idx + 1}`}
+                      </h3>
+                      <p className="text-xs text-gray-400">Assigned to Vehicle #{doc.vehicleId}</p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-center text-xs text-gray-500">
+                      <span>{doc.uploadedAt ? `Uploaded ${doc.uploadedAt.split('T')[0]}` : 'Active Record'}</span>
+                      <a 
+                        href={doc.url || '#'} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> View
+                      </a>
+                    </div>
+                  </motion.div>
+                ))}
+                {documents.length === 0 && (
+                  <div className="col-span-3 text-center py-12 bg-[#0a0b10] rounded-xl border border-white/5 text-gray-400">
+                    No documents currently archived for this fleet vehicle.
                   </div>
-                  <div className="p-4">
-                    <h4 className="text-sm font-bold text-white mb-1">{m.caption}</h4>
-                    <p className="text-xs text-gray-500">Linked to Trip #{m.tripId} • {m.uploadedAt?.split('T')[0] || '2026-10-10'}</p>
-                  </div>
-                </motion.div>
-              ))}
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -592,71 +565,6 @@ export default function AdminContent() {
                     className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all cursor-pointer shadow-lg shadow-purple-500/20"
                   >
                     Save & Publish
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ADD MEDIA MODAL */}
-      <AnimatePresence>
-        {showMediaModal && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
-            >
-              <h2 className="text-2xl font-bold text-white mb-6">Add Trip Media</h2>
-              <form onSubmit={handleSaveMedia} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-400 block mb-1">Caption *</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={mediaForm.caption}
-                    onChange={(e) => setMediaForm({ ...mediaForm, caption: e.target.value })}
-                    className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500"
-                    placeholder="e.g. Scania Touring Coach at Kandy Terminal"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400 block mb-1">Image URL *</label>
-                  <input 
-                    type="url" 
-                    required
-                    value={mediaForm.url}
-                    onChange={(e) => setMediaForm({ ...mediaForm, url: e.target.value })}
-                    className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500"
-                    placeholder="https://images.unsplash.com/..."
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400 block mb-1">Trip ID</label>
-                  <input 
-                    type="number" 
-                    value={mediaForm.tripId}
-                    onChange={(e) => setMediaForm({ ...mediaForm, tripId: parseInt(e.target.value) || 401 })}
-                    className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div className="flex justify-end gap-3 mt-6">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowMediaModal(false)}
-                    className="px-5 py-2.5 rounded-xl font-semibold text-gray-400 hover:bg-white/5 transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:opacity-90 transition-all cursor-pointer"
-                  >
-                    Upload Media
                   </button>
                 </div>
               </form>

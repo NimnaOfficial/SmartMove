@@ -27,15 +27,18 @@ public class PaymentController {
      */
     @PostMapping("/api/payments")
     public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Payment payload) {
+        if (payload.getPaymentMethod() != null && "CASH".equalsIgnoreCase(payload.getPaymentMethod().trim())) {
+            return org.springframework.http.ResponseEntity.badRequest().body(
+                java.util.Map.of("message", "Cash payments are not supported. Only Credit/Debit Card payments are accepted.")
+            );
+        }
         if (payload.getBookingId() == null || payload.getBookingId() <= 0) {
             payload.setBookingId(1L);
         }
         if (payload.getAmount() == null) {
             payload.setAmount(1500.0);
         }
-        if (payload.getPaymentMethod() == null || payload.getPaymentMethod().trim().isEmpty()) {
-            payload.setPaymentMethod("CARD");
-        }
+        payload.setPaymentMethod("CARD");
         if (payload.getStatus() == null || payload.getStatus().trim().isEmpty()) {
             payload.setStatus("SUCCESS");
         }

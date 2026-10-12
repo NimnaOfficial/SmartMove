@@ -125,6 +125,14 @@ const driverService = {
     } catch (e) {}
     return [];
   },
+  getAvailableTrips: async (): Promise<any[]> => {
+    return tripService.getAvailable();
+  },
+  claimTrip: async (tripId: number): Promise<any> => {
+    const user = authService.getCurrentUser();
+    const currentDriverId = Number(user?.userId || 1);
+    return tripService.claimTrip(tripId, currentDriverId);
+  },
   search: async (query: string): Promise<Driver[]> => {
     const res = await apiClient.get(`/drivers/search?q=${encodeURIComponent(query)}`);
     return Array.isArray(res.data) ? res.data : [];
@@ -133,7 +141,9 @@ const driverService = {
     return tripService.updateStatus(tripId, status);
   },
   acceptTrip: async (tripId: number): Promise<any> => {
-    return tripService.acceptTrip(tripId);
+    const user = authService.getCurrentUser();
+    const currentDriverId = Number(user?.userId || 1);
+    return tripService.claimTrip(tripId, currentDriverId);
   },
   changePassword: async (newPassword: string): Promise<boolean> => {
     return authService.changePassword(newPassword);

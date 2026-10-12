@@ -44,44 +44,41 @@ export default function Feedback() {
       const user = authService.getCurrentUser();
       const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
 
-      // First fetch passenger's recent bookings
+      // Only fetch trips from passenger's actual bookings (travel history)
       const bookings = await bookingService.getMyBookings(passengerId);
       const allTrips = await tripService.getAll();
 
-      const tripMap = new Map<number, any>();
-
-      // Populate from all trips
+      const tripMetaMap = new Map<number, any>();
       if (Array.isArray(allTrips)) {
         allTrips.forEach((t: any) => {
-          tripMap.set(t.tripId, {
-            tripId: t.tripId,
-            route: t.route || `${t.origin} -> ${t.destination}`,
-            vehicle: t.vehicle || 'Volvo 9900 (ND-4521)',
-            driverName: t.driverName || 'Saman Kumara',
-            date: t.date || (t.departureDate ? t.departureDate : 'Recent'),
-          });
+          tripMetaMap.set(t.tripId, t);
         });
       }
 
-      // Merge with passenger's booked trips if available
+      const trips: any[] = [];
+      const seenTripIds = new Set<number>();
+
       if (Array.isArray(bookings)) {
         bookings.forEach((b: any) => {
-          if (b.tripId) {
-            const existing = tripMap.get(b.tripId);
-            tripMap.set(b.tripId, {
+          const status = (b.status || '').toUpperCase();
+          if (b.tripId && status !== 'CANCELLED' && !seenTripIds.has(b.tripId)) {
+            seenTripIds.add(b.tripId);
+            const meta = tripMetaMap.get(b.tripId);
+            trips.push({
               tripId: b.tripId,
-              route: b.route || existing?.route || 'Colombo -> Kandy',
-              vehicle: b.vehicle || existing?.vehicle || 'Volvo 9900 (ND-4521)',
-              driverName: existing?.driverName || 'Saman Kumara',
-              date: b.date || existing?.date || 'Recent',
+              route: b.route || meta?.route || `${meta?.origin || b.origin || 'Terminal'} -> ${meta?.destination || b.destination || 'Station'}`,
+              vehicle: b.vehicle || meta?.vehicle || 'Volvo 9900 Coach',
+              driverName: b.driverName || meta?.driverName || 'Designated Driver',
+              date: b.date || b.bookingDate || meta?.departureDate || 'Completed Trip',
+              status: b.status,
             });
           }
         });
       }
 
-      setAvailableTrips(Array.from(tripMap.values()));
+      setAvailableTrips(trips);
     } catch (e) {
-      console.error('Failed to load trips', e);
+      console.error('Failed to load trips from travel history', e);
     }
   };
 
@@ -111,8 +108,12 @@ export default function Feedback() {
     if (e) e.preventDefault();
     setStatusMessage(null);
 
+    if (availableTrips.length === 0) {
+      setStatusMessage({ type: 'error', text: 'You can only submit feedback for trips that are in your travel history. No completed trips found.' });
+      return;
+    }
     if (!selectedTripId) {
-      setStatusMessage({ type: 'error', text: 'Please select a trip before submitting feedback.' });
+      setStatusMessage({ type: 'error', text: 'Please select a trip from your travel history before submitting feedback.' });
       return;
     }
     if (rating === 0) {
@@ -141,9 +142,10 @@ export default function Feedback() {
       setStatusMessage({ type: 'success', text: 'Thank you! Your feedback has been submitted successfully.' });
       handleReset();
       await fetchFeedback();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to submit feedback', e);
-      setStatusMessage({ type: 'error', text: 'Failed to submit feedback. Please try again.' });
+      const errMsg = e.response?.data?.message || 'Failed to submit feedback. You can only submit feedback for trips in your travel history.';
+      setStatusMessage({ type: 'error', text: errMsg });
     } finally {
       setIsSubmitting(false);
     }
@@ -175,13 +177,14 @@ export default function Feedback() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700">Select Trip</label>
+              <label className="text-sm font-semibold text-gray-700">Select Trip (From Travel History)</label>
               <select
                 value={selectedTripId}
+                disabled={availableTrips.length === 0}
                 onChange={(e) => handleTripChange(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3 outline-none"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
-                <option value="">Choose a recent trip...</option>
+                <option value="">{availableTrips.length === 0 ? 'No booked trips in your travel history' : 'Choose a trip from your history...'}</option>
                 {availableTrips.map((t) => (
                   <option key={t.tripId} value={t.tripId}>
                     T-{t.tripId}: {t.route} ({t.date})

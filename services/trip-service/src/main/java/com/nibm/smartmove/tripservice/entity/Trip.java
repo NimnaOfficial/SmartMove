@@ -85,6 +85,28 @@ public class Trip {
     @Transient
     private String departureDate;
 
+    @Transient
+    private Boolean isPaid;
+
+    @Transient
+    private String paymentStatus;
+
+    public Boolean getIsPaid() {
+        return this.isPaid;
+    }
+
+    public void setIsPaid(Boolean isPaid) {
+        this.isPaid = isPaid;
+    }
+
+    public String getPaymentStatus() {
+        return this.paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
     public Long getId() {
         return this.tripId != null ? this.tripId : this.id;
     }

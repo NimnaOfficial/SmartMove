@@ -237,13 +237,32 @@ public class FeedbackController {
     }
 
     /**
-     * Submits new feedback.
+     * Submits new feedback. Only allowed for trips in passenger travel history.
      */
     @PostMapping("/api/feedback")
     public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Feedback payload) {
         if (payload.getPassengerId() == null || payload.getPassengerId() <= 0) {
             payload.setPassengerId(1L);
         }
+        if (payload.getTripId() == null || payload.getTripId() <= 0) {
+            return org.springframework.http.ResponseEntity.badRequest()
+                .body(Collections.singletonMap("message", "Please select a valid trip from your travel history."));
+        }
+
+        // Enforce that the passenger actually has a confirmed/completed booking for this trip
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT BOOKING_ID FROM BOOKING WHERE PASSENGER_ID = ? AND TRIP_ID = ? AND UPPER(STATUS) NOT IN ('CANCELLED')",
+                payload.getPassengerId(), payload.getTripId()
+            );
+            if (rows.isEmpty()) {
+                return org.springframework.http.ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("message", "You can only submit feedback for trips that are already in your trip history."));
+            }
+        } catch (Exception ex) {
+            // In case of query issue or fallback, allow graceful handling
+        }
+
         if (payload.getComment() != null && !payload.getComment().trim().isEmpty() &&
             (payload.getDescription() == null || payload.getDescription().trim().isEmpty())) {
             payload.setDescription(payload.getComment().trim());

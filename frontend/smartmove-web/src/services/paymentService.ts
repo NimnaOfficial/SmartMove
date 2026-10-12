@@ -11,7 +11,10 @@ const paymentService = {
     return res.data;
   },
   processPayment: async (data: PaymentFormData): Promise<Payment> => {
-    const res = await apiClient.post('/payments', data);
+    const res = await apiClient.post('/payments', {
+      ...data,
+      paymentMethod: 'CARD',
+    });
     return res.data;
   },
   getByBooking: async (bookingId: number): Promise<Payment> => {
