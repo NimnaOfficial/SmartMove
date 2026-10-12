@@ -63,6 +63,10 @@ const tripService = {
     const res = await apiClient.get('/trips/upcoming');
     return Array.isArray(res.data) ? res.data : [];
   },
+  acceptTrip: async (id: number): Promise<Trip> => {
+    const res = await apiClient.post(`/trips/${id}/accept`, {});
+    return res.data;
+  },
 };
 
 export default tripService;

@@ -132,6 +132,9 @@ const driverService = {
   updateTripStatus: async (tripId: number, status: string): Promise<any> => {
     return tripService.updateStatus(tripId, status);
   },
+  acceptTrip: async (tripId: number): Promise<any> => {
+    return tripService.acceptTrip(tripId);
+  },
   changePassword: async (newPassword: string): Promise<boolean> => {
     return authService.changePassword(newPassword);
   },

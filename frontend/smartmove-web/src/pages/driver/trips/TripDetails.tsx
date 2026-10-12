@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import tripService from '@/services/tripService';
 import driverService from '@/services/driverService';
+import bookingService from '@/services/bookingService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -18,6 +19,7 @@ export default function TripDetails() {
   const [tripData, setTripData] = useState<any>(null);
   const navigate = useNavigate();
   const [tripStatus, setTripStatus] = useState('SCHEDULED');
+  const [manifestBookings, setManifestBookings] = useState<any[]>([]);
   const [showManifest, setShowManifest] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [issueText, setIssueText] = useState('');
@@ -26,22 +28,31 @@ export default function TripDetails() {
 
   const rawId = tripId ? Number(tripId.replace(/\D/g, '')) : 1001;
 
-  useEffect(() => {
-    const fetchTrip = async () => {
-      try {
-        if (tripId) {
-          const data = await tripService.getById(rawId);
-          if (data) {
-            setTripData(data);
-            setTripStatus(data.status || 'SCHEDULED');
-          }
+  const fetchTrip = async () => {
+    try {
+      if (tripId) {
+        const data = await tripService.getById(rawId);
+        if (data) {
+          setTripData(data);
+          setTripStatus((data.status || 'SCHEDULED').toUpperCase());
         }
-      } catch (e) {
-        console.error(e);
+        try {
+          const bks = await bookingService.getByTrip(rawId);
+          setManifestBookings(Array.isArray(bks) ? bks : []);
+        } catch {}
       }
-    };
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
     fetchTrip();
   }, [tripId, rawId]);
+
+  const bookedCount = manifestBookings.length > 0 
+    ? manifestBookings.reduce((sum, b) => sum + Number(b.seatsBooked || b.seats || 1), 0)
+    : (tripData?.availableSeats ? (tripData.totalSeats || 45) - tripData.availableSeats : 0);
 
   const trip = {
     id: `TRP-${tripData?.tripId || rawId}`,
@@ -53,18 +64,29 @@ export default function TripDetails() {
     arrival: tripData?.arrivalTime ? new Date(tripData.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '11:00 AM',
     vehicle: {
       number: tripData?.vehicleRegistration || 'WP-ND-4521',
-      model: 'Volvo 9900 Luxury Coach',
+      model: tripData?.vehicleModel || tripData?.vehicleType || 'Volvo 9900 Luxury Coach',
       capacity: tripData?.totalSeats || 45,
       maintenance: 'Cleared & Inspected'
     },
-    passengers: tripData?.availableSeats ? (tripData.totalSeats || 45) - tripData.availableSeats : 38,
+    passengers: bookedCount,
     status: tripStatus
+  };
+
+  const handleAcceptTrip = async () => {
+    try {
+      setTripStatus('CONFIRMED');
+      await driverService.acceptTrip(rawId);
+      await fetchTrip();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleUpdateStatus = async (newStatus: string) => {
     try {
       setTripStatus(newStatus);
       await driverService.updateTripStatus(rawId, newStatus);
+      await fetchTrip();
     } catch (err) {
       console.error(err);
     }
@@ -163,16 +185,24 @@ export default function TripDetails() {
           <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.1 }} className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100">
              <h3 className="text-lg font-bold text-gray-900 mb-4">Trip Controls</h3>
              <div className="flex flex-wrap gap-3">
+               {tripStatus === 'PENDING' && (
+                 <button 
+                   onClick={() => handleAcceptTrip()}
+                   className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
+                 >
+                   <CheckCircle2 className="w-4 h-4" /> Accept Schedule
+                 </button>
+               )}
                <button 
                  onClick={() => handleUpdateStatus('IN_PROGRESS')}
-                 disabled={tripStatus === 'IN_PROGRESS' || tripStatus === 'COMPLETED'}
+                 disabled={tripStatus === 'IN_PROGRESS' || tripStatus === 'COMPLETED' || tripStatus === 'PENDING'}
                  className="flex-1 bg-black text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md"
                >
                  Start Journey
                </button>
                <button 
                  onClick={() => handleUpdateStatus('COMPLETED')}
-                 disabled={tripStatus === 'COMPLETED' || tripStatus === 'SCHEDULED'}
+                 disabled={tripStatus !== 'IN_PROGRESS'}
                  className="flex-1 bg-emerald-600 text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md"
                >
                  Complete Trip
@@ -258,26 +288,59 @@ export default function TripDetails() {
               </div>
 
               <div className="flex-1 overflow-y-auto custom-scrollbar my-4 space-y-2">
-                {passengerManifest.map((p, idx) => (
-                  <div key={idx} className="p-3.5 bg-gray-50 rounded-2xl flex items-center justify-between border border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <span className="w-10 h-10 rounded-xl bg-black text-white font-bold text-xs flex items-center justify-center">
-                        {p.seat}
-                      </span>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">{p.name}</p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                          <Phone className="w-3 h-3" /> {p.phone}
-                        </p>
+                {manifestBookings.length > 0 ? (
+                  manifestBookings.map((b: any, idx: number) => {
+                    const st = (b.bookingStatus || b.status || 'CONFIRMED').toUpperCase();
+                    const isCompleted = st === 'COMPLETED';
+                    const isPending = st === 'PENDING';
+                    const isInProg = st === 'IN_PROGRESS';
+                    const seats = b.seatsBooked || b.seats || 1;
+                    return (
+                      <div key={b.bookingId || idx} className="p-3.5 bg-gray-50 rounded-2xl flex items-center justify-between border border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <span className="w-10 h-10 rounded-xl bg-black text-white font-bold text-xs flex items-center justify-center">
+                            #{b.bookingId || idx + 1}
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">{b.passengerName || `Passenger #${b.passengerId}`}</p>
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                              Seats: {seats} • LKR {Number(b.totalFare || b.amount || 0).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase ${
+                          isCompleted ? 'bg-gray-100 text-gray-700' :
+                          isInProg ? 'bg-purple-100 text-purple-800' :
+                          isPending ? 'bg-orange-100 text-orange-800' :
+                          'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          {st}
+                        </span>
                       </div>
+                    );
+                  })
+                ) : (
+                  passengerManifest.map((p, idx) => (
+                    <div key={idx} className="p-3.5 bg-gray-50 rounded-2xl flex items-center justify-between border border-gray-100">
+                      <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-xl bg-black text-white font-bold text-xs flex items-center justify-center">
+                          {p.seat}
+                        </span>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{p.name}</p>
+                          <p className="text-xs text-gray-500 flex items-center gap-1">
+                            <Phone className="w-3 h-3" /> {p.phone}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase ${
+                        p.status === 'Boarded' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {p.status}
+                      </span>
                     </div>
-                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase ${
-                      p.status === 'Boarded' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {p.status}
-                    </span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
 
               <button

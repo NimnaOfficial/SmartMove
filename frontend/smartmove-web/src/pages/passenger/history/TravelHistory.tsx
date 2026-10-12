@@ -48,23 +48,29 @@ export default function TravelHistory() {
            } catch {}
          }
 
-         const mapped = (data || []).map((item: any, idx: number) => {
+         const completedAndPaid = (data || []).filter((item: any) => {
+           const rawStatus = (item.status || item.STATUS || item.booking_status || item.BOOKING_STATUS || item.bookingStatus || item.trip_status || item.TRIP_STATUS || '').toUpperCase();
+           const rawPay = (item.paymentStatus || item.PAYMENT_STATUS || item.payment_status || '').toUpperCase();
+           const isCompleted = rawStatus === 'COMPLETED';
+           const isPaid = rawPay === 'PAID' || rawPay === 'SUCCESS';
+           return isCompleted && isPaid;
+         });
+
+         const mapped = completedAndPaid.map((item: any, idx: number) => {
            const tripId = item.tripId || item.TRIP_ID || item.trip_id || item.id || (idx + 1);
            const bookingId = item.bookingId || item.BOOKING_ID || item.booking_id || (idx + 1);
            const rawRoute = item.route || item.route_details || item.ROUTE_DETAILS || 'Colombo → Kandy';
            const cleanRoute = String(rawRoute).replace(' to ', ' → ').replace(' -> ', ' → ');
 
            const rawDate = item.date || item.departure_time || item.DEPARTURE_TIME || item.travelDate || item.bookingDate;
-           let dateStr = 'Scheduled';
+           let dateStr = 'Completed';
            if (rawDate) {
              const d = new Date(rawDate);
              dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : String(rawDate);
            }
 
            const veh = item.vehicle || item.registration_number || item.REGISTRATION_NUMBER || 'Volvo 9900 (ND-4521)';
-           const rawPay = item.paymentStatus || item.PAYMENT_STATUS || item.payment_status || 'Paid';
-           const payUpper = String(rawPay).toUpperCase();
-           const payStatus = (payUpper === 'PAID' || payUpper === 'SUCCESS' || payUpper === 'CONFIRMED') ? 'Paid' : 'Unpaid';
+           const payStatus = 'Paid';
 
            return {
              id: `TRIP-${tripId}`,

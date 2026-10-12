@@ -193,9 +193,42 @@ public class TripController {
         return service.findById(id).map(existing -> {
             Object statusObj = payload.get("status");
             if (statusObj != null && !statusObj.toString().trim().isEmpty()) {
-                existing.setStatus(statusObj.toString().trim());
+                String newStatus = statusObj.toString().trim().toUpperCase();
+                existing.setStatus(newStatus);
+                try {
+                    if ("IN_PROGRESS".equalsIgnoreCase(newStatus)) {
+                        jdbcTemplate.update("UPDATE BOOKING SET STATUS = 'IN_PROGRESS', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS NOT IN ('CANCELLED')", id);
+                    } else if ("COMPLETED".equalsIgnoreCase(newStatus)) {
+                        jdbcTemplate.update("UPDATE BOOKING SET STATUS = 'COMPLETED', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS NOT IN ('CANCELLED')", id);
+                    } else if ("CONFIRMED".equalsIgnoreCase(newStatus) || "SCHEDULED".equalsIgnoreCase(newStatus)) {
+                        jdbcTemplate.update("UPDATE BOOKING SET STATUS = 'CONFIRMED', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS NOT IN ('CANCELLED', 'COMPLETED')", id);
+                    } else if ("CANCELLED".equalsIgnoreCase(newStatus)) {
+                        jdbcTemplate.update("UPDATE BOOKING SET STATUS = 'CANCELLED', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ?", id);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             existing.setUpdatedAt(java.time.LocalDateTime.now());
+            Trip updated = service.save(existing);
+            enrichTrips(List.of(updated));
+            return org.springframework.http.ResponseEntity.ok(updated);
+        }).orElse(org.springframework.http.ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Driver or Admin accepts a trip schedule and all associated pending bookings.
+     */
+    @RequestMapping(value = "/api/trips/{id}/accept", method = {RequestMethod.POST, RequestMethod.PUT})
+    public org.springframework.http.ResponseEntity<?> acceptTrip(@PathVariable Long id) {
+        return service.findById(id).map(existing -> {
+            existing.setStatus("CONFIRMED");
+            existing.setUpdatedAt(java.time.LocalDateTime.now());
+            try {
+                jdbcTemplate.update("UPDATE BOOKING SET STATUS = 'CONFIRMED', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS IN ('PENDING', 'SCHEDULED')", id);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             Trip updated = service.save(existing);
             enrichTrips(List.of(updated));
             return org.springframework.http.ResponseEntity.ok(updated);

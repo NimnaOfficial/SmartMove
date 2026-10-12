@@ -116,8 +116,10 @@ public class BookingController {
             Double total = b.getTotalFare() != null ? b.getTotalFare() : (b.getSeatsBooked() != null ? b.getSeatsBooked() * 1500.0 : 1500.0);
             b.setAmount(total);
             b.setFare(total);
-            b.setSeats(b.getSeatsBooked() != null ? b.getSeatsBooked() : 1.0);
-            b.setBookingStatus(b.getStatus() != null ? b.getStatus() : "CONFIRMED");
+            b.setBookingStatus(b.getStatus() != null ? b.getStatus() : "PENDING");
+            if (b.getPaymentStatus() == null || b.getPaymentStatus().trim().isEmpty()) {
+                b.setPaymentStatus("UNPAID");
+            }
 
             if (b.getBookingDate() != null) {
                 String fullDate = b.getBookingDate().toString();
@@ -227,10 +229,10 @@ public class BookingController {
             payload.setTotalFare(payload.getSeatsBooked() * 1500.0);
         }
         if (payload.getStatus() == null || payload.getStatus().trim().isEmpty()) {
-            payload.setStatus("CONFIRMED");
+            payload.setStatus("PENDING");
         }
         if (payload.getPaymentStatus() == null || payload.getPaymentStatus().trim().isEmpty()) {
-            payload.setPaymentStatus("PAID");
+            payload.setPaymentStatus("UNPAID");
         }
         if (payload.getBookingDate() == null) {
             payload.setBookingDate(java.time.LocalDateTime.now());
@@ -301,6 +303,85 @@ public class BookingController {
     public org.springframework.http.ResponseEntity<?> deleteBooking(@PathVariable Long id) {
         service.deleteById(id);
         return org.springframework.http.ResponseEntity.ok().build();
+    }
+
+    /**
+     * Updates booking status (PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED).
+     */
+    @PatchMapping("/api/bookings/{id}/status")
+    public org.springframework.http.ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        return service.findById(id).map(b -> {
+            Object s = body.get("status");
+            if (s != null && !s.toString().trim().isEmpty()) {
+                b.setStatus(s.toString().trim().toUpperCase());
+            }
+            b.setUpdatedAt(java.time.LocalDateTime.now());
+            Booking saved = service.save(b);
+            enrichBookings(Collections.singletonList(saved));
+            return org.springframework.http.ResponseEntity.ok(saved);
+        }).orElse(org.springframework.http.ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Updates booking payment status (PAID, UNPAID).
+     */
+    @PatchMapping("/api/bookings/{id}/payment")
+    public org.springframework.http.ResponseEntity<?> updatePayment(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
+        return service.findById(id).map(b -> {
+            if (body != null && body.get("paymentStatus") != null) {
+                b.setPaymentStatus(body.get("paymentStatus").toString().trim().toUpperCase());
+            } else {
+                b.setPaymentStatus("PAID");
+            }
+            b.setUpdatedAt(java.time.LocalDateTime.now());
+            Booking saved = service.save(b);
+            enrichBookings(Collections.singletonList(saved));
+            return org.springframework.http.ResponseEntity.ok(saved);
+        }).orElse(org.springframework.http.ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Driver or Admin accepts a booking, marking it CONFIRMED.
+     */
+    @PutMapping("/api/bookings/{id}/accept")
+    public org.springframework.http.ResponseEntity<?> acceptBooking(@PathVariable Long id) {
+        return service.findById(id).map(b -> {
+            b.setStatus("CONFIRMED");
+            b.setUpdatedAt(java.time.LocalDateTime.now());
+            Booking saved = service.save(b);
+            enrichBookings(Collections.singletonList(saved));
+            return org.springframework.http.ResponseEntity.ok(saved);
+        }).orElse(org.springframework.http.ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Retrieves all bookings for a given trip.
+     */
+    @GetMapping("/api/bookings/trip/{tripId}")
+    public org.springframework.http.ResponseEntity<?> getBookingsByTrip(@PathVariable Long tripId) {
+        List<Booking> list = service.findAll().stream()
+                .filter(b -> b.getTripId() != null && b.getTripId().equals(tripId))
+                .collect(java.util.stream.Collectors.toList());
+        enrichBookings(list);
+        return org.springframework.http.ResponseEntity.ok(list);
+    }
+
+    /**
+     * Driver accepts all pending bookings for a scheduled trip.
+     */
+    @PutMapping("/api/bookings/trip/{tripId}/accept")
+    public org.springframework.http.ResponseEntity<?> acceptTripBookings(@PathVariable Long tripId) {
+        try {
+            jdbcTemplate.update("UPDATE BOOKING SET STATUS = 'CONFIRMED', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS = 'PENDING'", tripId);
+            jdbcTemplate.update("UPDATE TRIP SET STATUS = 'CONFIRMED', UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS IN ('SCHEDULED', 'PENDING')", tripId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        List<Booking> list = service.findAll().stream()
+                .filter(b -> b.getTripId() != null && b.getTripId().equals(tripId))
+                .collect(java.util.stream.Collectors.toList());
+        enrichBookings(list);
+        return org.springframework.http.ResponseEntity.ok(list);
     }
 
 }

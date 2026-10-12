@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import bookingService from '@/services/bookingService';
+import paymentService from '@/services/paymentService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bookmark, Calendar, MapPin, Search, 
@@ -32,10 +33,19 @@ export default function MyBookings() {
       setLoading(true);
       const data = await bookingService.getMyBookings();
       const mapped = (Array.isArray(data) ? data : []).map((b: any) => {
-        const statusUpper = (b.status || b.bookingStatus || 'CONFIRMED').toUpperCase();
+        const statusUpper = (b.status || b.bookingStatus || 'PENDING').toUpperCase();
         let tabType: TabType = 'Upcoming';
         if (statusUpper === 'COMPLETED') tabType = 'Completed';
         else if (statusUpper === 'CANCELLED' || statusUpper === 'CANCELED') tabType = 'Cancelled';
+
+        let displayStatus = 'Pending';
+        if (statusUpper === 'CONFIRMED' || statusUpper === 'SCHEDULED') displayStatus = 'Confirmed';
+        else if (statusUpper === 'IN_PROGRESS') displayStatus = 'In Progress';
+        else if (statusUpper === 'COMPLETED') displayStatus = 'Completed';
+        else if (statusUpper === 'CANCELLED' || statusUpper === 'CANCELED') displayStatus = 'Cancelled';
+
+        const rawPay = (b.paymentStatus || 'UNPAID').toUpperCase();
+        const displayPay = (rawPay === 'PAID' || rawPay === 'SUCCESS') ? 'Paid' : 'Unpaid';
 
         const origin = b.origin || 'Colombo';
         const destination = b.destination || 'Kandy';
@@ -61,8 +71,8 @@ export default function MyBookings() {
           type: b.type || tabType,
           route,
           trip,
-          bookingStatus: b.bookingStatus || (statusUpper.charAt(0) + statusUpper.slice(1).toLowerCase()),
-          paymentStatus: b.paymentStatus || 'Paid',
+          bookingStatus: displayStatus,
+          paymentStatus: displayPay,
           date: displayDate,
           time: displayTime,
           fare: `LKR ${amountNum.toLocaleString()}`,
@@ -99,6 +109,25 @@ export default function MyBookings() {
       console.error('Failed to cancel booking:', err);
     } finally {
       setSelectedBooking(null);
+    }
+  };
+
+  const handlePayBooking = async (booking: any) => {
+    if (!booking) return;
+    try {
+      const bId = booking.bookingId || (booking.id ? parseInt(String(booking.id).replace('BK-', '')) : null);
+      if (bId) {
+        await paymentService.processPayment({
+          bookingId: bId,
+          amount: booking.amount || 1500,
+          paymentMethod: 'CARD',
+          status: 'SUCCESS'
+        });
+        await bookingService.updatePaymentStatus(bId, 'PAID');
+        await fetchBookings();
+      }
+    } catch (err) {
+      console.error('Failed to process payment:', err);
     }
   };
 
@@ -180,9 +209,10 @@ export default function MyBookings() {
                 >
                   {/* Decorative Side Bar based on status */}
                   <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                    booking.bookingStatus === 'Confirmed' ? 'bg-green-500' :
+                    booking.bookingStatus === 'Confirmed' ? 'bg-blue-500' :
+                    booking.bookingStatus === 'In Progress' ? 'bg-purple-500' :
                     booking.bookingStatus === 'Pending' ? 'bg-orange-400' :
-                    booking.bookingStatus === 'Completed' ? 'bg-blue-500' :
+                    booking.bookingStatus === 'Completed' ? 'bg-emerald-500' :
                     'bg-red-500'
                   }`} />
 
@@ -223,12 +253,14 @@ export default function MyBookings() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400 font-medium w-16">Booking:</span>
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        booking.bookingStatus === 'Confirmed' ? 'bg-green-100 text-green-700' :
+                        booking.bookingStatus === 'Confirmed' ? 'bg-blue-100 text-blue-700' :
+                        booking.bookingStatus === 'In Progress' ? 'bg-purple-100 text-purple-700 animate-pulse' :
                         booking.bookingStatus === 'Pending' ? 'bg-orange-100 text-orange-700' :
-                        booking.bookingStatus === 'Completed' ? 'bg-blue-100 text-blue-700' :
+                        booking.bookingStatus === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
                         'bg-red-100 text-red-700'
                       }`}>
                         {booking.bookingStatus === 'Confirmed' && <CheckCircle2 className="w-3 h-3" />}
+                        {booking.bookingStatus === 'In Progress' && <Clock className="w-3 h-3" />}
                         {booking.bookingStatus === 'Pending' && <AlertCircle className="w-3 h-3" />}
                         {booking.bookingStatus === 'Completed' && <CheckCircle2 className="w-3 h-3" />}
                         {booking.bookingStatus === 'Cancelled' && <XCircle className="w-3 h-3" />}
@@ -238,8 +270,8 @@ export default function MyBookings() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400 font-medium w-16">Payment:</span>
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        booking.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' :
-                        booking.paymentStatus === 'Unpaid' ? 'bg-orange-100 text-orange-700' :
+                        booking.paymentStatus === 'Paid' ? 'bg-emerald-100 text-emerald-700 font-bold' :
+                        booking.paymentStatus === 'Unpaid' ? 'bg-amber-100 text-amber-700 font-bold' :
                         'bg-gray-100 text-gray-700'
                       }`}>
                         <CreditCard className="w-3 h-3" />
@@ -253,13 +285,21 @@ export default function MyBookings() {
                     <p className="text-sm text-gray-400 font-medium mb-1">Total</p>
                     <p className="text-2xl font-bold text-[#1e3f7a] mb-4">LKR {Number(booking.amount || 0).toLocaleString()}</p>
                     <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                      {booking.paymentStatus === 'Unpaid' && booking.bookingStatus !== 'Cancelled' && (
+                        <button 
+                          onClick={() => handlePayBooking(booking)}
+                          className="flex-1 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" /> Pay Fare
+                        </button>
+                      )}
                       <button 
                         onClick={() => { setSelectedBooking(booking); setModalMode('view'); }}
                         className="flex-1 px-4 py-2 rounded-xl bg-gray-50 text-gray-700 text-sm font-semibold hover:bg-gray-100 border border-gray-200 transition-colors flex items-center justify-center gap-1"
                       >
                         View
                       </button>
-                      {activeTab === 'Upcoming' && (
+                      {activeTab === 'Upcoming' && booking.bookingStatus !== 'Cancelled' && (
                         <button 
                           onClick={() => { setSelectedBooking(booking); setModalMode('cancel'); }}
                           className="flex-1 px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 border border-red-100 transition-colors"

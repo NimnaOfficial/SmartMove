@@ -10,6 +10,9 @@ public class PaymentController {
     @Autowired
     private com.nibm.smartmove.paymentservice.service.PaymentService service;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
 
     /**
      * Retrieves all payment records. Admin-only. Joins BOOKING, PASSENGER tables.
@@ -42,7 +45,15 @@ public class PaymentController {
         if (payload.getTransactionRef() == null || payload.getTransactionRef().trim().isEmpty()) {
             payload.setTransactionRef("TXN-" + System.currentTimeMillis());
         }
-        return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        Payment saved = service.save(payload);
+        if (saved.getBookingId() != null) {
+            try {
+                jdbcTemplate.update("UPDATE BOOKING SET PAYMENT_STATUS = 'PAID', UPDATED_AT = CURRENT_TIMESTAMP WHERE BOOKING_ID = ?", saved.getBookingId());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return org.springframework.http.ResponseEntity.ok(saved);
     }
 
     /**
@@ -58,7 +69,9 @@ public class PaymentController {
      */
     @GetMapping("/api/payments/booking/{bookingId}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long bookingId) {
-        return org.springframework.http.ResponseEntity.ok().build();
+        return org.springframework.http.ResponseEntity.ok(service.findAll().stream()
+                .filter(p -> p.getBookingId() != null && p.getBookingId().equals(bookingId))
+                .findFirst().orElse(null));
     }
 
 }

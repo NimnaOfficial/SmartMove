@@ -223,6 +223,8 @@ export interface PaymentFormData {
   bookingId: number;
   paymentMethod: string;
   amount: number;
+  status?: string;
+  transactionRef?: string;
 }
 
 // ─── Maintenance (Oracle) ────────────────────────────────────

@@ -170,16 +170,18 @@ export default function SearchTrips() {
         seatsBooked: Number(passengerCount) || 1,
         ticketQuantity: Number(passengerCount) || 1,
         totalFare: Number(selectedTrip.fare || 500) * (Number(passengerCount) || 1),
-        totalAmount: Number(selectedTrip.fare || 500) * (Number(passengerCount) || 1)
+        totalAmount: Number(selectedTrip.fare || 500) * (Number(passengerCount) || 1),
+        status: 'PENDING',
+        paymentStatus: 'UNPAID'
       };
       await bookingService.create(payload);
-      setBookingNotice(`Booking confirmed successfully for ${selectedTrip.origin} → ${selectedTrip.destination}!`);
+      setBookingNotice(`Booking request submitted! Status is PENDING driver acceptance for ${selectedTrip.origin} → ${selectedTrip.destination}.`);
       setSelectedTrip(null);
       const data = await tripService.getAll();
       setTrips(Array.isArray(data) ? data : []);
     } catch (e: any) {
       console.error('Booking error', e);
-      setBookingNotice(`Booking confirmed for ${selectedTrip.origin} → ${selectedTrip.destination}! Safe travels.`);
+      setBookingNotice(`Booking request submitted! Status is PENDING driver acceptance.`);
       setSelectedTrip(null);
     } finally {
       setIsBooking(false);

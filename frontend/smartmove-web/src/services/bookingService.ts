@@ -38,6 +38,26 @@ const bookingService = {
     const res = await apiClient.get(`/bookings/search?q=${encodeURIComponent(query)}`);
     return Array.isArray(res.data) ? res.data : [];
   },
+  updateStatus: async (id: number, status: string): Promise<Booking> => {
+    const res = await apiClient.patch(`/bookings/${id}/status`, { status });
+    return res.data;
+  },
+  updatePaymentStatus: async (id: number, paymentStatus: string): Promise<Booking> => {
+    const res = await apiClient.patch(`/bookings/${id}/payment`, { paymentStatus });
+    return res.data;
+  },
+  acceptBooking: async (id: number): Promise<Booking> => {
+    const res = await apiClient.put(`/bookings/${id}/accept`);
+    return res.data;
+  },
+  getByTrip: async (tripId: number): Promise<Booking[]> => {
+    const res = await apiClient.get(`/bookings/trip/${tripId}`);
+    return Array.isArray(res.data) ? res.data : [];
+  },
+  acceptTripBookings: async (tripId: number): Promise<any> => {
+    const res = await apiClient.put(`/bookings/trip/${tripId}/accept`);
+    return res.data;
+  },
 };
 
 export default bookingService;
