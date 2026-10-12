@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import bookingService from '@/services/bookingService';
 import contentService from '@/services/contentService';
+import feedbackService from '@/services/feedbackService';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -48,11 +49,33 @@ export default function PassengerDashboard() {
       }
     }).catch(e => console.error(e));
 
-    contentService.getAllReviews().then(data => {
-      if (Array.isArray(data)) {
-        setReviews(data.slice(0, 1)); // Just show the latest 1
+    const loadRecentReviews = async () => {
+      try {
+        const passengerId = user?.userId || user?.passengerId || user?.id || 1;
+        let data = await feedbackService.getByPassenger(passengerId);
+        if (!Array.isArray(data) || data.length === 0) {
+          data = await feedbackService.getAll();
+        }
+        if (Array.isArray(data) && data.length > 0) {
+          setReviews(data.slice(0, 1));
+        } else {
+          const contentReviews = await contentService.getAllReviews();
+          if (Array.isArray(contentReviews)) {
+            setReviews(contentReviews.slice(0, 1));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load recent reviews', e);
+        try {
+          const fallback = await contentService.getAllReviews();
+          if (Array.isArray(fallback)) {
+            setReviews(fallback.slice(0, 1));
+          }
+        } catch {}
       }
-    }).catch(e => console.error(e));
+    };
+
+    loadRecentReviews();
   }, []);
 
   const nextBooking = upcomingBookings.length > 0 ? upcomingBookings[0] : null;
@@ -313,17 +336,19 @@ export default function PassengerDashboard() {
               {reviews.length > 0 ? reviews.map((review, i) => (
                 <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-4">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="font-bold text-gray-900 text-sm">Route {review.routeId || ''}</span>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {review.route || review.routeName || (review.routeId ? `Route ${review.routeId}` : 'Trip Review')}
+                    </span>
                     <div className="flex items-center gap-1">
-                      {Array.from({ length: review.rating || 5 }).map((_, s) => (
+                      {Array.from({ length: Math.min(Math.max(review.rating || 5, 1), 5) }).map((_, s) => (
                         <Star key={s} className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
                       ))}
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 italic mb-3">
-                    "{review.comment || 'Great experience!'}"
+                    "{review.comment || review.description || 'Great experience!'}"
                   </p>
-                  <p className="text-xs text-gray-400 font-medium">Reviewed on {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-400 font-medium">Reviewed on {review.date || (review.createdAt ? new Date(review.createdAt).toLocaleDateString() : new Date().toLocaleDateString())}</p>
                 </div>
               )) : (
                 <p className="text-sm text-gray-500 py-2">No recent feedback.</p>
