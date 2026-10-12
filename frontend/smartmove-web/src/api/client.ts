@@ -22,7 +22,7 @@ apiClient.interceptors.request.use(
       try {
         const parsed = JSON.parse(userStr);
         const user = parsed.user || parsed; // Handle nested or flat structure
-        const userId = user.userId || user.id || user.PASSENGER_ID || user.DRIVER_ID || user.ADMIN_ID;
+        const userId = user.userId || user.passengerId || user.PASSENGER_ID || user.id || user.DRIVER_ID || user.ADMIN_ID;
         if (userId) config.headers['X-User-Id'] = userId.toString();
         const email = user.email || user.EMAIL;
         if (email) config.headers['X-User-Email'] = email;

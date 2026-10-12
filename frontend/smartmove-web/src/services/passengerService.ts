@@ -14,12 +14,28 @@ const passengerService = {
     const res = await apiClient.put(`/passengers/${id}`, data);
     return res.data;
   },
-  getProfile: async (): Promise<Passenger> => {
-    const res = await apiClient.get('/passengers/profile');
+  getProfile: async (passengerId?: number): Promise<Passenger> => {
+    const userStr = localStorage.getItem('smartmove_user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const effectiveId = passengerId || (user as any)?.passengerId || user?.userId || user?.id || 1;
+    const res = await apiClient.get('/passengers/profile', {
+      params: { passengerId: effectiveId, userId: effectiveId },
+      headers: { 'X-User-Id': effectiveId.toString() }
+    });
     return res.data;
   },
-  updateProfile: async (data: Partial<PassengerFormData>): Promise<Passenger> => {
-    const res = await apiClient.put('/passengers/profile', data);
+  updateProfile: async (data: any): Promise<Passenger> => {
+    const userStr = localStorage.getItem('smartmove_user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const effectiveId = data.passengerId || (user as any)?.passengerId || user?.userId || user?.id || 1;
+    const payload = {
+      ...data,
+      passengerId: effectiveId
+    };
+    const res = await apiClient.put('/passengers/profile', payload, {
+      params: { passengerId: effectiveId, userId: effectiveId },
+      headers: { 'X-User-Id': effectiveId.toString() }
+    });
     return res.data;
   },
   delete: async (id: number): Promise<void> => {

@@ -11,4 +11,8 @@ import java.util.List;
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     @Query("SELECT f FROM Feedback f WHERE LOWER(f.description) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(f.type) LIKE LOWER(CONCAT('%', :q, '%'))")
     List<Feedback> search(@Param("q") String q);
+
+    List<Feedback> findByPassengerIdOrderByFeedbackIdDesc(Long passengerId);
+
+    List<Feedback> findAllByOrderByFeedbackIdDesc();
 }

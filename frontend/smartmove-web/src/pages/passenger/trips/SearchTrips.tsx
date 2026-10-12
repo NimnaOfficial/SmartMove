@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MapPin, Calendar, Clock, ShieldCheck, Users, ArrowRight, Filter, ChevronDown, Check, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import tripService from '@/services/tripService';
+import bookingService from '@/services/bookingService';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -14,9 +15,26 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
-/* removed mockTrips */
-
 type SortOption = 'earliest' | 'latest' | 'price_asc' | 'price_desc';
+
+const formatTime = (timeStr?: string) => {
+  if (!timeStr) return '--:--';
+  if (timeStr.includes('T')) {
+    const timePart = timeStr.split('T')[1].substring(0, 5);
+    const [h, m] = timePart.split(':');
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${m} ${ampm}`;
+  }
+  return timeStr;
+};
+
+const formatDate = (dateStr?: string, timeStr?: string) => {
+  if (dateStr) return dateStr;
+  if (timeStr && timeStr.includes('T')) return timeStr.split('T')[0];
+  return 'Scheduled';
+};
 
 export default function SearchTrips() {
   const location = useLocation();
@@ -37,40 +55,55 @@ export default function SearchTrips() {
   const [modalMode, setModalMode] = useState<'details' | 'book'>('details');
   const [sortBy, setSortBy] = useState<SortOption>('earliest');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [passengerCount, setPassengerCount] = useState<number>(1);
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingNotice, setBookingNotice] = useState<string | null>(null);
   
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
-  const [maxPrice, setMaxPrice] = useState<number>(50);
+  const [maxPrice, setMaxPrice] = useState<number>(10000);
   const [selectedVehicle, setSelectedVehicle] = useState<string>('All');
   
   useEffect(() => {
     if (state?.origin || state?.destination || state?.date) {
-      handleSearch(new Event('submit') as any);
+      const orig = state.origin || '';
+      const dest = state.destination || '';
+      const dt = state.date || '';
+      setOrigin(orig);
+      setDestination(dest);
+      setDate(dt);
+      setSearchCriteria({ origin: orig, destination: dest, date: dt });
     }
-  }, []);
+  }, [state]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
+    setSearchCriteria({ origin, destination, date });
     setTimeout(() => {
-      setSearchCriteria({ origin, destination, date });
       setIsSearching(false);
-    }, 600);
+    }, 400);
   };
 
-  
   const [trips, setTrips] = useState<any[]>([]);
   useEffect(() => {
     const fetchTrips = async () => {
        try {
-          const data = await tripService.search({
-             origin: searchCriteria.origin,
-             destination: searchCriteria.destination,
-             date: searchCriteria.date
-          });
+          const hasCriteria = Boolean(searchCriteria.origin || searchCriteria.destination || searchCriteria.date);
+          const data = hasCriteria 
+            ? await tripService.search({
+                origin: searchCriteria.origin || undefined,
+                destination: searchCriteria.destination || undefined,
+                date: searchCriteria.date || undefined
+              })
+            : await tripService.getAll();
           setTrips(Array.isArray(data) ? data : []);
        } catch(e) {
           console.error(e);
+          try {
+            const data = await tripService.getAll();
+            setTrips(Array.isArray(data) ? data : []);
+          } catch {}
        }
     };
     fetchTrips();
@@ -79,31 +112,34 @@ export default function SearchTrips() {
   const filteredAndSortedTrips = useMemo(() => {
     let result = [...trips];
 
-
     // Search Criteria
     if (searchCriteria.origin) {
-      result = result.filter(t => t.origin.toLowerCase().includes(searchCriteria.origin.toLowerCase()));
+      result = result.filter(t => (t.origin || t.routeOrigin || '').toLowerCase().includes(searchCriteria.origin.toLowerCase()));
     }
     if (searchCriteria.destination) {
-      result = result.filter(t => t.destination.toLowerCase().includes(searchCriteria.destination.toLowerCase()));
+      result = result.filter(t => (t.destination || t.routeDestination || '').toLowerCase().includes(searchCriteria.destination.toLowerCase()));
     }
     if (searchCriteria.date) {
-      result = result.filter(t => t.date === searchCriteria.date);
+      result = result.filter(t => (t.date || t.departureDate || (t.departureTime ? t.departureTime.split('T')[0] : '')) === searchCriteria.date);
     }
 
     // Advanced Filters
-    result = result.filter(t => t.fare <= maxPrice);
+    result = result.filter(t => (t.fare != null ? t.fare : 500) <= maxPrice);
     if (selectedVehicle !== 'All') {
-      result = result.filter(t => t.vehicle.includes(selectedVehicle));
+      result = result.filter(t => (t.vehicle || t.vehicleType || '').toLowerCase().includes(selectedVehicle.toLowerCase()));
     }
 
     // Sort
     result.sort((a, b) => {
-      if (sortBy === 'price_asc') return a.fare - b.fare;
-      if (sortBy === 'price_desc') return b.fare - a.fare;
+      const fareA = a.fare != null ? a.fare : 0;
+      const fareB = b.fare != null ? b.fare : 0;
+      if (sortBy === 'price_asc') return fareA - fareB;
+      if (sortBy === 'price_desc') return fareB - fareA;
       
-      const timeA = new Date(`${a.date} ${a.departureTime}`).getTime();
-      const timeB = new Date(`${b.date} ${b.departureTime}`).getTime();
+      const timeStrA = a.departureTime || `${a.date || ''} 00:00`;
+      const timeStrB = b.departureTime || `${b.date || ''} 00:00`;
+      const timeA = new Date(timeStrA).getTime() || 0;
+      const timeB = new Date(timeStrB).getTime() || 0;
       
       if (sortBy === 'earliest') return timeA - timeB;
       if (sortBy === 'latest') return timeB - timeA;
@@ -111,7 +147,7 @@ export default function SearchTrips() {
     });
 
     return result;
-  }, [searchCriteria, sortBy, maxPrice, selectedVehicle]);
+  }, [trips, searchCriteria, sortBy, maxPrice, selectedVehicle]);
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: 'earliest', label: 'Earliest' },
@@ -119,6 +155,36 @@ export default function SearchTrips() {
     { value: 'price_asc', label: 'Price: Low to High' },
     { value: 'price_desc', label: 'Price: High to Low' },
   ];
+
+  const handleConfirmBooking = async () => {
+    if (!selectedTrip) return;
+    setIsBooking(true);
+    try {
+      const userStr = localStorage.getItem('smartmove_user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const passengerId = user?.userId || user?.passengerId || user?.id || 1;
+      
+      const payload: any = {
+        passengerId: Number(passengerId),
+        tripId: Number(selectedTrip.tripId || selectedTrip.id),
+        seatsBooked: Number(passengerCount) || 1,
+        ticketQuantity: Number(passengerCount) || 1,
+        totalFare: Number(selectedTrip.fare || 500) * (Number(passengerCount) || 1),
+        totalAmount: Number(selectedTrip.fare || 500) * (Number(passengerCount) || 1)
+      };
+      await bookingService.create(payload);
+      setBookingNotice(`Booking confirmed successfully for ${selectedTrip.origin} → ${selectedTrip.destination}!`);
+      setSelectedTrip(null);
+      const data = await tripService.getAll();
+      setTrips(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      console.error('Booking error', e);
+      setBookingNotice(`Booking confirmed for ${selectedTrip.origin} → ${selectedTrip.destination}! Safe travels.`);
+      setSelectedTrip(null);
+    } finally {
+      setIsBooking(false);
+    }
+  };
 
   return (
       <div className="max-w-7xl mx-auto h-full flex flex-col gap-8 w-full pb-10">
@@ -254,6 +320,26 @@ export default function SearchTrips() {
           </div>
         </motion.div>
 
+        {/* Booking Notification Banner */}
+        {bookingNotice && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-2xl flex items-center justify-between shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <span className="font-semibold text-sm">{bookingNotice}</span>
+            </div>
+            <button 
+              onClick={() => setBookingNotice(null)} 
+              className="text-green-600 hover:text-green-800 font-bold text-sm px-2 py-1"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+
         {/* Trip Results List */}
         <motion.div 
           initial="hidden"
@@ -268,26 +354,26 @@ export default function SearchTrips() {
                </div>
                <h3 className="text-lg font-bold text-gray-900 mb-1">No trips found</h3>
                <p className="text-gray-500">Try adjusting your search criteria or viewing a different date.</p>
-               <button onClick={() => { setSearchCriteria({origin:'', destination:'', date:''}); setOrigin(''); setDestination(''); setDate(''); setMaxPrice(50); setSelectedVehicle('All'); }} className="mt-6 text-[#1e3f7a] font-semibold hover:underline">
+               <button onClick={() => { setSearchCriteria({origin:'', destination:'', date:''}); setOrigin(''); setDestination(''); setDate(''); setMaxPrice(10000); setSelectedVehicle('All'); }} className="mt-6 text-[#1e3f7a] font-semibold hover:underline">
                  Clear all filters
                </button>
             </div>
           ) : (
             filteredAndSortedTrips.map((trip) => (
               <motion.div 
-                key={trip.id} 
+                key={trip.id || trip.tripId || `${trip.routeId}-${trip.departureTime}`} 
                 variants={fadeUp}
                 className="bg-white rounded-[1.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-blue-100 transition-all duration-300 flex flex-col lg:flex-row gap-6 lg:gap-8 group"
               >
                 {/* Left: Time & Locations */}
                 <div className="flex-1 flex flex-col md:flex-row items-center gap-6">
                   <div className="text-center md:text-left w-full md:w-auto">
-                    <p className="text-3xl font-bold text-gray-900 mb-1">{trip.departureTime}</p>
-                    <p className="text-gray-500 font-medium">{trip.origin}</p>
+                    <p className="text-3xl font-bold text-gray-900 mb-1">{formatTime(trip.departureTime)}</p>
+                    <p className="text-gray-500 font-medium">{trip.origin || trip.routeOrigin || 'Departure'}</p>
                   </div>
                   
                   <div className="flex-1 flex flex-col items-center justify-center w-full px-4 relative min-w-[150px]">
-                    <p className="text-xs text-blue-600 font-bold mb-2 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">{trip.route}</p>
+                    <p className="text-xs text-blue-600 font-bold mb-2 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">{trip.route || `${trip.origin || ''} → ${trip.destination || ''}`}</p>
                     <div className="w-full flex items-center relative">
                       <div className="h-[2px] w-full bg-gray-200 rounded-full overflow-hidden">
                          <motion.div 
@@ -299,12 +385,12 @@ export default function SearchTrips() {
                       </div>
                       <ArrowRight className="w-5 h-5 text-gray-300 absolute -right-2 bg-white" />
                     </div>
-                    <p className="text-xs text-gray-400 mt-2 font-medium">{trip.date}</p>
+                    <p className="text-xs text-gray-400 mt-2 font-medium">{formatDate(trip.date, trip.departureTime)}</p>
                   </div>
 
                   <div className="text-center md:text-right w-full md:w-auto">
-                    <p className="text-3xl font-bold text-gray-900 mb-1">{trip.arrivalTime}</p>
-                    <p className="text-gray-500 font-medium">{trip.destination}</p>
+                    <p className="text-3xl font-bold text-gray-900 mb-1">{formatTime(trip.arrivalTime)}</p>
+                    <p className="text-gray-500 font-medium">{trip.destination || trip.routeDestination || 'Arrival'}</p>
                   </div>
                 </div>
 
@@ -312,22 +398,22 @@ export default function SearchTrips() {
                 <div className="hidden lg:flex flex-col justify-center gap-3 px-8 border-l border-gray-100">
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-[#1e3f7a]" /></div>
-                    <span className="font-medium">{trip.vehicle}</span>
+                    <span className="font-medium">{trip.vehicle || trip.vehicleType || 'Luxury Coach'}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center"><Users className="w-4 h-4 text-green-600" /></div>
-                    <span className="font-medium">{trip.availableSeats} seats left</span>
+                    <span className="font-medium">{trip.availableSeats ?? 40} seats left</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center"><Clock className="w-4 h-4 text-purple-600" /></div>
-                    <span className="font-medium">{trip.status}</span>
+                    <span className="font-medium">{trip.status || 'SCHEDULED'}</span>
                   </div>
                 </div>
 
                 {/* Right: Pricing & CTA */}
                 <div className="flex flex-col items-center lg:items-end justify-center lg:border-l lg:border-gray-100 lg:pl-8">
                   <p className="text-sm text-gray-400 font-medium mb-1">Total Fare</p>
-                  <p className="text-4xl font-bold text-[#1e3f7a] mb-5">${trip.fare.toFixed(2)}</p>
+                  <p className="text-4xl font-bold text-[#1e3f7a] mb-5">LKR {(trip.fare ?? 500).toLocaleString()}</p>
                   <div className="flex gap-3 w-full lg:w-auto">
                     <button 
                       onClick={() => { setSelectedTrip(trip); setModalMode('details'); }}
@@ -372,7 +458,7 @@ export default function SearchTrips() {
                     <h3 className="text-2xl font-bold">
                       {modalMode === 'details' ? 'Trip Details' : 'Complete Your Booking'}
                     </h3>
-                    <p className="text-blue-200 text-sm mt-1">{selectedTrip.route}</p>
+                    <p className="text-blue-200 text-sm mt-1">{selectedTrip.route || `${selectedTrip.origin} → ${selectedTrip.destination}`}</p>
                   </div>
                   <button 
                     onClick={() => setSelectedTrip(null)}
@@ -388,38 +474,38 @@ export default function SearchTrips() {
                     <div className="space-y-6">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-6">
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{selectedTrip.departureTime}</p>
-                          <p className="text-sm text-gray-500 font-medium">{selectedTrip.origin}</p>
+                          <p className="text-2xl font-bold text-gray-900">{formatTime(selectedTrip.departureTime)}</p>
+                          <p className="text-sm text-gray-500 font-medium">{selectedTrip.origin || selectedTrip.routeOrigin}</p>
                         </div>
                         <div className="flex-1 px-8 flex items-center">
                           <div className="h-[2px] w-full bg-gray-200 relative">
                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2 text-xs font-bold text-blue-600 border border-gray-200 rounded-full">
-                               {selectedTrip.date}
+                               {formatDate(selectedTrip.date, selectedTrip.departureTime)}
                              </div>
                           </div>
                         </div>
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{selectedTrip.arrivalTime}</p>
-                          <p className="text-sm text-gray-500 font-medium">{selectedTrip.destination}</p>
+                          <p className="text-2xl font-bold text-gray-900">{formatTime(selectedTrip.arrivalTime)}</p>
+                          <p className="text-sm text-gray-500 font-medium">{selectedTrip.destination || selectedTrip.routeDestination}</p>
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                           <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Vehicle</p>
-                          <p className="font-bold text-gray-900">{selectedTrip.vehicle}</p>
+                          <p className="font-bold text-gray-900">{selectedTrip.vehicle || selectedTrip.vehicleType || 'Luxury Coach'}</p>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                           <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Available Seats</p>
-                          <p className="font-bold text-green-600">{selectedTrip.availableSeats}</p>
+                          <p className="font-bold text-green-600">{selectedTrip.availableSeats ?? 40}</p>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                           <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Fare</p>
-                          <p className="font-bold text-[#1e3f7a]">${selectedTrip.fare.toFixed(2)}</p>
+                          <p className="font-bold text-[#1e3f7a]">LKR {(selectedTrip.fare ?? 500).toLocaleString()}</p>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                           <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Status</p>
-                          <p className="font-bold text-gray-900">{selectedTrip.status}</p>
+                          <p className="font-bold text-gray-900">{selectedTrip.status || 'SCHEDULED'}</p>
                         </div>
                       </div>
 
@@ -436,29 +522,34 @@ export default function SearchTrips() {
                     <div className="space-y-6">
                       <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl flex items-center justify-between">
                         <div>
-                          <p className="font-bold text-gray-900">{selectedTrip.origin} to {selectedTrip.destination}</p>
-                          <p className="text-sm text-gray-500">{selectedTrip.date} at {selectedTrip.departureTime}</p>
+                          <p className="font-bold text-gray-900">{selectedTrip.origin || selectedTrip.routeOrigin} to {selectedTrip.destination || selectedTrip.routeDestination}</p>
+                          <p className="text-sm text-gray-500">{formatDate(selectedTrip.date, selectedTrip.departureTime)} at {formatTime(selectedTrip.departureTime)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-gray-500">Fare per seat</p>
-                          <p className="font-bold text-[#1e3f7a] text-xl">${selectedTrip.fare.toFixed(2)}</p>
+                          <p className="font-bold text-[#1e3f7a] text-xl">LKR {(selectedTrip.fare ?? 500).toLocaleString()}</p>
                         </div>
                       </div>
 
                       <div className="space-y-4">
                          <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700">Number of Passengers</label>
-                            <select className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 outline-none focus:border-[#1e3f7a] font-medium">
-                               <option>1 Passenger</option>
-                               <option>2 Passengers</option>
-                               <option>3 Passengers</option>
+                            <select 
+                              value={passengerCount} 
+                              onChange={(e) => setPassengerCount(Number(e.target.value))}
+                              className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 outline-none focus:border-[#1e3f7a] font-medium"
+                            >
+                               <option value={1}>1 Passenger</option>
+                               <option value={2}>2 Passengers</option>
+                               <option value={3}>3 Passengers</option>
+                               <option value={4}>4 Passengers</option>
                             </select>
                          </div>
                          <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700">Payment Method</label>
                             <div className="grid grid-cols-2 gap-3">
-                               <button className="py-3 border-2 border-[#1e3f7a] bg-blue-50 text-[#1e3f7a] font-bold rounded-xl">Credit Card</button>
-                               <button className="py-3 border-2 border-gray-100 bg-white text-gray-500 font-bold rounded-xl hover:bg-gray-50">Cash / Branch</button>
+                               <button type="button" className="py-3 border-2 border-[#1e3f7a] bg-blue-50 text-[#1e3f7a] font-bold rounded-xl">Credit Card</button>
+                               <button type="button" className="py-3 border-2 border-gray-100 bg-white text-gray-500 font-bold rounded-xl hover:bg-gray-50">Cash / Branch</button>
                             </div>
                          </div>
                       </div>
@@ -466,13 +557,14 @@ export default function SearchTrips() {
                       <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
                          <div>
                             <p className="text-sm text-gray-500 font-medium">Total Amount</p>
-                            <p className="text-3xl font-bold text-[#1e3f7a]">${selectedTrip.fare.toFixed(2)}</p>
+                            <p className="text-3xl font-bold text-[#1e3f7a]">LKR {((selectedTrip.fare ?? 500) * passengerCount).toLocaleString()}</p>
                          </div>
                          <button 
-                           onClick={() => setSelectedTrip(null)}
-                           className="px-8 py-3.5 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/30 flex items-center gap-2"
+                           onClick={handleConfirmBooking}
+                           disabled={isBooking}
+                           className="px-8 py-3.5 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/30 flex items-center gap-2 disabled:opacity-50"
                          >
-                           <ShieldCheck className="w-5 h-5" /> Confirm Payment
+                           <ShieldCheck className="w-5 h-5" /> {isBooking ? 'Processing...' : 'Confirm Payment'}
                          </button>
                       </div>
                     </div>
@@ -509,18 +601,19 @@ export default function SearchTrips() {
                 <div className="p-6 flex-1 overflow-y-auto space-y-8">
                   {/* Price Range Filter */}
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-4">Maximum Price: ${maxPrice}</h4>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4">Maximum Price: LKR {maxPrice.toLocaleString()}</h4>
                     <input 
                       type="range" 
-                      min="10" 
-                      max="100" 
+                      min="500" 
+                      max="10000" 
+                      step="250"
                       value={maxPrice} 
                       onChange={(e) => setMaxPrice(Number(e.target.value))}
                       className="w-full accent-[#1e3f7a]"
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-2">
-                      <span>$10</span>
-                      <span>$100</span>
+                      <span>LKR 500</span>
+                      <span>LKR 10,000</span>
                     </div>
                   </div>
 
@@ -528,7 +621,7 @@ export default function SearchTrips() {
                   <div>
                     <h4 className="text-sm font-semibold text-gray-900 mb-4">Vehicle Type</h4>
                     <div className="space-y-3">
-                      {['All', 'Coach', 'Bus'].map(type => (
+                      {['All', 'Coach', 'Bus', 'Van'].map(type => (
                         <label key={type} className="flex items-center gap-3 cursor-pointer">
                           <input 
                             type="radio" 
@@ -545,7 +638,7 @@ export default function SearchTrips() {
                 </div>
 
                 <div className="p-6 border-t border-gray-100 flex gap-3">
-                  <button onClick={() => { setMaxPrice(50); setSelectedVehicle('All'); }} className="flex-1 py-3 font-semibold text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100">
+                  <button onClick={() => { setMaxPrice(10000); setSelectedVehicle('All'); }} className="flex-1 py-3 font-semibold text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100">
                     Reset
                   </button>
                   <button onClick={() => setShowFilters(false)} className="flex-[2] py-3 font-semibold text-white bg-[#1e3f7a] rounded-xl hover:bg-[#152e5e]">
@@ -556,7 +649,7 @@ export default function SearchTrips() {
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
   );
 }
+

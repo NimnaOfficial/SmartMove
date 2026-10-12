@@ -43,5 +43,16 @@ public class Passenger {
     @Column(name = "UPDATED_AT")
     private java.time.LocalDateTime updatedAt;
 
+    @Transient
+    private Long id;
 
+    @Transient
+    private String address;
+
+    @Transient
+    private String city;
+
+    public Long getId() {
+        return id != null ? id : passengerId;
+    }
 }

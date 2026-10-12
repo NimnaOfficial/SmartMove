@@ -16,9 +16,11 @@ const staggerContainer = {
 
 export default function AdminRoutes() {
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [showForm, setShowForm] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<RouteInfo | null>(null);
   const [viewMode, setViewMode] = useState(false);
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
   const [routes, setRoutes] = useState<RouteInfo[]>([]);
   const [formData, setFormData] = useState<RouteFormData>({
@@ -54,25 +56,29 @@ export default function AdminRoutes() {
     }));
   };
 
-  const handleCreateOrEdit = () => {
-    if (selectedRoute) {
+  const handleCreateOrEdit = (r?: RouteInfo | null) => {
+    setError(null);
+    if (r) {
+      setSelectedRoute(r);
       setFormData({
-        origin: selectedRoute.origin,
-        destination: selectedRoute.destination,
-        status: selectedRoute.status,
-        distance: selectedRoute.distanceKm ?? selectedRoute.distance ?? 50,
-        duration: selectedRoute.estimatedDuration ?? selectedRoute.duration ?? '1h 30m',
-        baseFare: selectedRoute.baseFare ?? 350,
-        description: selectedRoute.description
+        origin: r.origin || '',
+        destination: r.destination || '',
+        status: r.status || 'ACTIVE',
+        distance: r.distanceKm ?? r.distance ?? 50,
+        duration: r.estimatedDuration ?? r.duration ?? '1h 30m',
+        baseFare: r.baseFare ?? 350,
+        description: r.description || ''
       });
     } else {
+      setSelectedRoute(null);
       setFormData({
         origin: '',
         destination: '',
         status: 'ACTIVE',
         distance: 50,
         duration: '1h 30m',
-        baseFare: 350
+        baseFare: 350,
+        description: ''
       });
     }
     setViewMode(false);
@@ -83,13 +89,17 @@ export default function AdminRoutes() {
     setSelectedRoute(r);
     setViewMode(true);
     setShowForm(true);
+    setError(null);
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this route?')) return;
+    const route = routes.find(r => r.routeId === id);
+    const label = route ? `#${route.routeId} (${route.origin} -> ${route.destination})` : `Route #${id}`;
+    if (!window.confirm(`Are you sure you want to delete ${label}?`)) return;
     try {
       await routeService.delete(id);
-      fetchRoutes();
+      setNotice({ type: 'success', message: `${label} removed or deactivated successfully.` });
+      await fetchRoutes();
     } catch (e: any) {
       console.error('Failed to delete route', e);
       alert('Failed to delete route: ' + (e.response?.data?.message || e.message));
@@ -101,33 +111,69 @@ export default function AdminRoutes() {
     setIsSubmitting(true);
     setError(null);
     try {
+      const origin = (formData.origin || '').trim();
+      const destination = (formData.destination || '').trim();
+
+      if (!origin) {
+        setError('Origin is required.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (!destination) {
+        setError('Destination is required.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (origin.toLowerCase() === destination.toLowerCase()) {
+        setError('Origin and destination cannot be the same.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const dist = Number(formData.distance) > 0 ? Number(formData.distance) : 50;
+      const fare = Number(formData.baseFare) >= 0 ? Number(formData.baseFare) : Math.max(50, dist * 5);
+      const dur = (formData.duration || '').trim() || '1h 30m';
+
       const payload: RouteFormData = {
-        ...formData,
-        distanceKm: Number(formData.distance) || 50,
-        estimatedDuration: formData.duration || '1h 30m',
-        baseFare: Number(formData.baseFare) || 350
+        origin,
+        destination,
+        status: formData.status || 'ACTIVE',
+        distance: dist,
+        distanceKm: dist,
+        duration: dur,
+        estimatedDuration: dur,
+        baseFare: fare,
+        description: formData.description?.trim() || undefined
       };
+
       if (selectedRoute) {
         await routeService.update(selectedRoute.routeId, payload);
+        setNotice({ type: 'success', message: `Route #${selectedRoute.routeId} (${origin} -> ${destination}) updated successfully.` });
       } else {
-        await routeService.create(payload);
+        const created = await routeService.create(payload);
+        setNotice({ type: 'success', message: `Route #${created.routeId || ''} (${origin} -> ${destination}) created successfully.` });
       }
       setShowForm(false);
       setSelectedRoute(null);
-      fetchRoutes();
+      await fetchRoutes();
     } catch (e: any) {
       console.error('Failed to save route', e);
-      setError(e.response?.data?.message || 'Failed to save route. Please check your inputs.');
+      setError(e.response?.data?.message || e.message || 'Failed to save route. Please check your inputs.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const filtered = routes.filter(r => 
-    r.origin.toLowerCase().includes(search.toLowerCase()) || 
-    r.destination.toLowerCase().includes(search.toLowerCase()) ||
-    r.routeId.toString().includes(search)
-  );
+  const filtered = routes.filter(r => {
+    const term = search.toLowerCase();
+    const matchesSearch = 
+      (r.origin || '').toLowerCase().includes(term) || 
+      (r.destination || '').toLowerCase().includes(term) ||
+      (r.routeId?.toString() || '').includes(term) ||
+      (r.estimatedDuration || r.duration || '').toLowerCase().includes(term);
+    const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -137,12 +183,27 @@ export default function AdminRoutes() {
           <p className="text-gray-400 mt-2 font-medium">Configure and manage travel routes across the network.</p>
         </div>
         <button 
-          onClick={() => { setSelectedRoute(null); handleCreateOrEdit(); }}
+          onClick={() => handleCreateOrEdit(null)}
           className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
         >
           <Plus className="w-5 h-5" /> Create Route
         </button>
       </motion.div>
+
+      {notice && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className={`p-4 rounded-2xl flex items-center justify-between border ${
+            notice.type === 'success' 
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+              : 'bg-red-500/10 border-red-500/20 text-red-400'
+          }`}
+        >
+          <span className="text-sm font-medium">{notice.message}</span>
+          <button onClick={() => setNotice(null)} className="text-xs font-bold hover:underline ml-4">Dismiss</button>
+        </motion.div>
+      )}
 
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-[#1a1b23] border border-white/5 rounded-[2rem] p-6 shadow-xl flex flex-col md:flex-row gap-4 items-center mt-4">
         <div className="flex-1 w-full relative">
@@ -156,8 +217,24 @@ export default function AdminRoutes() {
           />
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0a0b10] border border-white/10 text-gray-300 font-semibold hover:text-white transition-colors">
-            <Filter className="w-4 h-4" /> Filter
+          <div className="relative flex-1 md:flex-none">
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="w-full md:w-auto appearance-none pl-11 pr-8 py-3 rounded-xl bg-[#0a0b10] border border-white/10 text-gray-300 font-semibold hover:text-white focus:outline-none focus:border-purple-500 cursor-pointer transition-colors"
+            >
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+          <button 
+            onClick={() => fetchRoutes()} 
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0a0b10] border border-white/10 text-gray-300 font-semibold hover:text-white transition-colors"
+            title="Refresh routes from database"
+          >
+            Refresh
           </button>
         </div>
       </motion.div>
@@ -201,13 +278,13 @@ export default function AdminRoutes() {
                     </span>
                   </td>
                   <td className="p-5 pr-8 flex items-center justify-end gap-2">
-                    <button onClick={() => handleView(r)} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                    <button onClick={() => handleView(r)} title="View Route" className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button onClick={() => { setSelectedRoute(r); handleCreateOrEdit(); }} className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
+                    <button onClick={() => handleCreateOrEdit(r)} title="Edit Route" className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(r.routeId)} className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
+                    <button onClick={() => handleDelete(r.routeId)} title="Delete Route" className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
@@ -235,7 +312,7 @@ export default function AdminRoutes() {
               className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
             >
               <h2 className="text-2xl font-bold text-white mb-6">
-                {viewMode ? 'Route Details' : (selectedRoute ? 'Edit Route' : 'Create New Route')}
+                {viewMode ? 'Route Details' : (selectedRoute ? `Edit Route #${selectedRoute.routeId}` : 'Create New Route')}
               </h2>
               {error && (
                 <div className="mb-4 bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl text-sm">
@@ -275,8 +352,9 @@ export default function AdminRoutes() {
                       <span className="text-white font-medium text-sm">{selectedRoute.description}</span>
                     </div>
                   )}
-                  <div className="flex justify-end mt-8">
+                  <div className="flex justify-end gap-3 mt-8">
                     <button onClick={() => { setShowForm(false); setSelectedRoute(null); setViewMode(false); }} className="px-5 py-2.5 rounded-xl font-semibold bg-white/10 text-white hover:bg-white/20 transition-all">Close</button>
+                    <button onClick={() => handleCreateOrEdit(selectedRoute)} className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all">Edit Route</button>
                   </div>
                 </div>
               ) : (
@@ -321,7 +399,7 @@ export default function AdminRoutes() {
                   <div className="flex justify-end gap-3 mt-8">
                     <button type="button" onClick={() => { setShowForm(false); setSelectedRoute(null); setViewMode(false); }} className="px-5 py-2.5 rounded-xl font-semibold text-gray-300 hover:bg-white/5 transition-all">Cancel</button>
                     <button type="submit" disabled={isSubmitting} className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all disabled:opacity-50">
-                      {isSubmitting ? 'Saving...' : 'Save Route'}
+                      {isSubmitting ? 'Saving...' : (selectedRoute ? 'Update Route' : 'Save Route')}
                     </button>
                   </div>
                 </form>

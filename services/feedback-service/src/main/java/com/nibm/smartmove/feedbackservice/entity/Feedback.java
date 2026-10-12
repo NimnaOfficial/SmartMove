@@ -34,5 +34,54 @@ public class Feedback {
     @Column(name = "CREATED_AT")
     private java.time.LocalDateTime createdAt;
 
+    @Transient
+    private Long id;
 
+    @Transient
+    private String route;
+
+    @Transient
+    private String routeName;
+
+    @Transient
+    private Long routeId;
+
+    @Transient
+    private Long vehicleId;
+
+    @Transient
+    private String vehicle;
+
+    @Transient
+    private Long driverId;
+
+    @Transient
+    private String driverName;
+
+    @Transient
+    private String passengerName;
+
+    @Transient
+    private Integer rating;
+
+    @Transient
+    private String comment;
+
+    @Transient
+    private String date;
+
+    public Long getId() {
+        return id != null ? id : feedbackId;
+    }
+
+    public String getComment() {
+        return (comment != null && !comment.isEmpty()) ? comment : description;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+        if (this.description == null || this.description.isEmpty()) {
+            this.description = comment;
+        }
+    }
 }

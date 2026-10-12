@@ -16,15 +16,19 @@ const staggerContainer = {
 
 export default function AdminVehicles() {
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE'>('ALL');
   const [showForm, setShowForm] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [viewOnly, setViewOnly] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   
   const [formData, setFormData] = useState<VehicleFormData>({
     registrationNumber: '',
-    type: 'Standard',
+    type: 'Luxury Coach',
     model: '',
     year: new Date().getFullYear(),
     capacity: 45,
@@ -35,8 +39,9 @@ export default function AdminVehicles() {
     try {
       const data = await vehicleService.getAll();
       setVehicles(Array.isArray(data) ? data : []);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setNotice({ type: 'error', message: 'Failed to load vehicles from database.' });
     }
   };
 
@@ -44,13 +49,21 @@ export default function AdminVehicles() {
     fetchVehicles();
   }, []);
 
+  useEffect(() => {
+    if (notice) {
+      const timer = setTimeout(() => setNotice(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notice]);
+
   const handleOpenForm = (v?: Vehicle) => {
     setViewOnly(false);
+    setFormError(null);
     if (v) {
       setSelectedVehicle(v);
       setFormData({
         registrationNumber: v.registrationNumber || '',
-        type: v.type || 'Standard',
+        type: v.type || 'Luxury Coach',
         model: v.model || '',
         year: v.year || new Date().getFullYear(),
         capacity: v.capacity || 45,
@@ -60,7 +73,7 @@ export default function AdminVehicles() {
       setSelectedVehicle(null);
       setFormData({
         registrationNumber: '',
-        type: 'Standard',
+        type: 'Luxury Coach',
         model: '',
         year: new Date().getFullYear(),
         capacity: 45,
@@ -77,35 +90,74 @@ export default function AdminVehicles() {
   };
 
   const handleSave = async () => {
+    setFormError(null);
+    const reg = (formData.registrationNumber || '').trim().toUpperCase();
+    if (!reg) {
+      setFormError('Registration number is required (e.g. ND-4521).');
+      return;
+    }
+    const model = (formData.model || '').trim();
+    if (!model) {
+      setFormError('Vehicle model is required (e.g. Volvo 9900).');
+      return;
+    }
+    if (!formData.capacity || formData.capacity <= 0) {
+      setFormError('Capacity must be greater than 0.');
+      return;
+    }
+
+    setIsSaving(true);
     try {
+      const payload: VehicleFormData = {
+        ...formData,
+        registrationNumber: reg,
+        model: model,
+        status: formData.status || 'ACTIVE'
+      };
       if (selectedVehicle) {
-        await vehicleService.update(selectedVehicle.vehicleId, formData);
+        await vehicleService.update(selectedVehicle.vehicleId, payload);
+        setNotice({ type: 'success', message: `Vehicle ${reg} updated successfully.` });
       } else {
-        await vehicleService.create(formData);
+        await vehicleService.create(payload);
+        setNotice({ type: 'success', message: `Vehicle ${reg} added successfully.` });
       }
       setShowForm(false);
       setSelectedVehicle(null);
-      fetchVehicles();
-    } catch (e) {
-      console.error(e);
+      await fetchVehicles();
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Failed to save vehicle.';
+      setFormError(msg);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this vehicle?")) {
+    const v = vehicles.find(item => item.vehicleId === id);
+    const reg = v?.registrationNumber || `ID ${id}`;
+    if (window.confirm(`Are you sure you want to delete vehicle ${reg}?`)) {
       try {
         await vehicleService.delete(id);
-        fetchVehicles();
-      } catch (e) {
-        console.error(e);
+        setNotice({ type: 'success', message: `Vehicle ${reg} processed successfully.` });
+        await fetchVehicles();
+      } catch (err: any) {
+        const msg = err.response?.data?.message || err.message || 'Failed to delete vehicle.';
+        alert(msg);
       }
     }
   };
 
-  const filtered = vehicles.filter(v => 
-    (v.registrationNumber || '').toLowerCase().includes(search.toLowerCase()) || 
-    (v.vehicleId?.toString() || '').includes(search.toLowerCase())
-  );
+  const filtered = vehicles.filter(v => {
+    const term = search.toLowerCase();
+    const matchesSearch = 
+      (v.registrationNumber || '').toLowerCase().includes(term) || 
+      (v.vehicleId?.toString() || '').includes(term) ||
+      (v.model || '').toLowerCase().includes(term) ||
+      (v.type || '').toLowerCase().includes(term) ||
+      (v.driverName || '').toLowerCase().includes(term);
+    const matchesStatus = statusFilter === 'ALL' || v.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="flex flex-col gap-6 pb-10">
@@ -122,23 +174,52 @@ export default function AdminVehicles() {
         </button>
       </motion.div>
 
+      {notice && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className={`p-4 rounded-2xl flex items-center justify-between border ${
+            notice.type === 'success' 
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+              : 'bg-red-500/10 border-red-500/20 text-red-400'
+          }`}
+        >
+          <span className="text-sm font-medium">{notice.message}</span>
+          <button onClick={() => setNotice(null)} className="text-xs font-bold hover:underline ml-4">Dismiss</button>
+        </motion.div>
+      )}
+
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-[#1a1b23] border border-white/5 rounded-[2rem] p-6 shadow-xl flex flex-col md:flex-row gap-4 items-center">
         <div className="flex-1 w-full relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input 
             type="text" 
-            placeholder="Search by registration or ID..." 
+            placeholder="Search by registration, model, type, or driver..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#0a0b10] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
           />
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0a0b10] border border-white/10 text-gray-300 font-semibold hover:text-white transition-colors">
-            <Filter className="w-4 h-4" /> Filter
-          </button>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0a0b10] border border-white/10 text-gray-300 font-semibold hover:text-white transition-colors">
-            <Settings2 className="w-4 h-4" /> Columns
+          <div className="relative flex-1 md:flex-none">
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="w-full md:w-auto appearance-none pl-11 pr-8 py-3 rounded-xl bg-[#0a0b10] border border-white/10 text-gray-300 font-semibold hover:text-white focus:outline-none focus:border-purple-500 cursor-pointer transition-colors"
+            >
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="MAINTENANCE">Maintenance</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+          <button 
+            onClick={() => fetchVehicles()} 
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0a0b10] border border-white/10 text-gray-300 font-semibold hover:text-white transition-colors"
+            title="Refresh fleet from database"
+          >
+            <Settings2 className="w-4 h-4" /> Refresh
           </button>
         </div>
       </motion.div>
@@ -216,6 +297,11 @@ export default function AdminVehicles() {
               className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
             >
               <h2 className="text-2xl font-bold text-white mb-6">{selectedVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}</h2>
+              {formError && (
+                <div className="p-3.5 mb-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                  {formError}
+                </div>
+              )}
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-400 block mb-1">Registration Number</label>
@@ -234,7 +320,7 @@ export default function AdminVehicles() {
                       className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50">
                       <option value="Luxury Coach">Luxury Coach</option>
                       <option value="Mini Bus">Mini Bus</option>
-                      <option value="Standard">Standard</option>
+                      <option value="Standard Bus">Standard Bus</option>
                       <option value="Sleeper">Sleeper</option>
                     </select>
                   </div>
@@ -273,13 +359,24 @@ export default function AdminVehicles() {
                     <option value="ACTIVE">Active</option>
                     <option value="MAINTENANCE">Maintenance</option>
                     <option value="INACTIVE">Inactive</option>
-                    <option value="RETIRED">Retired</option>
                   </select>
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-8">
-                <button onClick={() => setShowForm(false)} className="px-5 py-2.5 rounded-xl font-semibold text-gray-300 hover:bg-white/5 transition-all">Cancel</button>
-                <button onClick={handleSave} className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all">Save</button>
+                <button 
+                  onClick={() => setShowForm(false)} 
+                  disabled={isSaving}
+                  className="px-5 py-2.5 rounded-xl font-semibold text-gray-300 hover:bg-white/5 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSave} 
+                  disabled={isSaving}
+                  className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -318,6 +415,10 @@ export default function AdminVehicles() {
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Capacity</span>
                   <span className="text-white font-medium">{selectedVehicle.capacity} Seats</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Assigned Driver</span>
+                  <span className="text-white font-medium">{selectedVehicle.driverName || 'Unassigned'}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Status</span>
