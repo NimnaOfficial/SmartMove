@@ -16,4 +16,6 @@ public class FeedbackService {
     public Feedback save(Feedback entity) { return repository.save(entity); }
     public void deleteById(Long id) { repository.deleteById(id); }
     public List<Feedback> search(String q) { return repository.search(q); }
+    public List<Feedback> findByPassengerId(Long passengerId) { return repository.findByPassengerIdOrderByFeedbackIdDesc(passengerId); }
+    public List<Feedback> findAllDesc() { return repository.findAllByOrderByFeedbackIdDesc(); }
 }
