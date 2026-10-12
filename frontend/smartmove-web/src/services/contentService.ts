@@ -27,18 +27,37 @@ const contentService = {
   // ─── Announcements (MongoDB) ─────────────────────────────
   getAllAnnouncements: async (): Promise<Announcement[]> => {
     const res = await apiClient.get('/announcements');
-    return Array.isArray(res.data) ? res.data : [];
+    const items = Array.isArray(res.data) ? res.data : [];
+    return items.map((a: any) => {
+      const idVal = a._id ?? a.id ?? a.announcementId;
+      const cleanId = typeof idVal === 'object' && idVal !== null 
+        ? (idVal.$oid || idVal.toString()) 
+        : (idVal ? String(idVal) : undefined);
+      return {
+        ...a,
+        _id: cleanId,
+        id: cleanId,
+        announcementId: cleanId,
+      };
+    });
   },
   createAnnouncement: async (data: AnnouncementFormData): Promise<Announcement> => {
     const res = await apiClient.post('/announcements', data);
-    return res.data;
+    const a = res.data;
+    const idVal = a?._id ?? a?.id ?? a?.announcementId;
+    const cleanId = typeof idVal === 'object' && idVal !== null ? (idVal.$oid || idVal.toString()) : (idVal ? String(idVal) : undefined);
+    return { ...a, _id: cleanId, id: cleanId };
   },
   updateAnnouncement: async (id: string, data: AnnouncementFormData): Promise<Announcement> => {
-    const res = await apiClient.put(`/announcements/${id}`, data);
-    return res.data;
+    const cleanId = typeof id === 'object' && id !== null ? ((id as any).$oid || (id as any).toString()) : String(id);
+    const res = await apiClient.put(`/announcements/${encodeURIComponent(cleanId)}`, data);
+    const a = res.data;
+    const idVal = a?._id ?? a?.id ?? a?.announcementId ?? cleanId;
+    return { ...a, _id: String(idVal), id: String(idVal) };
   },
   deleteAnnouncement: async (id: string): Promise<void> => {
-    await apiClient.delete(`/announcements/${id}`);
+    const cleanId = typeof id === 'object' && id !== null ? ((id as any).$oid || (id as any).toString()) : String(id);
+    await apiClient.delete(`/announcements/${encodeURIComponent(cleanId)}`);
   },
 
   // ─── Vehicle Documents (MongoDB) ─────────────────────────
