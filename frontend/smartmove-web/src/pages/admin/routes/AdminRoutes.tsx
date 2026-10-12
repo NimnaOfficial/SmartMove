@@ -46,6 +46,8 @@ export default function AdminRoutes() {
 
   useEffect(() => {
     fetchRoutes();
+    const interval = setInterval(fetchRoutes, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

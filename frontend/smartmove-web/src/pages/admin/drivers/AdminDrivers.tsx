@@ -46,6 +46,8 @@ export default function AdminDrivers() {
 
   useEffect(() => {
     fetchDrivers();
+    const interval = setInterval(fetchDrivers, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const [formError, setFormError] = useState<string | null>(null);

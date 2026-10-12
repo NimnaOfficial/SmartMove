@@ -207,7 +207,7 @@ export default function DriverDashboard() {
                 ))}
               </div>
               <button 
-                onClick={fetchDashboard} 
+                onClick={() => fetchDashboard(false)} 
                 className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
                 title="Refresh schedule"
               >

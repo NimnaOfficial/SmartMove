@@ -22,74 +22,78 @@ export default function TravelHistory() {
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
+  const fetchHistory = async (silent = false) => {
+     try {
+       if (!silent) setLoading(true);
+       const user = authService.getCurrentUser() as any;
+       const passengerId = user?.userId || user?.passengerId || user?.id || 1;
+       let data: any[] = [];
        try {
-         const user = authService.getCurrentUser() as any;
-         const passengerId = user?.userId || user?.passengerId || user?.id || 1;
-         let data: any[] = [];
-         try {
-           const reportRes = await reportService.getPassengerHistory(passengerId);
-           if (Array.isArray(reportRes)) {
-             data = reportRes;
-           } else if (Array.isArray(reportRes?.trips)) {
-             data = reportRes.trips;
-           }
-         } catch (err) {
-           console.warn('Report service error, falling back to bookings', err);
+         const reportRes = await reportService.getPassengerHistory(passengerId);
+         if (Array.isArray(reportRes)) {
+           data = reportRes;
+         } else if (Array.isArray(reportRes?.trips)) {
+           data = reportRes.trips;
          }
-
-         if (!data || data.length === 0) {
-           try {
-             const bookings = await bookingService.getMyBookings(passengerId);
-             if (Array.isArray(bookings) && bookings.length > 0) {
-               data = bookings;
-             }
-           } catch {}
-         }
-
-         const completedAndPaid = (data || []).filter((item: any) => {
-           const rawStatus = (item.status || item.STATUS || item.booking_status || item.BOOKING_STATUS || item.bookingStatus || item.trip_status || item.TRIP_STATUS || '').toUpperCase();
-           const rawPay = (item.paymentStatus || item.PAYMENT_STATUS || item.payment_status || '').toUpperCase();
-           const isCompleted = rawStatus === 'COMPLETED';
-           const isPaid = rawPay === 'PAID' || rawPay === 'SUCCESS';
-           return isCompleted && isPaid;
-         });
-
-         const mapped = completedAndPaid.map((item: any, idx: number) => {
-           const tripId = item.tripId || item.TRIP_ID || item.trip_id || item.id || (idx + 1);
-           const bookingId = item.bookingId || item.BOOKING_ID || item.booking_id || (idx + 1);
-           const rawRoute = item.route || item.route_details || item.ROUTE_DETAILS || 'Colombo → Kandy';
-           const cleanRoute = String(rawRoute).replace(' to ', ' → ').replace(' -> ', ' → ');
-
-           const rawDate = item.date || item.departure_time || item.DEPARTURE_TIME || item.travelDate || item.bookingDate;
-           let dateStr = 'Completed';
-           if (rawDate) {
-             const d = new Date(rawDate);
-             dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : String(rawDate);
-           }
-
-           const veh = item.vehicle || item.registration_number || item.REGISTRATION_NUMBER || 'Volvo 9900 (ND-4521)';
-           const payStatus = 'Paid';
-
-           return {
-             id: `TRIP-${tripId}`,
-             route: cleanRoute,
-             date: dateStr,
-             vehicle: veh,
-             booking: `BK-${bookingId}`,
-             paymentStatus: payStatus
-           };
-         });
-
-         setHistoryData(mapped);
-       } catch (e) {
-         console.error(e);
-       } finally {
-         setLoading(false);
+       } catch (err) {
+         console.warn('Report service error, falling back to bookings', err);
        }
-    };
+
+       if (!data || data.length === 0) {
+         try {
+           const bookings = await bookingService.getMyBookings(passengerId);
+           if (Array.isArray(bookings) && bookings.length > 0) {
+             data = bookings;
+           }
+         } catch {}
+       }
+
+       const completedAndPaid = (data || []).filter((item: any) => {
+         const rawStatus = (item.status || item.STATUS || item.booking_status || item.BOOKING_STATUS || item.bookingStatus || item.trip_status || item.TRIP_STATUS || '').toUpperCase();
+         const rawPay = (item.paymentStatus || item.PAYMENT_STATUS || item.payment_status || '').toUpperCase();
+         const isCompleted = rawStatus === 'COMPLETED';
+         const isPaid = rawPay === 'PAID' || rawPay === 'SUCCESS';
+         return isCompleted && isPaid;
+       });
+
+       const mapped = completedAndPaid.map((item: any, idx: number) => {
+         const tripId = item.tripId || item.TRIP_ID || item.trip_id || item.id || (idx + 1);
+         const bookingId = item.bookingId || item.BOOKING_ID || item.booking_id || (idx + 1);
+         const rawRoute = item.route || item.route_details || item.ROUTE_DETAILS || 'Colombo → Kandy';
+         const cleanRoute = String(rawRoute).replace(' to ', ' → ').replace(' -> ', ' → ');
+
+         const rawDate = item.date || item.departure_time || item.DEPARTURE_TIME || item.travelDate || item.bookingDate;
+         let dateStr = 'Completed';
+         if (rawDate) {
+           const d = new Date(rawDate);
+           dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : String(rawDate);
+         }
+
+         const veh = item.vehicle || item.registration_number || item.REGISTRATION_NUMBER || 'Volvo 9900 (ND-4521)';
+         const payStatus = 'Paid';
+
+         return {
+           id: `TRIP-${tripId}`,
+           route: cleanRoute,
+           date: dateStr,
+           vehicle: veh,
+           booking: `BK-${bookingId}`,
+           paymentStatus: payStatus
+         };
+       });
+
+       setHistoryData(mapped);
+     } catch (e) {
+       console.error(e);
+     } finally {
+       if (!silent) setLoading(false);
+     }
+  };
+
+  useEffect(() => {
     fetchHistory();
+    const interval = setInterval(() => fetchHistory(true), 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredHistory = historyData.filter(trip => {
@@ -104,7 +108,13 @@ export default function TravelHistory() {
       {/* Header */}
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Travel History</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Travel History</h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Sync
+            </span>
+          </div>
           <p className="text-gray-500 mt-2 font-light">View your past trips and booking records.</p>
         </div>
       </motion.div>

@@ -31,8 +31,9 @@ export default function PassengerDashboard() {
   const user = userStr ? JSON.parse(userStr) : null;
   const firstName = user?.firstName || user?.FIRST_NAME || user?.name || 'Passenger';
 
-  useEffect(() => {
-    bookingService.getMyBookings().then(data => {
+  const fetchDashboard = async () => {
+    try {
+      const data = await bookingService.getMyBookings();
       if (Array.isArray(data)) {
         setAllBookings(data);
         const upcoming = data.filter(b => {
@@ -41,41 +42,48 @@ export default function PassengerDashboard() {
         }).sort((a, b) => new Date(b.bookingDate || b.createdAt || 0).getTime() - new Date(a.bookingDate || a.createdAt || 0).getTime());
         setUpcomingBookings(upcoming.slice(0, 3));
       }
-    }).catch(e => console.error(e));
+    } catch (e) {
+      console.error(e);
+    }
 
-    contentService.getAllAnnouncements().then(data => {
+    try {
+      const data = await contentService.getAllAnnouncements();
       if (Array.isArray(data)) {
         setAnnouncements(data.slice(0, 3));
       }
-    }).catch(e => console.error(e));
+    } catch (e) {
+      console.error(e);
+    }
 
-    const loadRecentReviews = async () => {
-      try {
-        const passengerId = user?.userId || user?.passengerId || user?.id || 1;
-        let data = await feedbackService.getByPassenger(passengerId);
-        if (!Array.isArray(data) || data.length === 0) {
-          data = await feedbackService.getAll();
-        }
-        if (Array.isArray(data) && data.length > 0) {
-          setReviews(data.slice(0, 1));
-        } else {
-          const contentReviews = await contentService.getAllReviews();
-          if (Array.isArray(contentReviews)) {
-            setReviews(contentReviews.slice(0, 1));
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load recent reviews', e);
-        try {
-          const fallback = await contentService.getAllReviews();
-          if (Array.isArray(fallback)) {
-            setReviews(fallback.slice(0, 1));
-          }
-        } catch {}
+    try {
+      const passengerId = user?.userId || user?.passengerId || user?.id || 1;
+      let data = await feedbackService.getByPassenger(passengerId);
+      if (!Array.isArray(data) || data.length === 0) {
+        data = await feedbackService.getAll();
       }
-    };
+      if (Array.isArray(data) && data.length > 0) {
+        setReviews(data.slice(0, 1));
+      } else {
+        const contentReviews = await contentService.getAllReviews();
+        if (Array.isArray(contentReviews)) {
+          setReviews(contentReviews.slice(0, 1));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load recent reviews', e);
+      try {
+        const fallback = await contentService.getAllReviews();
+        if (Array.isArray(fallback)) {
+          setReviews(fallback.slice(0, 1));
+        }
+      } catch {}
+    }
+  };
 
-    loadRecentReviews();
+  useEffect(() => {
+    fetchDashboard();
+    const interval = setInterval(fetchDashboard, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const nextBooking = upcomingBookings.length > 0 ? upcomingBookings[0] : null;
@@ -92,7 +100,13 @@ export default function PassengerDashboard() {
       {/* Header Section */}
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Dynamic
+            </span>
+          </div>
           <p className="text-gray-500 mt-2 font-light">Welcome back {firstName}, here is your travel summary.</p>
         </div>
         <button onClick={() => navigate('/passenger/trips')} className="hidden sm:flex items-center gap-2 bg-[#1e3f7a] text-white px-5 py-2.5 rounded-full font-semibold hover:bg-[#152e5e] transition-colors shadow-md hover:-translate-y-0.5">

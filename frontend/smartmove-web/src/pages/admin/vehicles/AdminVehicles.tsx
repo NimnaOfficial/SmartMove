@@ -47,6 +47,8 @@ export default function AdminVehicles() {
 
   useEffect(() => {
     fetchVehicles();
+    const interval = setInterval(fetchVehicles, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
