@@ -84,10 +84,10 @@ export default function AdminContent() {
     if (ann) {
       setSelectedAnn(ann);
       setAnnForm({
-        title: ann.title,
-        message: ann.message,
+        title: ann.title || '',
+        message: ann.message || (ann as any).content || '',
         targetAudience: ann.targetAudience || 'ALL',
-        priority: ann.priority
+        priority: ann.priority || 'MEDIUM'
       });
     } else {
       setSelectedAnn(null);
@@ -104,27 +104,28 @@ export default function AdminContent() {
   const handleSaveAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (selectedAnn && selectedAnn._id) {
-        await contentService.updateAnnouncement(selectedAnn._id, annForm);
+      const targetId = selectedAnn ? (selectedAnn._id || selectedAnn.id || (selectedAnn as any).announcementId) : null;
+      if (selectedAnn && targetId) {
+        await contentService.updateAnnouncement(String(targetId), annForm);
       } else {
         await contentService.createAnnouncement(annForm);
       }
       setShowAnnModal(false);
       setSelectedAnn(null);
       const data = await contentService.getAllAnnouncements();
-      setAnnouncements(data);
+      setAnnouncements(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleDeleteAnnouncement = async (id?: string) => {
+  const handleDeleteAnnouncement = async (id?: any) => {
     if (!id) return;
     if (window.confirm('Are you sure you want to delete this announcement?')) {
       try {
-        await contentService.deleteAnnouncement(id);
+        await contentService.deleteAnnouncement(String(id));
         const data = await contentService.getAllAnnouncements();
-        setAnnouncements(data);
+        setAnnouncements(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error(e);
       }
@@ -305,7 +306,7 @@ export default function AdminContent() {
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button 
-                          onClick={() => handleDeleteAnnouncement(ann._id)}
+                          onClick={() => handleDeleteAnnouncement(ann._id || ann.id || (ann as any).announcementId)}
                           className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center transition-colors cursor-pointer"
                           title="Delete Announcement"
                         >

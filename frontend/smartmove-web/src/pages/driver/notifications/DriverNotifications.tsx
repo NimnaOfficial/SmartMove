@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import contentService from '@/services/contentService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
@@ -32,54 +32,35 @@ export default function DriverNotifications() {
   const [activeTab, setActiveTab] = useState<TabType>('All');
   
   const [notifications, setNotifications] = useState<any[]>([]);
+  const readMapRef = useRef<Record<string, boolean>>({});
   
-  useEffect(() => {
-     const fetchAnnouncements = async () => {
-        try {
-           const data = await contentService.getAllAnnouncements();
-           if (Array.isArray(data) && data.length > 0) {
-              setNotifications(data.map((a: any) => {
-                 const meta = getIconAndColor(a);
-                 const dateStr = a.createdAt || a.publishedAt 
-                    ? new Date(a.createdAt || a.publishedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) 
-                    : 'Recent';
-                 return {
-                    id: a.announcementId || a.id || a._id,
-                    title: a.title,
-                    message: a.content || a.message || 'Operational update for fleet captains.',
-                    time: dateStr,
-                    date: dateStr,
-                    icon: meta.icon,
-                    color: meta.color,
-                    read: false
-                 };
-              }));
-           } else {
-              setNotifications([
-                {
-                  id: 'ann-1',
-                  title: 'New High-Speed Expressway Fleet Launched',
-                  message: 'We have added brand new Volvo 9900 coaches to our Southern Expressway routes starting this week.',
-                  time: 'Today',
-                  date: 'Today',
-                  icon: Bell,
-                  color: 'blue',
-                  read: false
-                },
-                {
-                  id: 'ann-2',
-                  title: 'Driver Safety & Defensive Driving Workshop',
-                  message: 'Mandatory quarterly safety refresher for all Southern and Central route captains on Friday.',
-                  time: 'Yesterday',
-                  date: 'Yesterday',
-                  icon: AlertTriangle,
-                  color: 'orange',
-                  read: false
-                }
-              ]);
-           }
-        } catch (e) {
-           console.error(e);
+  const fetchAnnouncements = async () => {
+     try {
+        const data = await contentService.getAllAnnouncements();
+        if (Array.isArray(data) && data.length > 0) {
+           const relevant = data.filter((a: any) => {
+              const aud = (a.targetAudience || 'ALL').toUpperCase();
+              return aud === 'ALL' || aud === 'DRIVERS';
+           });
+           const toDisplay = relevant.length > 0 ? relevant : data;
+           setNotifications(toDisplay.map((a: any) => {
+              const meta = getIconAndColor(a);
+              const rawId = String(a.announcementId || a.id || a._id || a.title);
+              const dateStr = a.createdAt || a.publishedAt 
+                 ? new Date(a.createdAt || a.publishedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) 
+                 : 'Recent';
+              return {
+                 id: rawId,
+                 title: a.title,
+                 message: a.content || a.message || 'Operational update for fleet captains.',
+                 time: dateStr,
+                 date: dateStr,
+                 icon: meta.icon,
+                 color: meta.color,
+                 read: Boolean(readMapRef.current[rawId])
+              };
+           }));
+        } else {
            setNotifications([
              {
                id: 'ann-1',
@@ -89,7 +70,7 @@ export default function DriverNotifications() {
                date: 'Today',
                icon: Bell,
                color: 'blue',
-               read: false
+               read: Boolean(readMapRef.current['ann-1'])
              },
              {
                id: 'ann-2',
@@ -99,21 +80,35 @@ export default function DriverNotifications() {
                date: 'Yesterday',
                icon: AlertTriangle,
                color: 'orange',
-               read: false
+               read: Boolean(readMapRef.current['ann-2'])
              }
            ]);
         }
-     };
+     } catch (e) {
+        console.error(e);
+     }
+  };
+
+  useEffect(() => {
      fetchAnnouncements();
+     const timer = setInterval(() => {
+        fetchAnnouncements();
+     }, 5000);
+     return () => clearInterval(timer);
   }, []);
 
   const filteredNotifications = notifications.filter(n => activeTab === 'All' || !n.read);
 
   const markAsRead = (id: string | number) => {
-    setNotifications(prev => prev.map(n => String(n.id) === String(id) ? { ...n, read: true } : n));
+    const key = String(id);
+    readMapRef.current[key] = true;
+    setNotifications(prev => prev.map(n => String(n.id) === key ? { ...n, read: true } : n));
   };
 
   const markAllAsRead = () => {
+    notifications.forEach(n => {
+      readMapRef.current[String(n.id)] = true;
+    });
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
