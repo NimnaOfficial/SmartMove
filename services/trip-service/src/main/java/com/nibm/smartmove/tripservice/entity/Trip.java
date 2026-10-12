@@ -43,5 +43,56 @@ public class Trip {
     @Column(name = "UPDATED_AT")
     private java.time.LocalDateTime updatedAt;
 
+    @Transient
+    private Long id;
 
+    @Transient
+    private String origin;
+
+    @Transient
+    private String destination;
+
+    @Transient
+    private String route;
+
+    @Transient
+    private String routeOrigin;
+
+    @Transient
+    private String routeDestination;
+
+    @Transient
+    private Double fare;
+
+    @Transient
+    private String vehicle;
+
+    @Transient
+    private String vehicleRegistration;
+
+    @Transient
+    private String vehicleType;
+
+    @Transient
+    private String vehicleModel;
+
+    @Transient
+    private String driverName;
+
+    @Transient
+    private String date;
+
+    @Transient
+    private String departureDate;
+
+    public Long getId() {
+        return this.tripId != null ? this.tripId : this.id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+        if (this.tripId == null) {
+            this.tripId = id;
+        }
+    }
 }
