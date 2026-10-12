@@ -127,6 +127,8 @@ export interface Passenger {
   totalBookings?: number;
   registeredAt?: string;
   updatedAt?: string;
+  address?: string;
+  city?: string;
 }
 
 export interface PassengerFormData {
@@ -134,6 +136,8 @@ export interface PassengerFormData {
   lastName: string;
   email: string;
   phone: string;
+  address?: string;
+  city?: string;
 }
 
 // ─── Trip (Oracle) ───────────────────────────────────────────

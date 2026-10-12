@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import passengerService from '@/services/passengerService';
+import authService from '@/services/authService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Shield, Key, 
@@ -20,36 +21,136 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('Changes saved successfully!');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
   const [profileData, setProfileData] = useState<any>({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    address: '',
-    city: '',
+    address: 'Colombo, Sri Lanka',
+    city: 'Colombo',
+  });
+
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const data = await passengerService.getProfile();
-        if (data) setProfileData((prev: any) => ({ ...prev, ...data }));
+        const user = authService.getCurrentUser();
+        const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
+        const data = await passengerService.getProfile(passengerId);
+        if (data) {
+          setProfileData((prev: any) => ({
+            ...prev,
+            ...data,
+            firstName: data.firstName || user?.firstName || '',
+            lastName: data.lastName || user?.lastName || '',
+            email: data.email || user?.email || '',
+            phone: data.phone || user?.phone || '',
+            address: data.address || prev.address || 'Colombo, Sri Lanka',
+            city: data.city || prev.city || 'Colombo',
+          }));
+        } else if (user) {
+          setProfileData((prev: any) => ({
+            ...prev,
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            email: user.email || '',
+            phone: user.phone || '',
+          }));
+        }
       } catch (e) {
-        console.error(e);
+        console.error('Failed to fetch profile', e);
+        const user = authService.getCurrentUser();
+        if (user) {
+          setProfileData((prev: any) => ({
+            ...prev,
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            email: user.email || '',
+            phone: user.phone || '',
+          }));
+        }
       }
     };
     fetchProfile();
   }, []);
 
-    const handleSave = async () => {
+  const handleSave = async () => {
     try {
-      await passengerService.updateProfile(profileData);
+      const user = authService.getCurrentUser();
+      const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
+      const updated = await passengerService.updateProfile({
+        ...profileData,
+        passengerId,
+      });
+
+      if (updated) {
+        setProfileData((prev: any) => ({ ...prev, ...updated }));
+      }
+
+      if (user) {
+        const updatedUser = {
+          ...user,
+          firstName: profileData.firstName || user.firstName,
+          lastName: profileData.lastName || user.lastName,
+          email: profileData.email || user.email,
+          phone: profileData.phone || user.phone,
+        };
+        localStorage.setItem('smartmove_user', JSON.stringify(updatedUser));
+      }
+
       setIsEditing(false);
-      setIsChangingPassword(false);
+      setToastType('success');
+      setToastMessage('Changes saved successfully!');
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
-    } catch(e) { console.error(e); }
+    } catch (e) {
+      console.error('Failed to save profile changes', e);
+      setToastType('error');
+      setToastMessage('Failed to save changes. Please try again.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (!passwords.newPassword) {
+      setToastType('error');
+      setToastMessage('Please enter a new password.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setToastType('error');
+      setToastMessage('New password and confirmation do not match.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
+    try {
+      await authService.changePassword(passwords.newPassword);
+      setIsChangingPassword(false);
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setToastType('success');
+      setToastMessage('Password updated successfully!');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (e) {
+      console.error('Failed to change password', e);
+      setToastType('error');
+      setToastMessage('Failed to update password. Please try again.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
   };
 
   return (
@@ -62,10 +163,10 @@ export default function Profile() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-0 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 font-medium"
+            className={`absolute top-0 right-4 z-50 ${toastType === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 font-medium`}
           >
-            <CheckCircle2 className="w-5 h-5" />
-            Changes saved successfully!
+            {toastType === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+            {toastMessage}
           </motion.div>
         )}
       </AnimatePresence>
@@ -269,6 +370,8 @@ export default function Profile() {
                     <input 
                       type="password" 
                       placeholder="••••••••"
+                      value={passwords.currentPassword}
+                      onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
                       className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3f7a] focus:border-transparent transition-all"
                     />
                   </div>
@@ -277,6 +380,8 @@ export default function Profile() {
                     <input 
                       type="password" 
                       placeholder="••••••••"
+                      value={passwords.newPassword}
+                      onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
                       className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3f7a] focus:border-transparent transition-all"
                     />
                   </div>
@@ -286,10 +391,12 @@ export default function Profile() {
                       <input 
                         type="password" 
                         placeholder="••••••••"
+                        value={passwords.confirmPassword}
+                        onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
                         className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1e3f7a] focus:border-transparent transition-all"
                       />
                       <button 
-                        onClick={handleSave}
+                        onClick={handlePasswordUpdate}
                         className="px-4 py-2.5 rounded-xl bg-gray-900 text-white font-semibold hover:bg-black transition-colors"
                       >
                         Update
