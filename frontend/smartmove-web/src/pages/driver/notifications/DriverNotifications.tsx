@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import contentService from '@/services/contentService';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, CheckCircle2 } from 'lucide-react';
+import { Bell, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -16,6 +16,18 @@ const staggerContainer = {
 const tabs = ['All', 'Unread'] as const;
 type TabType = typeof tabs[number];
 
+const getIconAndColor = (a: any) => {
+  const pri = (a.priority || '').toUpperCase();
+  const aud = (a.targetAudience || '').toUpperCase();
+  if (pri === 'HIGH' || pri === 'URGENT') {
+    return { icon: AlertTriangle, color: 'orange' };
+  }
+  if (aud === 'DRIVERS') {
+    return { icon: ShieldCheck, color: 'purple' };
+  }
+  return { icon: Bell, color: 'blue' };
+};
+
 export default function DriverNotifications() {
   const [activeTab, setActiveTab] = useState<TabType>('All');
   
@@ -26,13 +38,22 @@ export default function DriverNotifications() {
         try {
            const data = await contentService.getAllAnnouncements();
            if (Array.isArray(data) && data.length > 0) {
-              setNotifications(data.map((a: any) => ({
-                 id: a.announcementId || a.id || a._id,
-                 title: a.title,
-                 message: a.content || a.message || 'Operational update for fleet captains.',
-                 time: a.createdAt || a.publishedAt ? new Date(a.createdAt || a.publishedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Recent',
-                 read: false
-              })));
+              setNotifications(data.map((a: any) => {
+                 const meta = getIconAndColor(a);
+                 const dateStr = a.createdAt || a.publishedAt 
+                    ? new Date(a.createdAt || a.publishedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) 
+                    : 'Recent';
+                 return {
+                    id: a.announcementId || a.id || a._id,
+                    title: a.title,
+                    message: a.content || a.message || 'Operational update for fleet captains.',
+                    time: dateStr,
+                    date: dateStr,
+                    icon: meta.icon,
+                    color: meta.color,
+                    read: false
+                 };
+              }));
            } else {
               setNotifications([
                 {
@@ -40,6 +61,9 @@ export default function DriverNotifications() {
                   title: 'New High-Speed Expressway Fleet Launched',
                   message: 'We have added brand new Volvo 9900 coaches to our Southern Expressway routes starting this week.',
                   time: 'Today',
+                  date: 'Today',
+                  icon: Bell,
+                  color: 'blue',
                   read: false
                 },
                 {
@@ -47,12 +71,37 @@ export default function DriverNotifications() {
                   title: 'Driver Safety & Defensive Driving Workshop',
                   message: 'Mandatory quarterly safety refresher for all Southern and Central route captains on Friday.',
                   time: 'Yesterday',
+                  date: 'Yesterday',
+                  icon: AlertTriangle,
+                  color: 'orange',
                   read: false
                 }
               ]);
            }
         } catch (e) {
            console.error(e);
+           setNotifications([
+             {
+               id: 'ann-1',
+               title: 'New High-Speed Expressway Fleet Launched',
+               message: 'We have added brand new Volvo 9900 coaches to our Southern Expressway routes starting this week.',
+               time: 'Today',
+               date: 'Today',
+               icon: Bell,
+               color: 'blue',
+               read: false
+             },
+             {
+               id: 'ann-2',
+               title: 'Driver Safety & Defensive Driving Workshop',
+               message: 'Mandatory quarterly safety refresher for all Southern and Central route captains on Friday.',
+               time: 'Yesterday',
+               date: 'Yesterday',
+               icon: AlertTriangle,
+               color: 'orange',
+               read: false
+             }
+           ]);
         }
      };
      fetchAnnouncements();
@@ -60,8 +109,8 @@ export default function DriverNotifications() {
 
   const filteredNotifications = notifications.filter(n => activeTab === 'All' || !n.read);
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAsRead = (id: string | number) => {
+    setNotifications(prev => prev.map(n => String(n.id) === String(id) ? { ...n, read: true } : n));
   };
 
   const markAllAsRead = () => {
@@ -126,7 +175,7 @@ export default function DriverNotifications() {
           >
             {filteredNotifications.length > 0 ? (
               filteredNotifications.map((notif) => {
-                const Icon = notif.icon;
+                const Icon = notif.icon || Bell;
                 const isUnread = !notif.read;
                 
                 return (
@@ -151,7 +200,7 @@ export default function DriverNotifications() {
                         <h3 className={`text-base font-bold ${isUnread ? 'text-gray-900' : 'text-gray-600'}`}>
                           {notif.title}
                         </h3>
-                        <span className="text-xs font-bold text-gray-400 whitespace-nowrap">{notif.date}</span>
+                        <span className="text-xs font-bold text-gray-400 whitespace-nowrap">{notif.date || notif.time || 'Recent'}</span>
                       </div>
                       <p className={`text-sm font-medium ${isUnread ? 'text-gray-600' : 'text-gray-500'}`}>
                         {notif.message}
