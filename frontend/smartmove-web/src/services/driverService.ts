@@ -4,9 +4,6 @@ import authService from './authService';
 import tripService from './tripService';
 
 const driverService = {
-  updateTripStatus: async (tripId: number, status: string): Promise<any> => {
-    return tripService.updateStatus(tripId, status);
-  },
   getAll: async (): Promise<Driver[]> => {
     const res = await apiClient.get('/drivers');
     return Array.isArray(res.data) ? res.data : [];
@@ -29,7 +26,7 @@ const driverService = {
   getProfile: async (): Promise<Driver> => {
     const res = await apiClient.get('/drivers/profile');
     if (res.data && res.data.driverId) return res.data;
-    
+
     // Fallback to fetch by current authenticated user ID
     const user = authService.getCurrentUser();
     if (user && user.userId) {
