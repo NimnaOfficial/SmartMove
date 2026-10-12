@@ -48,19 +48,33 @@ export default function AdminFeedback() {
     fetchFeedback();
   }, []);
 
+  const getRating = (f: Feedback) => {
+    if (f.rating != null && f.rating > 0) return f.rating;
+    if (f.type === 'APPRECIATION') return 5;
+    if (f.type === 'SUGGESTION') return 3;
+    if (f.type === 'COMPLAINT') return 1;
+    return 4;
+  };
+
+  const getComment = (f: Feedback) => {
+    return f.comment || f.description || 'No feedback comment provided.';
+  };
+
   const filtered = feedbackList.filter(f => {
     const passengerStr = f.passengerName || '';
     const routeStr = f.routeName || '';
-    const commentStr = f.comment || '';
+    const commentStr = getComment(f);
+    const rating = getRating(f);
     
     const matchSearch = passengerStr.toLowerCase().includes(search.toLowerCase()) || 
       routeStr.toLowerCase().includes(search.toLowerCase()) ||
-      commentStr.toLowerCase().includes(search.toLowerCase());
+      commentStr.toLowerCase().includes(search.toLowerCase()) ||
+      f.feedbackId.toString().includes(search);
 
     const matchFilter = activeFilter === 'All' || 
-      (activeFilter === 'Positive' && f.rating >= 4) || 
-      (activeFilter === 'Negative' && f.rating <= 2) || 
-      (activeFilter === 'Neutral' && f.rating === 3);
+      (activeFilter === 'Positive' && rating >= 4) || 
+      (activeFilter === 'Negative' && rating <= 2) || 
+      (activeFilter === 'Neutral' && rating === 3);
 
     return matchSearch && matchFilter;
   });
@@ -110,42 +124,48 @@ export default function AdminFeedback() {
       )}
 
       <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 gap-4">
-        {filtered.map((item) => (
-          <motion.div key={item.feedbackId} variants={fadeUp} className="bg-[#1a1b23] rounded-2xl p-5 border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">
-            <div className="flex items-start gap-4 flex-1">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shrink-0">
-                <MessageSquare className="w-6 h-6 text-indigo-400" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-bold text-white">{item.passengerName || `Passenger #${item.passengerId}`}</h3>
-                  <div className="flex items-center gap-1 bg-[#0a0b10] px-2 py-1 rounded-md border border-white/5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`w-3.5 h-3.5 ${i < item.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}`} />
-                    ))}
+        {filtered.map((item) => {
+          const rating = getRating(item);
+          const comment = getComment(item);
+
+          return (
+            <motion.div key={item.feedbackId} variants={fadeUp} className="bg-[#1a1b23] rounded-2xl p-5 border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shrink-0">
+                  <MessageSquare className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-bold text-white">{item.passengerName || `Passenger #${item.passengerId}`}</h3>
+                    <div className="flex items-center gap-1 bg-[#0a0b10] px-2 py-1 rounded-md border border-white/5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-3.5 h-3.5 ${i < rating ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-300 mt-2 line-clamp-2">
+                    "{comment}"
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-500 font-medium">
+                    {item.routeName && <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5">{item.routeName}</span>}
+                    <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5">{item.createdAt?.split('T')[0] || 'N/A'}</span>
+                    <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5 text-purple-400 uppercase">{item.type}</span>
                   </div>
                 </div>
-                <div className="text-sm text-gray-300 mt-2 line-clamp-2">
-                  "{item.comment}"
-                </div>
-                <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-500 font-medium">
-                  {item.routeName && <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5">{item.routeName}</span>}
-                  <span className="bg-[#0a0b10] px-2 py-1 rounded border border-white/5">{item.createdAt?.split('T')[0] || 'N/A'}</span>
-                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <button onClick={() => setSelectedFeedback(item)} className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-all flex items-center gap-2 font-medium">
-                <Eye className="w-4 h-4" />
-                View
-              </button>
-              <button onClick={() => handleDelete(item.feedbackId)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all flex items-center justify-center font-medium" title="Delete Feedback">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+              <div className="flex items-center gap-2">
+                <button onClick={() => setSelectedFeedback(item)} className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-all flex items-center gap-2 font-medium">
+                  <Eye className="w-4 h-4" />
+                  View
+                </button>
+                <button onClick={() => handleDelete(item.feedbackId)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all flex items-center justify-center font-medium" title="Delete Feedback">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          );
+        })}
         {filtered.length === 0 && (
           <div className="text-center py-10 bg-[#1a1b23] rounded-2xl border border-white/5">
             <p className="text-gray-400 font-medium">No feedback matches your criteria.</p>
@@ -168,12 +188,12 @@ export default function AdminFeedback() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`w-6 h-6 ${i < selectedFeedback.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}`} />
+                    <Star key={i} className={`w-6 h-6 ${i < getRating(selectedFeedback) ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}`} />
                   ))}
                 </div>
                 
                 <div className="bg-[#0a0b10] p-4 rounded-xl border border-white/5 text-gray-300 italic">
-                  "{selectedFeedback.comment}"
+                  "{getComment(selectedFeedback)}"
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mt-4">

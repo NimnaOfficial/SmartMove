@@ -239,7 +239,7 @@ export default function DriverProfile() {
               </span>
             </div>
             <p className="text-xs text-gray-500 leading-relaxed">
-              Your driver account credentials allow access to assigned dispatch manifests, passenger logs, and real-time operations messaging. Always maintain a private password.
+              Your driver account credentials allow access to assigned trip manifests, passenger logs, and route schedules. Always maintain a private password.
             </p>
             <div className="mt-4 p-4 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-between">
               <div>

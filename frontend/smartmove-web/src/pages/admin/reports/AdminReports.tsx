@@ -192,15 +192,15 @@ export default function AdminReports() {
                         <div className="grid grid-cols-3 gap-4 mb-8">
                           <div className="bg-[#0a0b10] p-4 rounded-xl border border-white/5">
                             <div className="text-gray-500 text-sm mb-1">Total Revenue</div>
-                            <div className="text-2xl font-bold text-emerald-400">${revenue.totalRevenue.toFixed(2)}</div>
+                            <div className="text-2xl font-bold text-emerald-400">${(revenue.totalRevenue ?? 0).toFixed(2)}</div>
                           </div>
                           <div className="bg-[#0a0b10] p-4 rounded-xl border border-white/5">
                             <div className="text-gray-500 text-sm mb-1">Tickets Sold</div>
-                            <div className="text-2xl font-bold text-white">{revenue.ticketsSold}</div>
+                            <div className="text-2xl font-bold text-white">{revenue.ticketsSold ?? 0}</div>
                           </div>
                           <div className="bg-[#0a0b10] p-4 rounded-xl border border-white/5">
                             <div className="text-gray-500 text-sm mb-1">Avg Ticket Value</div>
-                            <div className="text-2xl font-bold text-white">${revenue.averageTicketValue.toFixed(2)}</div>
+                            <div className="text-2xl font-bold text-white">${(revenue.averageTicketValue ?? 0).toFixed(2)}</div>
                           </div>
                         </div>
                       )}
@@ -258,11 +258,11 @@ export default function AdminReports() {
                             <td className="py-4 text-gray-300">{t.vehicle}</td>
                             <td className="py-4 text-center">
                               <div className="flex flex-col items-center">
-                                <span className="font-bold text-purple-400">{t.occupancyPercent.toFixed(1)}%</span>
-                                <span className="text-xs text-gray-500">{t.bookedSeats} / {t.capacity} seats</span>
+                                <span className="font-bold text-purple-400">{(t.occupancyPercent ?? 0).toFixed(1)}%</span>
+                                <span className="text-xs text-gray-500">{t.bookedSeats ?? 0} / {t.capacity ?? 0} seats</span>
                               </div>
                             </td>
-                            <td className="py-4 text-right font-bold text-emerald-400">${t.revenue.toFixed(2)}</td>
+                            <td className="py-4 text-right font-bold text-emerald-400">${(t.revenue ?? 0).toFixed(2)}</td>
                           </tr>
                         ))}
                         {tripPerformance.length === 0 && <tr><td colSpan={5} className="py-4 text-center text-gray-500">No data available</td></tr>}

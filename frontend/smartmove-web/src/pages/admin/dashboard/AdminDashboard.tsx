@@ -5,7 +5,7 @@ import reportService from '@/services/reportService';
 import { 
   Car, Users, Route as RouteIcon, CalendarCheck, 
   Wrench, Plus, MoreHorizontal, AlertCircle, RefreshCw,
-  Download, ArrowUpRight, X, ShieldAlert, Sparkles, Radio
+  Download, ArrowUpRight, X, ShieldAlert, Sparkles
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer,
@@ -50,11 +50,12 @@ export default function AdminDashboard() {
         let booked = 0;
         let available = 0;
         tripPerf.forEach(t => {
-          totalOccupancy += t.occupancyPercent;
-          booked += t.bookedSeats;
-          available += t.availableSeats;
+          totalOccupancy += Number(t.occupancyPercent || 0);
+          booked += Number(t.bookedSeats || 0);
+          available += Number(t.availableSeats || 0);
         });
-        setAvgOccupancy(Math.round(totalOccupancy / tripPerf.length));
+        const calculatedAvg = Math.round(totalOccupancy / tripPerf.length);
+        setAvgOccupancy(isNaN(calculatedAvg) ? 0 : calculatedAvg);
         setOccupancyData([
           { name: 'Booked', value: booked, color: '#a855f7' },
           { name: 'Available', value: available, color: '#fb923c' }
@@ -136,13 +137,6 @@ export default function AdminDashboard() {
           <p className="text-gray-400 text-sm mt-1">Real-time fleet operations, financial analytics and scheduling controls.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => navigate('/admin/messages')}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-xl text-xs font-semibold text-purple-300 hover:text-white transition-all cursor-pointer shadow-sm"
-          >
-            <Radio className="w-3.5 h-3.5 animate-pulse text-purple-400" />
-            <span>Live Dispatch Chat</span>
-          </button>
           <button 
             onClick={fetchDashboard}
             disabled={isRefreshing}

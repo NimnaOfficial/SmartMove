@@ -11,11 +11,25 @@ const maintenanceService = {
     return res.data;
   },
   create: async (data: MaintenanceFormData): Promise<Maintenance> => {
-    const res = await apiClient.post('/maintenance', data);
+    const payload: any = { ...data };
+    if (payload.maintenanceDate && !payload.maintenanceDate.includes('T')) {
+      payload.maintenanceDate = `${payload.maintenanceDate}T00:00:00`;
+    }
+    if (payload.nextMaintenanceDate && !payload.nextMaintenanceDate.includes('T')) {
+      payload.nextMaintenanceDate = `${payload.nextMaintenanceDate}T00:00:00`;
+    }
+    const res = await apiClient.post('/maintenance', payload);
     return res.data;
   },
   update: async (id: number, data: MaintenanceFormData): Promise<Maintenance> => {
-    const res = await apiClient.put(`/maintenance/${id}`, data);
+    const payload: any = { ...data };
+    if (payload.maintenanceDate && !payload.maintenanceDate.includes('T')) {
+      payload.maintenanceDate = `${payload.maintenanceDate}T00:00:00`;
+    }
+    if (payload.nextMaintenanceDate && !payload.nextMaintenanceDate.includes('T')) {
+      payload.nextMaintenanceDate = `${payload.nextMaintenanceDate}T00:00:00`;
+    }
+    const res = await apiClient.put(`/maintenance/${id}`, payload);
     return res.data;
   },
   delete: async (id: number): Promise<void> => {

@@ -106,7 +106,8 @@ public class ReportController {
         stats.put("activeDrivers", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM DRIVER", Integer.class));
         stats.put("todaysTrips", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM TRIP WHERE TRUNC(CREATED_AT) = TRUNC(SYSDATE)", Integer.class));
         stats.put("todaysBookings", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM BOOKING WHERE TRUNC(BOOKING_DATE) = TRUNC(SYSDATE)", Integer.class));
-        stats.put("todaysRevenue", jdbcTemplate.queryForObject("SELECT COALESCE(SUM(TOTAL_FARE), 0) FROM BOOKING WHERE TRUNC(BOOKING_DATE) = TRUNC(SYSDATE) AND STATUS = 'CONFIRMED'", Integer.class));
+        Number rev = jdbcTemplate.queryForObject("SELECT COALESCE(SUM(TOTAL_FARE), 0) FROM BOOKING WHERE TRUNC(BOOKING_DATE) = TRUNC(SYSDATE) AND STATUS = 'CONFIRMED'", Number.class);
+        stats.put("todaysRevenue", rev != null ? rev.doubleValue() : 0.0);
         stats.put("maintenanceDue", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM MAINTENANCE WHERE STATUS = 'SCHEDULED' OR STATUS = 'PENDING'", Integer.class));
         return org.springframework.http.ResponseEntity.ok(stats);
     }

@@ -31,7 +31,6 @@ import AdminFeedback from '@/pages/admin/feedback/AdminFeedback';
 import AdminReports from '@/pages/admin/reports/AdminReports';
 import AdminContent from '@/pages/admin/content/AdminContent';
 import AdminProfile from '@/pages/admin/profile/AdminProfile';
-import AdminMessages from '@/pages/admin/messages/AdminMessages';
 
 // Error Pages Imports
 import NotFound from '@/pages/error/NotFound';
@@ -105,7 +104,6 @@ function App() {
             <Route path="trips" element={<AdminTrips />} />
             <Route path="bookings" element={<AdminBookings />} />
             <Route path="maintenance" element={<AdminMaintenance />} />
-            <Route path="messages" element={<AdminMessages />} />
             <Route path="feedback" element={<AdminFeedback />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="content" element={<AdminContent />} />
