@@ -29,9 +29,9 @@ export default function DriverDashboard() {
   const [filterTab, setFilterTab] = useState<'All' | 'Today' | 'Upcoming' | 'Completed'>('All');
   const navigate = useNavigate();
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [pData, tData, openData] = await Promise.all([
         driverService.getProfile(),
         driverService.getMyTrips(),
@@ -43,12 +43,14 @@ export default function DriverDashboard() {
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchDashboard();
+    const interval = setInterval(() => fetchDashboard(true), 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const nextTrip = trips.find(t => t.status === 'IN_PROGRESS' || t.status === 'SCHEDULED' || t.status === 'CONFIRMED' || t.status === 'PENDING') || trips[0];
@@ -86,7 +88,7 @@ export default function DriverDashboard() {
           <div className="z-10">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Captain On Duty</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Captain On Duty • Live Dynamic</span>
             </div>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">
               Hello {driverName}!

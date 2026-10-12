@@ -49,14 +49,20 @@ public class TripController {
             });
 
             Map<Long, List<Map<String, Object>>> tripBookingsMap = new HashMap<>();
+            Map<Long, Double> tripBookingTotalFareMap = new HashMap<>();
             try {
-                jdbcTemplate.query("SELECT TRIP_ID, STATUS, PAYMENT_STATUS FROM BOOKING WHERE STATUS NOT IN ('CANCELLED')", rs -> {
+                jdbcTemplate.query("SELECT TRIP_ID, TOTAL_FARE, STATUS, PAYMENT_STATUS FROM BOOKING WHERE STATUS NOT IN ('CANCELLED')", rs -> {
                     long tId = rs.getLong("TRIP_ID");
+                    double fareVal = rs.getDouble("TOTAL_FARE");
                     if (tId > 0) {
                         Map<String, Object> bRow = new HashMap<>();
                         bRow.put("status", rs.getString("STATUS"));
                         bRow.put("paymentStatus", rs.getString("PAYMENT_STATUS"));
                         tripBookingsMap.computeIfAbsent(tId, k -> new java.util.ArrayList<>()).add(bRow);
+
+                        if (fareVal > 0) {
+                            tripBookingTotalFareMap.put(tId, tripBookingTotalFareMap.getOrDefault(tId, 0.0) + fareVal);
+                        }
                     }
                 });
             } catch (Exception ignored) {}
@@ -73,12 +79,24 @@ public class TripController {
                     t.setRouteOrigin(orig);
                     t.setRouteDestination(dest);
                     t.setRoute((orig != null ? orig : "") + " -> " + (dest != null ? dest : ""));
-                    t.setFare(bf != null && bf > 0 ? bf : 1000.0);
+
+                    // Priority 1: Load total fare from BOOKING table for this trip
+                    if (tripBookingTotalFareMap.containsKey(t.getTripId()) && tripBookingTotalFareMap.get(t.getTripId()) > 0) {
+                        t.setFare(tripBookingTotalFareMap.get(t.getTripId()));
+                    } else if (bf != null && bf > 0) {
+                        t.setFare(bf);
+                    } else {
+                        t.setFare(1000.0);
+                    }
                 } else {
                     t.setOrigin("Route #" + t.getRouteId());
                     t.setDestination("");
                     t.setRoute("Route #" + t.getRouteId());
-                    t.setFare(1000.0);
+                    if (tripBookingTotalFareMap.containsKey(t.getTripId()) && tripBookingTotalFareMap.get(t.getTripId()) > 0) {
+                        t.setFare(tripBookingTotalFareMap.get(t.getTripId()));
+                    } else {
+                        t.setFare(1000.0);
+                    }
                 }
 
                 if (t.getVehicleId() != null && vehicleMap.containsKey(t.getVehicleId())) {
@@ -214,6 +232,27 @@ public class TripController {
             if (payload.getAvailableSeats() != null) existing.setAvailableSeats(payload.getAvailableSeats());
             if (payload.getStatus() != null && !payload.getStatus().trim().isEmpty()) existing.setStatus(payload.getStatus());
             existing.setUpdatedAt(java.time.LocalDateTime.now());
+
+            if (payload.getFare() != null && payload.getFare() > 0) {
+                existing.setFare(payload.getFare());
+                try {
+                    // Update BOOKING table total fare for active bookings belonging to this trip
+                    jdbcTemplate.update(
+                        "UPDATE BOOKING SET TOTAL_FARE = ?, UPDATED_AT = CURRENT_TIMESTAMP WHERE TRIP_ID = ? AND STATUS NOT IN ('CANCELLED')",
+                        payload.getFare(), id
+                    );
+                    // Also update ROUTE BASE_FARE
+                    if (existing.getRouteId() != null) {
+                        jdbcTemplate.update(
+                            "UPDATE ROUTE SET BASE_FARE = ?, UPDATED_AT = CURRENT_TIMESTAMP WHERE ROUTE_ID = ?",
+                            payload.getFare(), existing.getRouteId()
+                        );
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+
             Trip updated = service.save(existing);
             enrichTrips(List.of(updated));
             return org.springframework.http.ResponseEntity.ok(updated);

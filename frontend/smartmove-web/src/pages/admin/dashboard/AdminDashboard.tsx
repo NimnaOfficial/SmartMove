@@ -35,8 +35,8 @@ export default function AdminDashboard() {
   const [showQuickModal, setShowQuickModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchDashboard = async () => {
-    setIsRefreshing(true);
+  const fetchDashboard = async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
     try {
       const dashboardStats = await reportService.getDashboardStats();
       if (dashboardStats) setStats(dashboardStats);
@@ -92,12 +92,14 @@ export default function AdminDashboard() {
     } catch (e) {
       console.error('Failed to load dashboard', e);
     } finally {
-      setIsRefreshing(false);
+      if (!silent) setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchDashboard();
+    const interval = setInterval(() => fetchDashboard(true), 5000);
+    return () => clearInterval(interval);
   }, [revenueView, occupancyFilter]);
 
   const handleExport = () => {

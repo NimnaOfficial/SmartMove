@@ -3,8 +3,9 @@ import tripService from '@/services/tripService';
 import routeService from '@/services/routeService';
 import vehicleService from '@/services/vehicleService';
 import driverService from '@/services/driverService';
+import bookingService from '@/services/bookingService';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Filter, Edit2, Eye, Trash2, ShieldCheck, Users, Clock } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Eye, Trash2, ShieldCheck, Users, Clock, RefreshCw } from 'lucide-react';
 import { Trip, TripFormData, RouteInfo, Vehicle, Driver } from '@/types';
 
 const fadeUp = {
@@ -27,6 +28,8 @@ export default function AdminTrips() {
   const [routes, setRoutes] = useState<RouteInfo[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [fareSource, setFareSource] = useState<'booking' | 'route' | 'manual'>('manual');
   
   const [formData, setFormData] = useState<TripFormData>({
     routeId: 0,
@@ -57,11 +60,16 @@ export default function AdminTrips() {
 
   useEffect(() => {
     fetchData();
+    // 100% Real-time auto-polling every 4 seconds
+    const interval = setInterval(() => {
+      fetchData();
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const [formError, setFormError] = useState<string | null>(null);
 
-  const handleOpenForm = (t?: Trip) => {
+  const handleOpenForm = async (t?: Trip) => {
     setViewOnly(false);
     setFormError(null);
     if (t) {
@@ -69,24 +77,61 @@ export default function AdminTrips() {
       const depTimeFull = t.departureTime || '';
       const datePart = depTimeFull.includes('T') ? depTimeFull.split('T')[0] : (t.departureDate || '');
       const timePart = depTimeFull.includes('T') ? depTimeFull.split('T')[1].substring(0, 5) : '08:00';
+      
+      let loadedFare = Number(t.fare || 0);
+      let source: 'booking' | 'route' | 'manual' = 'manual';
+
+      // Load total fare from BOOKING table for this trip
+      try {
+        const tripBookings = await bookingService.getByTrip(t.tripId);
+        if (Array.isArray(tripBookings) && tripBookings.length > 0) {
+          const activeBookings = tripBookings.filter(
+            (b: any) => (b.status || '').toUpperCase() !== 'CANCELLED'
+          );
+          if (activeBookings.length > 0) {
+            const sumBookingFare = activeBookings.reduce(
+              (acc: number, curr: any) => acc + Number(curr.totalFare ?? curr.amount ?? curr.fare ?? 0),
+              0
+            );
+            if (sumBookingFare > 0) {
+              loadedFare = sumBookingFare;
+              source = 'booking';
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load booking fare for trip', err);
+      }
+
+      if (source !== 'booking') {
+        const r = routes.find(item => item.routeId === t.routeId);
+        if (r && r.baseFare) {
+          loadedFare = loadedFare > 0 ? loadedFare : r.baseFare;
+          source = 'route';
+        }
+      }
+
+      setFareSource(source);
       setFormData({
         routeId: t.routeId || 0,
         vehicleId: t.vehicleId || 0,
         driverId: t.driverId || 0,
         departureDate: datePart,
         departureTime: timePart,
-        fare: t.fare || 0,
+        fare: loadedFare,
         status: t.status || 'SCHEDULED'
       });
     } else {
       setSelectedTrip(null);
+      setFareSource('route');
+      const firstRoute = routes.length > 0 ? routes[0] : null;
       setFormData({
-        routeId: routes.length > 0 ? routes[0].routeId : 0,
+        routeId: firstRoute ? firstRoute.routeId : 0,
         vehicleId: vehicles.length > 0 ? vehicles[0].vehicleId : 0,
         driverId: drivers.length > 0 ? drivers[0].driverId : 0,
         departureDate: new Date().toISOString().split('T')[0],
         departureTime: '08:00',
-        fare: 100,
+        fare: firstRoute?.baseFare || 1500,
         status: 'SCHEDULED'
       });
     }
@@ -125,6 +170,7 @@ export default function AdminTrips() {
         departureTime: departureTimeIso,
         arrivalTime: arrivalTimeIso,
         availableSeats: seats,
+        fare: Number(formData.fare),
         status: formData.status || 'SCHEDULED'
       };
 
@@ -200,15 +246,35 @@ export default function AdminTrips() {
     <div className="flex flex-col gap-6 pb-10">
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Trip Scheduling</h1>
-          <p className="text-gray-400 mt-2 font-medium">Manage and monitor daily trip operations.</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white tracking-tight">Trip Scheduling</h1>
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live Real-Time Sync
+            </span>
+          </div>
+          <p className="text-gray-400 mt-2 font-medium">Manage and monitor daily trip operations in real time.</p>
         </div>
-        <button 
-          onClick={() => handleOpenForm()}
-          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" /> Schedule Trip
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={async () => {
+              setIsRefreshing(true);
+              await fetchData();
+              setTimeout(() => setIsRefreshing(false), 500);
+            }}
+            className="flex items-center gap-2 px-4 py-3 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 text-sm font-semibold transition-all cursor-pointer"
+            title="Refresh Trips"
+          >
+            <RefreshCw className={`w-4 h-4 text-purple-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button 
+            onClick={() => handleOpenForm()}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 transition-transform flex items-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-5 h-5" /> Schedule Trip
+          </button>
+        </div>
       </motion.div>
 
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-[#1a1b23] border border-white/5 rounded-[2rem] p-6 shadow-xl flex flex-col md:flex-row gap-4 items-center mt-4">
@@ -239,6 +305,7 @@ export default function AdminTrips() {
                 <th className="p-5">Schedule</th>
                 <th className="p-5">Vehicle & Driver</th>
                 <th className="p-5">Occupancy</th>
+                <th className="p-5">Fare</th>
                 <th className="p-5">Status</th>
                 <th className="p-5 pr-8 text-right">Actions</th>
               </tr>
@@ -271,6 +338,10 @@ export default function AdminTrips() {
                       </div>
                     </td>
                     <td className="p-5">
+                      <span className="text-sm font-bold text-emerald-400">${t.fare || 0}</span>
+                      <span className="text-[10px] text-gray-500 block">Total / Booking</span>
+                    </td>
+                    <td className="p-5">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider
                         ${t.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400' : 
                           t.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -295,7 +366,7 @@ export default function AdminTrips() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-5 text-center text-gray-500">No trips found.</td>
+                  <td colSpan={8} className="p-5 text-center text-gray-500">No trips found.</td>
                 </tr>
               )}
             </tbody>
@@ -375,11 +446,24 @@ export default function AdminTrips() {
                       className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50 [color-scheme:dark]" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-400 block mb-1">Fare ($)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-sm font-medium text-gray-400 block">Total Fare ($)</label>
+                      {fareSource === 'booking' && (
+                        <span className="text-[9px] text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                          From Booking
+                        </span>
+                      )}
+                    </div>
                     <input type="number" 
                       value={formData.fare} 
-                      onChange={e => setFormData({...formData, fare: parseFloat(e.target.value) || 0})}
+                      onChange={e => {
+                        setFormData({...formData, fare: parseFloat(e.target.value) || 0});
+                        setFareSource('manual');
+                      }}
                       className="w-full bg-[#0a0b10] border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-indigo-500/50" />
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      {selectedTrip ? 'Synced with Booking table.' : 'Default trip fare.'}
+                    </p>
                   </div>
                 </div>
                 <div>

@@ -31,9 +31,9 @@ export default function MyTrips() {
   const [claimNotice, setClaimNotice] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const fetchTrips = async () => {
+  const fetchTrips = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [myData, openData] = await Promise.all([
         driverService.getMyTrips(),
         driverService.getAvailableTrips()
@@ -43,12 +43,14 @@ export default function MyTrips() {
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchTrips();
+    const interval = setInterval(() => fetchTrips(true), 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleUpdateStatus = async (tripId: number, newStatus: string, e: React.MouseEvent) => {
@@ -130,12 +132,18 @@ export default function MyTrips() {
       {/* Header Section */}
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-black">
-              <Map className="w-6 h-6" />
-            </div>
-            My Trips
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-black">
+                <Map className="w-6 h-6" />
+              </div>
+              My Trips
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Real-Time
+            </span>
+          </div>
           <p className="text-gray-500 mt-2 font-medium max-w-lg">
             Accept open passenger requests, manage scheduled routes, and update live journey progress.
           </p>
@@ -154,7 +162,7 @@ export default function MyTrips() {
             />
           </div>
           <button
-            onClick={fetchTrips}
+            onClick={() => fetchTrips(false)}
             className="p-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 transition-colors"
             title="Refresh trips"
           >

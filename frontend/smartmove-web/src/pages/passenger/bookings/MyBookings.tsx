@@ -4,7 +4,7 @@ import paymentService from '@/services/paymentService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bookmark, Calendar, MapPin, Search, 
-  CreditCard, CheckCircle2, XCircle, Clock, AlertCircle
+  CreditCard, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw
 } from 'lucide-react';
 
 const fadeUp = {
@@ -28,9 +28,9 @@ export default function MyBookings() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchBookings = async () => {
+  const fetchBookings = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await bookingService.getMyBookings();
       const mapped = (Array.isArray(data) ? data : []).map((b: any) => {
         const statusUpper = (b.status || b.bookingStatus || 'PENDING').toUpperCase();
@@ -84,12 +84,14 @@ export default function MyBookings() {
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchBookings();
+    const interval = setInterval(() => fetchBookings(true), 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const [activeTab, setActiveTab] = useState<TabType>('Upcoming');
@@ -145,27 +147,42 @@ export default function MyBookings() {
       {/* Header Section */}
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
-              <Bookmark className="w-6 h-6" />
-            </div>
-            My Bookings
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                <Bookmark className="w-6 h-6" />
+              </div>
+              My Bookings
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Real-Time
+            </span>
+          </div>
           <p className="text-gray-500 mt-2 font-light max-w-lg">
             Manage your travel itinerary, view past journeys, and handle cancellations or payments all in one place.
           </p>
         </div>
         
-        {/* Search Bar */}
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Search bookings..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-gray-200 rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3f7a] focus:border-transparent transition-all shadow-sm"
-          />
+        {/* Search Bar & Refresh */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search bookings..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3f7a] focus:border-transparent transition-all shadow-sm"
+            />
+          </div>
+          <button
+            onClick={() => fetchBookings(false)}
+            className="p-2.5 bg-white border border-gray-200 hover:bg-gray-50 rounded-full text-gray-600 shadow-sm transition-all"
+            title="Refresh bookings"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+          </button>
         </div>
       </motion.div>
 

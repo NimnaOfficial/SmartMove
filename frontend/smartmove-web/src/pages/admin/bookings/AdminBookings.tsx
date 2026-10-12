@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import bookingService from '@/services/bookingService';
 import { Booking } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Eye, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { Search, Filter, Eye, CheckCircle2, XCircle, Trash2, RefreshCw } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -20,19 +20,27 @@ export default function AdminBookings() {
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const fetchBookings = async () => {
+  const fetchBookings = async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
     try {
       const data = await bookingService.getAll();
       setBookings(Array.isArray(data) ? data : []);
+      setLastUpdated(new Date());
     } catch (e: any) {
       console.error('Failed to fetch bookings:', e);
-      setError('Failed to fetch bookings.');
+      if (!silent) setError('Failed to fetch bookings.');
+    } finally {
+      if (!silent) setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchBookings();
+    const interval = setInterval(() => fetchBookings(true), 4000);
+    return () => clearInterval(interval);
   }, []);
   
   const handleCancelBooking = async (id: number) => {
@@ -77,9 +85,23 @@ export default function AdminBookings() {
     <div className="flex flex-col gap-6 pb-10">
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Booking Management</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white tracking-tight">Booking Management</h1>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live Real-Time Sync
+            </span>
+          </div>
           <p className="text-gray-400 mt-2 font-medium">Monitor and manage passenger bookings and payments.</p>
         </div>
+        <button
+          onClick={() => fetchBookings(false)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1a1b23] border border-white/10 text-gray-300 font-semibold hover:text-white hover:border-white/20 transition-all text-sm w-fit"
+          title="Refresh bookings"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-purple-400' : ''}`} />
+          <span>Refresh</span>
+        </button>
       </motion.div>
 
       <motion.div variants={fadeUp} initial="hidden" animate="visible" className="bg-[#1a1b23] border border-white/5 rounded-[2rem] p-6 shadow-xl flex flex-col md:flex-row gap-4 items-center mt-4">
