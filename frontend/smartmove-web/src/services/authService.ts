@@ -3,61 +3,12 @@ import { LoginRequest, RegisterRequest, AuthResponse } from '@/types';
 
 const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    try {
-      const res = await apiClient.post('/auth/login', data);
-      if (res.data && res.data.token) {
-        const u = res.data.user || {};
-        const userId = u.PASSENGER_ID || u.DRIVER_ID || u.ADMIN_ID || u.userId || 1;
-        return {
-          token: res.data.token,
-          role: (res.data.role || u.ROLE || 'PASSENGER') as any,
-          userId: Number(userId),
-          firstName: u.FIRST_NAME || u.firstName || 'User',
-          lastName: u.LAST_NAME || u.lastName || '',
-          email: u.EMAIL || u.email || data.email,
-          phone: u.PHONE || u.phone,
-          mustChangePassword: false,
-        };
-      }
-    } catch {
-      // Backend offline or error: fall back seamlessly to local mock store
-    }
-
-    const email = (data.email || '').trim().toLowerCase();
-    const password = data.password || '';
-
-    // 1. Check if user is a Driver (either newly created or pre-seeded)
-    const driverAuth = mockStore.verifyDriverPassword(email, password);
-    if (driverAuth.success && driverAuth.driver) {
-      const d = driverAuth.driver;
-      return {
-        token: `mock-driver-jwt-${d.driverId}-${Date.now()}`,
-        role: 'DRIVER',
-        userId: d.driverId,
-        firstName: d.firstName,
-        lastName: d.lastName,
-        email: d.email,
-        mustChangePassword: driverAuth.mustChangePassword
-      };
-    }
-
-    // 2. Check if user is an Admin
-    if (
-      email === 'admin@smartmove.lk' ||
-      email === 'admin@smartmove.com' ||
-      email === 'admin' ||
-      (email.includes('admin') && (password === 'admin' || password === 'Admin@123' || password === 'admin123'))
-    ) {
-      return {
-        token: `mock-admin-jwt-${Date.now()}`,
-        role: 'ADMIN',
-        userId: 1,
-        firstName: 'Central',
-        lastName: 'Admin',
-        email: data.email || 'admin@smartmove.lk',
-        mustChangePassword: false
-      };
-    }
+    const res = await apiClient.post('/auth/login', {
+      email: (data.email || '').trim(),
+      password: data.password || ''
+    }, {
+      timeout: 300000 // 5 minutes (300,000 ms)
+    });
 
     const raw = res.data;
     if (!raw || !raw.token) {

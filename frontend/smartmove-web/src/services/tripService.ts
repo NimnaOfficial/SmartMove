@@ -5,15 +5,6 @@ const tripService = {
   getAll: async (): Promise<Trip[]> => {
     const res = await apiClient.get('/trips');
     return Array.isArray(res.data) ? res.data : [];
-    try {
-      const res = await apiClient.get('/trips');
-      if (Array.isArray(res.data)) {
-        return res.data;
-      }
-      return mockStore.getTrips();
-    } catch {
-      return mockStore.getTrips();
-    }
   },
   getById: async (id: number): Promise<Trip> => {
     const res = await apiClient.get(`/trips/${id}`);

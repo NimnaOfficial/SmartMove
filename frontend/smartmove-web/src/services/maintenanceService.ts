@@ -5,15 +5,6 @@ const maintenanceService = {
   getAll: async (): Promise<Maintenance[]> => {
     const res = await apiClient.get('/maintenance');
     return Array.isArray(res.data) ? res.data : [];
-    try {
-      const res = await apiClient.get('/maintenance');
-      if (Array.isArray(res.data)) {
-        return res.data;
-      }
-      return mockStore.getMaintenance();
-    } catch {
-      return mockStore.getMaintenance();
-    }
   },
   getById: async (id: number): Promise<Maintenance> => {
     const res = await apiClient.get(`/maintenance/${id}`);
@@ -33,13 +24,6 @@ const maintenanceService = {
   getDueVehicles: async (): Promise<Maintenance[]> => {
     const res = await apiClient.get('/maintenance/due');
     return Array.isArray(res.data) ? res.data : [];
-    try {
-      const res = await apiClient.get('/maintenance/due');
-      if (Array.isArray(res.data)) return res.data;
-      return mockStore.getMaintenance().filter(m => m.status === 'SCHEDULED' || m.status === 'OVERDUE');
-    } catch {
-      return mockStore.getMaintenance().filter(m => m.status === 'SCHEDULED' || m.status === 'OVERDUE');
-    }
   },
   search: async (query: string): Promise<Maintenance[]> => {
     const res = await apiClient.get(`/maintenance/search?q=${encodeURIComponent(query)}`);

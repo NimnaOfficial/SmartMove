@@ -21,23 +21,28 @@ const staggerContainer = {
 const tabs = ['All', 'Alerts', 'News'] as const;
 type TabType = typeof tabs[number];
 
-// Mock MongoDB Document Data
-const mockAnnouncements : any[] = [];
-
 export default function Announcements() {
+  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
 
-  const filteredAnnouncements = mockAnnouncements.filter(a => {
+  useEffect(() => {
+    contentService.getAllAnnouncements()
+      .then(data => setAnnouncements(Array.isArray(data) ? data : []))
+      .catch(e => console.error('Failed to load announcements:', e));
+  }, []);
+
+  const filteredAnnouncements = announcements.filter(a => {
+    const type = (a.type || 'info').toLowerCase();
     const matchesTab = 
       activeTab === 'All' ? true : 
-      activeTab === 'Alerts' ? (a.type === 'alert' || a.type === 'warning') : 
-      (a.type === 'info');
+      activeTab === 'Alerts' ? (type === 'alert' || type === 'warning') : 
+      (type === 'info' || type === 'news');
       
     const matchesSearch = 
-      a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      a.message.toLowerCase().includes(searchQuery.toLowerCase());
+      (a.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (a.message || a.content || '').toLowerCase().includes(searchQuery.toLowerCase());
       
     return matchesTab && matchesSearch;
   });
