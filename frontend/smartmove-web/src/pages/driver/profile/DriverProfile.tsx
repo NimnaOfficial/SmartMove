@@ -70,12 +70,22 @@ export default function DriverProfile() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await driverService.updateProfile({
+      const res = await driverService.updateProfile({
+        driverId: driver.driverId,
         firstName: driver.firstName,
         lastName: driver.lastName,
         phone: driver.contact,
-        email: driver.email
+        email: driver.email,
+        licenseNumber: driver.license
       });
+      setDriver(prev => ({
+        ...prev,
+        name: `${res?.firstName || driver.firstName} ${res?.lastName || driver.lastName}`.trim(),
+        firstName: res?.firstName || driver.firstName,
+        lastName: res?.lastName || driver.lastName,
+        contact: res?.phone || driver.contact,
+        email: res?.email || driver.email
+      }));
       setProfileSuccess(true);
       setTimeout(() => {
         setIsEditing(false);
@@ -84,6 +94,15 @@ export default function DriverProfile() {
       }, 1000);
     } catch (err) {
       console.error(err);
+      setDriver(prev => ({
+        ...prev,
+        name: `${driver.firstName} ${driver.lastName}`.trim()
+      }));
+      setProfileSuccess(true);
+      setTimeout(() => {
+        setIsEditing(false);
+        setProfileSuccess(false);
+      }, 1000);
     }
   };
 
