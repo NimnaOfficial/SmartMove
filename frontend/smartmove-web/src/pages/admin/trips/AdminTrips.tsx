@@ -59,16 +59,22 @@ export default function AdminTrips() {
     fetchData();
   }, []);
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const handleOpenForm = (t?: Trip) => {
     setViewOnly(false);
+    setFormError(null);
     if (t) {
       setSelectedTrip(t);
+      const depTimeFull = t.departureTime || '';
+      const datePart = depTimeFull.includes('T') ? depTimeFull.split('T')[0] : (t.departureDate || '');
+      const timePart = depTimeFull.includes('T') ? depTimeFull.split('T')[1].substring(0, 5) : '08:00';
       setFormData({
         routeId: t.routeId || 0,
         vehicleId: t.vehicleId || 0,
         driverId: t.driverId || 0,
-        departureDate: t.departureDate ? t.departureDate.split('T')[0] : '',
-        departureTime: t.departureTime || '',
+        departureDate: datePart,
+        departureTime: timePart,
         fare: t.fare || 0,
         status: t.status || 'SCHEDULED'
       });
@@ -94,17 +100,45 @@ export default function AdminTrips() {
   };
 
   const handleSave = async () => {
+    setFormError(null);
+    if (!formData.routeId || !formData.vehicleId || !formData.driverId) {
+      setFormError('Please select a route, vehicle, and driver.');
+      return;
+    }
     try {
+      const depDate = formData.departureDate || new Date().toISOString().split('T')[0];
+      const depTime = formData.departureTime || '08:00';
+      const formattedTime = depTime.length === 5 ? `${depTime}:00` : depTime;
+      const departureTimeIso = `${depDate}T${formattedTime}`;
+      
+      const depDateObj = new Date(departureTimeIso);
+      const arrDateObj = new Date(depDateObj.getTime() + (2.5 * 60 * 60 * 1000));
+      const arrivalTimeIso = arrDateObj.toISOString().split('.')[0];
+
+      const selectedVeh = vehicles.find(v => v.vehicleId === Number(formData.vehicleId));
+      const seats = selectedVeh?.capacity || 45;
+
+      const payload = {
+        routeId: Number(formData.routeId),
+        vehicleId: Number(formData.vehicleId),
+        driverId: Number(formData.driverId),
+        departureTime: departureTimeIso,
+        arrivalTime: arrivalTimeIso,
+        availableSeats: seats,
+        status: formData.status || 'SCHEDULED'
+      };
+
       if (selectedTrip) {
-        await tripService.update(selectedTrip.tripId, formData);
+        await tripService.update(selectedTrip.tripId, payload);
       } else {
-        await tripService.create(formData);
+        await tripService.create(payload);
       }
       setShowForm(false);
       setSelectedTrip(null);
       fetchData();
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setFormError(e.response?.data?.message || 'Failed to save trip.');
     }
   };
 
@@ -281,6 +315,11 @@ export default function AdminTrips() {
               className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
             >
               <h2 className="text-2xl font-bold text-white mb-6">{selectedTrip ? 'Edit Trip' : 'Create New Trip'}</h2>
+              {formError && (
+                <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-400 text-sm">
+                  {formError}
+                </div>
+              )}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">

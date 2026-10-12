@@ -32,7 +32,23 @@ public class PassengerController {
      */
     @PutMapping("/api/passengers/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint2(@PathVariable Long id, @RequestBody Passenger payload) {
-        return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        return service.findById(id).map(existing -> {
+            if (payload.getFirstName() != null) existing.setFirstName(payload.getFirstName());
+            if (payload.getLastName() != null) existing.setLastName(payload.getLastName());
+            if (payload.getEmail() != null) existing.setEmail(payload.getEmail());
+            if (payload.getPhone() != null) existing.setPhone(payload.getPhone());
+            if (payload.getStatus() != null && !payload.getStatus().trim().isEmpty()) existing.setStatus(payload.getStatus());
+            existing.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(existing));
+        }).orElseGet(() -> {
+            payload.setPassengerId(id);
+            if (payload.getStatus() == null) payload.setStatus("ACTIVE");
+            if (payload.getRole() == null) payload.setRole("PASSENGER");
+            if (payload.getPasswordHash() == null) payload.setPasswordHash("$2a$10$wI5fQ5h0j5q6v3eK7G1e6eL0O/6yBqN3rYQ.QGf1pL0W0uO1k8o1e");
+            if (payload.getRegisteredAt() == null) payload.setRegisteredAt(java.time.LocalDateTime.now());
+            payload.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        });
     }
 
     /**

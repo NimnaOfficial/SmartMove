@@ -98,10 +98,23 @@ export default function AdminMaintenance() {
     setIsSubmitting(true);
     setError(null);
     try {
+      const datePart = formData.maintenanceDate || new Date().toISOString().split('T')[0];
+      const isoDate = datePart.includes('T') ? datePart : `${datePart}T00:00:00`;
+      let normalizedStatus = (formData.status || 'PENDING').toUpperCase();
+      if (normalizedStatus === 'SCHEDULED' || normalizedStatus === 'OVERDUE') {
+        normalizedStatus = 'PENDING';
+      }
+      const payload = {
+        ...formData,
+        vehicleId: Number(formData.vehicleId) || (vehicles.length > 0 ? vehicles[0].vehicleId : 1),
+        cost: Number(formData.cost) || 0,
+        maintenanceDate: isoDate,
+        status: normalizedStatus
+      };
       if (selectedItem) {
-        await maintenanceService.update(selectedItem.maintenanceId, formData);
+        await maintenanceService.update(selectedItem.maintenanceId, payload);
       } else {
-        await maintenanceService.create(formData);
+        await maintenanceService.create(payload);
       }
       setShowForm(false);
       setSelectedItem(null);

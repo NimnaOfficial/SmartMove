@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 @Table(name = "ROUTE")
 public class Route {
@@ -39,5 +40,27 @@ public class Route {
     @Column(name = "UPDATED_AT")
     private java.time.LocalDateTime updatedAt;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("distance")
+    public void setDistance(Double distance) {
+        if (this.distanceKm == null) {
+            this.distanceKm = distance;
+        }
+    }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("duration")
+    public void setDuration(String duration) {
+        if (this.estimatedDuration == null) {
+            this.estimatedDuration = duration;
+        }
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("distance")
+    public Double getDistance() {
+        return this.distanceKm;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("duration")
+    public String getDuration() {
+        return this.estimatedDuration;
+    }
 }

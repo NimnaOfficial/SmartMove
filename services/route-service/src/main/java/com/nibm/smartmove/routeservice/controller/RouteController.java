@@ -24,6 +24,18 @@ public class RouteController {
      */
     @PostMapping("/api/routes")
     public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Route payload) {
+        if (payload.getDistanceKm() == null) {
+            payload.setDistanceKm(50.0);
+        }
+        if (payload.getBaseFare() == null) {
+            payload.setBaseFare(Math.max(50.0, payload.getDistanceKm() * 5.0));
+        }
+        if (payload.getStatus() == null || payload.getStatus().trim().isEmpty()) {
+            payload.setStatus("ACTIVE");
+        }
+        if (payload.getCreatedAt() == null) {
+            payload.setCreatedAt(java.time.LocalDateTime.now());
+        }
         return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
@@ -40,7 +52,24 @@ public class RouteController {
      */
     @PutMapping("/api/routes/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Route payload) {
-        return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        return service.findById(id).map(existing -> {
+            if (payload.getOrigin() != null) existing.setOrigin(payload.getOrigin());
+            if (payload.getDestination() != null) existing.setDestination(payload.getDestination());
+            if (payload.getDistanceKm() != null) existing.setDistanceKm(payload.getDistanceKm());
+            if (payload.getEstimatedDuration() != null) existing.setEstimatedDuration(payload.getEstimatedDuration());
+            if (payload.getBaseFare() != null) existing.setBaseFare(payload.getBaseFare());
+            if (payload.getStatus() != null && !payload.getStatus().trim().isEmpty()) existing.setStatus(payload.getStatus());
+            existing.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(existing));
+        }).orElseGet(() -> {
+            payload.setRouteId(id);
+            if (payload.getDistanceKm() == null) payload.setDistanceKm(50.0);
+            if (payload.getBaseFare() == null) payload.setBaseFare(350.0);
+            if (payload.getStatus() == null) payload.setStatus("ACTIVE");
+            if (payload.getCreatedAt() == null) payload.setCreatedAt(java.time.LocalDateTime.now());
+            payload.setUpdatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        });
     }
 
     /**

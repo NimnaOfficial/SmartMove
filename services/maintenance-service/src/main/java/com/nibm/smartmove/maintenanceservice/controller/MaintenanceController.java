@@ -24,6 +24,29 @@ public class MaintenanceController {
      */
     @PostMapping("/api/maintenance")
     public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Maintenance payload) {
+        if (payload.getVehicleId() == null || payload.getVehicleId() <= 0) {
+            payload.setVehicleId(1L);
+        }
+        if (payload.getDescription() == null || payload.getDescription().trim().isEmpty()) {
+            payload.setDescription("Routine Maintenance");
+        }
+        if (payload.getCost() == null) {
+            payload.setCost(0.0);
+        }
+        if (payload.getMaintenanceDate() == null) {
+            payload.setMaintenanceDate(java.time.LocalDateTime.now());
+        }
+        // Normalize status to Oracle CHECK constraint: PENDING, IN_PROGRESS, COMPLETED
+        if (payload.getStatus() == null || payload.getStatus().trim().isEmpty() || "SCHEDULED".equalsIgnoreCase(payload.getStatus())) {
+            payload.setStatus("PENDING");
+        } else if (!"IN_PROGRESS".equalsIgnoreCase(payload.getStatus()) && !"COMPLETED".equalsIgnoreCase(payload.getStatus())) {
+            payload.setStatus("PENDING");
+        } else {
+            payload.setStatus(payload.getStatus().toUpperCase());
+        }
+        if (payload.getCreatedAt() == null) {
+            payload.setCreatedAt(java.time.LocalDateTime.now());
+        }
         return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 
@@ -40,7 +63,27 @@ public class MaintenanceController {
      */
     @PutMapping("/api/maintenance/{id}")
     public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long id, @RequestBody Maintenance payload) {
-        return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        return service.findById(id).map(existing -> {
+            if (payload.getVehicleId() != null) existing.setVehicleId(payload.getVehicleId());
+            if (payload.getDescription() != null) existing.setDescription(payload.getDescription());
+            if (payload.getCost() != null) existing.setCost(payload.getCost());
+            if (payload.getMaintenanceDate() != null) existing.setMaintenanceDate(payload.getMaintenanceDate());
+            if (payload.getStatus() != null && !payload.getStatus().trim().isEmpty()) {
+                String s = payload.getStatus().trim().toUpperCase();
+                if ("SCHEDULED".equals(s) || "PENDING".equals(s)) existing.setStatus("PENDING");
+                else if ("IN_PROGRESS".equals(s)) existing.setStatus("IN_PROGRESS");
+                else if ("COMPLETED".equals(s)) existing.setStatus("COMPLETED");
+                else existing.setStatus("PENDING");
+            }
+            return org.springframework.http.ResponseEntity.ok(service.save(existing));
+        }).orElseGet(() -> {
+            payload.setMaintenanceId(id);
+            if (payload.getStatus() == null || "SCHEDULED".equalsIgnoreCase(payload.getStatus())) {
+                payload.setStatus("PENDING");
+            }
+            if (payload.getCreatedAt() == null) payload.setCreatedAt(java.time.LocalDateTime.now());
+            return org.springframework.http.ResponseEntity.ok(service.save(payload));
+        });
     }
 
     /**

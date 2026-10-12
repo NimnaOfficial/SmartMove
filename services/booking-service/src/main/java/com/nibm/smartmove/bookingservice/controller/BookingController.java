@@ -24,6 +24,27 @@ public class BookingController {
      */
     @PostMapping("/api/bookings")
     public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Booking payload) {
+        if (payload.getPassengerId() == null || payload.getPassengerId() <= 0) {
+            payload.setPassengerId(1L);
+        }
+        if (payload.getTripId() == null || payload.getTripId() <= 0) {
+            payload.setTripId(1L);
+        }
+        if (payload.getSeatsBooked() == null || payload.getSeatsBooked() <= 0) {
+            payload.setSeatsBooked(1.0);
+        }
+        if (payload.getTotalFare() == null) {
+            payload.setTotalFare(payload.getSeatsBooked() * 1500.0);
+        }
+        if (payload.getStatus() == null || payload.getStatus().trim().isEmpty()) {
+            payload.setStatus("CONFIRMED");
+        }
+        if (payload.getPaymentStatus() == null || payload.getPaymentStatus().trim().isEmpty()) {
+            payload.setPaymentStatus("PAID");
+        }
+        if (payload.getBookingDate() == null) {
+            payload.setBookingDate(java.time.LocalDateTime.now());
+        }
         return org.springframework.http.ResponseEntity.ok(service.save(payload));
     }
 

@@ -48,8 +48,12 @@ export default function AdminDrivers() {
     fetchDrivers();
   }, []);
 
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleOpenForm = (d?: Driver) => {
     setViewOnly(false);
+    setFormError(null);
     if (d) {
       setSelectedDriver(d);
       setFormData({
@@ -81,11 +85,21 @@ export default function AdminDrivers() {
   };
 
   const handleSave = async () => {
+    setFormError(null);
+    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.licenseNumber.trim()) {
+      setFormError('Please fill in all required fields.');
+      return;
+    }
+    setIsSaving(true);
     try {
       if (selectedDriver) {
         await driverService.update(selectedDriver.driverId, formData);
       } else {
-        const created = await driverService.create(formData);
+        const payloadToCreate = {
+          ...formData,
+          passwordHash: '$2a$10$wI5fQ5h0j5q6v3eK7G1e6eL0O/6yBqN3rYQ.QGf1pL0W0uO1k8o1e'
+        };
+        const created = await driverService.create(payloadToCreate);
         setNewDriverNotice({
           email: created.email || formData.email,
           name: `${created.firstName || formData.firstName} ${created.lastName || formData.lastName}`,
@@ -95,8 +109,11 @@ export default function AdminDrivers() {
       setShowForm(false);
       setSelectedDriver(null);
       fetchDrivers();
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setFormError(e.response?.data?.message || 'Failed to save driver. Please check license number and email uniqueness.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -221,6 +238,12 @@ export default function AdminDrivers() {
               className="bg-[#1a1b23] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative"
             >
               <h2 className="text-2xl font-bold text-white mb-4">{selectedDriver ? 'Edit Driver' : 'Add New Driver'}</h2>
+
+              {formError && (
+                <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-400 text-sm">
+                  {formError}
+                </div>
+              )}
 
               {!selectedDriver && (
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border border-purple-500/30 flex items-start gap-3.5 mb-5 shadow-lg">

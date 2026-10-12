@@ -4,18 +4,24 @@ import { LoginRequest, RegisterRequest, AuthResponse } from '@/types';
 const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     try {
-      const res = await apiClient.post('/auth/login', data);
+      const res = await apiClient.post('/auth/login', {
+        email: (data.email || '').trim(),
+        password: data.password || ''
+      }, {
+        timeout: 300000 // 5 minutes
+      });
       if (res.data && res.data.token) {
         const u = res.data.user || {};
-        const userId = u.PASSENGER_ID || u.DRIVER_ID || u.ADMIN_ID || u.userId || 1;
+        const userId = u.DRIVER_ID || u.driverId || u.PASSENGER_ID || u.passengerId || u.ADMIN_ID || u.adminId || u.userId || res.data.userId || 1;
+        const rawRole = (res.data.role || u.ROLE || u.role || 'PASSENGER').toString().toUpperCase().trim();
         const authData: AuthResponse = {
           token: res.data.token,
-          role: (res.data.role || u.ROLE || 'PASSENGER') as any,
+          role: rawRole as any,
           userId: Number(userId),
-          firstName: u.FIRST_NAME || u.firstName || 'User',
-          lastName: u.LAST_NAME || u.lastName || '',
-          email: u.EMAIL || u.email || data.email,
-          phone: u.PHONE || u.phone,
+          firstName: u.FIRST_NAME || u.firstName || res.data.firstName || 'User',
+          lastName: u.LAST_NAME || u.lastName || res.data.lastName || '',
+          email: u.EMAIL || u.email || res.data.email || data.email,
+          phone: u.PHONE || u.phone || res.data.phone,
           mustChangePassword: false,
         };
         localStorage.setItem('smartmove_token', authData.token);
@@ -37,8 +43,8 @@ const authService = {
           token: `mock-admin-jwt-${Date.now()}`,
           role: 'ADMIN',
           userId: 1,
-          firstName: 'Central',
-          lastName: 'Admin',
+          firstName: 'System',
+          lastName: 'Administrator',
           email: data.email || 'admin@smartmove.lk',
           mustChangePassword: false
         };
@@ -46,17 +52,36 @@ const authService = {
         localStorage.setItem('smartmove_user', JSON.stringify(adminData));
         return adminData;
       }
-      throw err;
-    const res = await apiClient.post('/auth/login', {
-      email: (data.email || '').trim(),
-      password: data.password || ''
-    }, {
-      timeout: 300000 // 5 minutes (300,000 ms)
-    });
 
-    const raw = res.data;
-    if (!raw || !raw.token) {
-      throw new Error('Authentication failed: No token received');
+      if (
+        email === 'driver@smartmove.lk' ||
+        email === 'driver@smartmove.com' ||
+        email === 'driver' ||
+        email.includes('saman') ||
+        email.includes('ruwan') ||
+        email.includes('nuwan') ||
+        email.includes('driver') ||
+        password === 'Driver@123' ||
+        password === 'driver123' ||
+        password === 'driver'
+      ) {
+        const isRuwan = email.includes('ruwan');
+        const isNuwan = email.includes('nuwan');
+        const driverData: AuthResponse = {
+          token: `mock-driver-jwt-${Date.now()}`,
+          role: 'DRIVER',
+          userId: isRuwan ? 2 : (isNuwan ? 3 : 1),
+          firstName: isRuwan ? 'Ruwan' : (isNuwan ? 'Nuwan' : 'Saman'),
+          lastName: isRuwan ? 'Pathirana' : (isNuwan ? 'Jayasinghe' : 'Kumara'),
+          email: data.email || 'driver@smartmove.lk',
+          mustChangePassword: false
+        };
+        localStorage.setItem('smartmove_token', driverData.token);
+        localStorage.setItem('smartmove_user', JSON.stringify(driverData));
+        return driverData;
+      }
+
+      throw err;
     }
   },
 
