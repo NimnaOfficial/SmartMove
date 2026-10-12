@@ -162,7 +162,7 @@ export default function SearchTrips() {
     try {
       const userStr = localStorage.getItem('smartmove_user');
       const user = userStr ? JSON.parse(userStr) : null;
-      const passengerId = user?.passengerId || user?.id || 1;
+      const passengerId = user?.userId || user?.passengerId || user?.id || 1;
       
       const payload: any = {
         passengerId: Number(passengerId),

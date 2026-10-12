@@ -37,19 +37,36 @@ export default function MyBookings() {
         if (statusUpper === 'COMPLETED') tabType = 'Completed';
         else if (statusUpper === 'CANCELLED' || statusUpper === 'CANCELED') tabType = 'Cancelled';
 
+        const origin = b.origin || 'Colombo';
+        const destination = b.destination || 'Kandy';
+        const route = b.route || `${origin} → ${destination}`;
+        const trip = b.trip || `Trip #${b.tripId || b.bookingId || 1} (${route})`;
+        const amountNum = Number(b.amount != null ? b.amount : (b.totalFare != null ? b.totalFare : (b.fare != null ? b.fare : 1500)));
+
+        let displayDate = b.date;
+        let displayTime = b.time;
+        if (!displayDate) {
+          const rawDate = b.departureTime || b.bookingDate;
+          displayDate = rawDate ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Scheduled';
+        }
+        if (!displayTime) {
+          const rawDate = b.departureTime || b.bookingDate;
+          displayTime = rawDate ? new Date(rawDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '08:00 AM';
+        }
+
         return {
           ...b,
           id: b.id || (b.bookingId ? `BK-${b.bookingId}` : 'BK-000'),
           bookingId: b.bookingId || (b.id ? parseInt(String(b.id).replace('BK-', '')) : null),
           type: b.type || tabType,
-          route: b.route || `Trip Route #${b.tripId || b.bookingId || 1}`,
-          trip: b.trip || `Trip #${b.tripId || b.bookingId || 1}`,
+          route,
+          trip,
           bookingStatus: b.bookingStatus || (statusUpper.charAt(0) + statusUpper.slice(1).toLowerCase()),
           paymentStatus: b.paymentStatus || 'Paid',
-          date: b.date || (b.bookingDate ? new Date(b.bookingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today'),
-          time: b.time || (b.bookingDate ? new Date(b.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '08:00 AM'),
-          fare: b.fare || `LKR ${(b.totalFare || b.fare || 0).toLocaleString()}`,
-          amount: b.amount || b.totalFare || 0,
+          date: displayDate,
+          time: displayTime,
+          fare: `LKR ${amountNum.toLocaleString()}`,
+          amount: amountNum,
           seats: b.seats || b.seatsBooked || 1,
         };
       });
@@ -234,7 +251,7 @@ export default function MyBookings() {
                   {/* Far Right: Price & Actions */}
                   <div className="flex flex-col items-end justify-center lg:border-l lg:border-gray-100 lg:pl-6 min-w-[120px]">
                     <p className="text-sm text-gray-400 font-medium mb-1">Total</p>
-                    <p className="text-2xl font-bold text-[#1e3f7a] mb-4">${booking.amount.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-[#1e3f7a] mb-4">LKR {Number(booking.amount || 0).toLocaleString()}</p>
                     <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                       <button 
                         onClick={() => { setSelectedBooking(booking); setModalMode('view'); }}
@@ -344,7 +361,7 @@ export default function MyBookings() {
 
                       <div className="pt-4 flex justify-between items-center border-t border-gray-100">
                         <span className="text-gray-500 font-medium">Amount Paid</span>
-                        <span className="text-3xl font-bold text-[#1e3f7a]">${selectedBooking.amount.toFixed(2)}</span>
+                        <span className="text-3xl font-bold text-[#1e3f7a]">LKR {Number(selectedBooking.amount || 0).toLocaleString()}</span>
                       </div>
 
                       <div className="mt-4 flex flex-col sm:flex-row gap-3">
@@ -381,7 +398,7 @@ export default function MyBookings() {
 
                       <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
                         <span className="text-gray-500 font-medium">Total Amount Due</span>
-                        <span className="text-3xl font-bold text-[#1e3f7a]">${selectedBooking.amount.toFixed(2)}</span>
+                        <span className="text-3xl font-bold text-[#1e3f7a]">LKR {Number(selectedBooking.amount || 0).toLocaleString()}</span>
                       </div>
 
                       <div className="space-y-4">
@@ -422,7 +439,7 @@ export default function MyBookings() {
                            }}
                            className="flex-1 py-3.5 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-colors shadow-lg shadow-green-500/20 flex items-center justify-center gap-2"
                          >
-                           <CheckCircle2 className="w-5 h-5" /> Pay ${selectedBooking.amount.toFixed(2)}
+                           <CheckCircle2 className="w-5 h-5" /> Pay LKR {Number(selectedBooking.amount || 0).toLocaleString()}
                          </button>
                       </div>
                     </div>

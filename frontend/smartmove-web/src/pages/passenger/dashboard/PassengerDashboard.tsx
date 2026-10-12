@@ -254,7 +254,7 @@ export default function PassengerDashboard() {
                       <Navigation className="w-5 h-5" />
                     </div>
                     <div className="flex-1 text-center sm:text-left min-w-0">
-                      <h4 className="text-base font-bold text-gray-900 truncate">Booking #{trip.bookingId}</h4>
+                      <h4 className="text-base font-bold text-gray-900 truncate">{trip.route ? trip.route : `Booking #${trip.bookingId}`}</h4>
                       <p className="text-sm text-gray-500 truncate">Status: {trip.status || trip.bookingStatus || 'CONFIRMED'}</p>
                     </div>
                     <div className="text-center sm:text-right">
