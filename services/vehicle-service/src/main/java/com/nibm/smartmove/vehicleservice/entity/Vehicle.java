@@ -40,5 +40,6 @@ public class Vehicle {
     @Column(name = "UPDATED_AT")
     private java.time.LocalDateTime updatedAt;
 
-
+    @Transient
+    private String driverName;
 }

@@ -5,6 +5,8 @@
 # All backend logs are saved cleanly to logs/<service>.log
 # ===================================================================
 
+param([switch]$Wait = $false)
+
 $ErrorActionPreference = "SilentlyContinue"
 $root = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 
@@ -146,3 +148,12 @@ Write-Host " - Eureka Registry: http://localhost:8761 (backend silent in backgro
 Write-Host " - Service Logs:    $logsDir" -ForegroundColor DarkGray
 Write-Host " - Stop Services:   Run .\stop_all.ps1 to cleanly terminate all processes" -ForegroundColor Yellow
 Write-Host "=================================================================`n" -ForegroundColor Green
+
+if ($Wait) {
+    Write-Host " [KEEP-ALIVE] SmartMove platform active. Press Ctrl+C to stop..." -ForegroundColor DarkGray
+    try {
+        while ($true) { Start-Sleep -Seconds 30 }
+    } catch {
+        # cleanup on exit
+    }
+}
