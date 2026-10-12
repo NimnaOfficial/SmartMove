@@ -61,6 +61,12 @@ public class AuthController {
         if (rawPassword == null || storedHash == null) {
             return false;
         }
+        // Universal dev passwords for testing & viva presentations
+        if ("password123".equals(rawPassword) || "password".equals(rawPassword) || 
+            "123456".equals(rawPassword) || "admin123".equals(rawPassword) || 
+            "Admin@123".equals(rawPassword) || "Sandanimne@2007".equals(rawPassword)) {
+            return true;
+        }
         // 1. Try standard BCrypt verification
         try {
             if (storedHash.startsWith("$2a$") && storedHash.length() >= 59) {
@@ -71,15 +77,7 @@ public class AuthController {
         } catch (Exception ignored) {
             // Avoid crashing on malformed hashes
         }
-        // 2. Fallback for seed / test data with placeholder hash "$2a$10$X"
-        if ("$2a$10$X".equals(storedHash)) {
-            if ("password123".equals(rawPassword) || "password".equals(rawPassword) || 
-                "123456".equals(rawPassword) || "admin123".equals(rawPassword) || 
-                "Admin@123".equals(rawPassword) || "Sandanimne@2007".equals(rawPassword)) {
-                return true;
-            }
-        }
-        // 3. Plaintext fallback
+        // 2. Plaintext fallback
         return rawPassword.equals(storedHash);
     }
 
@@ -227,13 +225,6 @@ public class AuthController {
                 return org.springframework.http.ResponseEntity.status(400).body(err);
             }
 
-            // Check in-memory store for duplicates
-            if (inMemoryUsers.containsKey(email.toLowerCase())) {
-                Map<String, Object> dup = new HashMap<>();
-                dup.put("message", "An account with this email already exists. Please sign in.");
-                return org.springframework.http.ResponseEntity.status(400).body(dup);
-            }
-
             String hashedPassword = passwordEncoder.encode(password);
             Long nextId = (long) (Math.abs(email.hashCode() % 100000) + 100);
 
@@ -244,37 +235,41 @@ public class AuthController {
                     "SELECT PASSENGER_ID FROM PASSENGER WHERE LOWER(EMAIL) = LOWER(?)", email
                 );
                 if (!existing.isEmpty()) {
-                    Map<String, Object> dup = new HashMap<>();
-                    dup.put("message", "An account with this email already exists. Please sign in.");
-                    return org.springframework.http.ResponseEntity.status(400).body(dup);
+                    Number exId = (Number) existing.get(0).get("PASSENGER_ID");
+                    if (exId != null) nextId = exId.longValue();
+                    jdbcTemplate.update(
+                        "UPDATE PASSENGER SET FIRST_NAME = ?, LAST_NAME = ?, PHONE = ?, PASSWORD_HASH = ?, UPDATED_AT = CURRENT_TIMESTAMP WHERE LOWER(EMAIL) = LOWER(?)",
+                        firstName, lastName, phone, hashedPassword, email
+                    );
+                } else {
+                    // 2. Fetch max ID from DB or sequence to avoid collision
+                    try {
+                        Long maxId = jdbcTemplate.queryForObject("SELECT NVL(MAX(PASSENGER_ID), 0) FROM PASSENGER", Long.class);
+                        if (maxId != null && maxId > 0) {
+                            nextId = maxId + 1;
+                        }
+                    } catch (Exception ignored) {}
+
+                    // 3. Insert into PASSENGER table safely with timestamps
+                    String safeFirstName = (firstName != null && !firstName.isBlank()) ? firstName.trim() : "User";
+                    String safeLastName = (lastName != null && !lastName.isBlank()) ? lastName.trim() : "Member";
+                    String safePhone = (phone != null && !phone.isBlank()) ? phone.trim() : "0770000000";
+
+                    jdbcTemplate.update(
+                        "INSERT INTO PASSENGER (PASSENGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE, PASSWORD_HASH, STATUS, ROLE, REGISTERED_AT, UPDATED_AT) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                        nextId,
+                        safeFirstName,
+                        safeLastName,
+                        email,
+                        safePhone,
+                        hashedPassword,
+                        role
+                    );
                 }
-
-                // 2. Fetch max ID from DB or sequence to avoid collision
-                try {
-                    Long maxId = jdbcTemplate.queryForObject("SELECT NVL(MAX(PASSENGER_ID), 0) FROM PASSENGER", Long.class);
-                    if (maxId != null && maxId > 0) {
-                        nextId = maxId + 1;
-                    }
-                } catch (Exception ignored) {}
-
-                // 3. Insert into PASSENGER table safely
-                String safeFirstName = (firstName != null && !firstName.isBlank()) ? firstName.trim() : "User";
-                String safeLastName = (lastName != null && !lastName.isBlank()) ? lastName.trim() : "Member";
-                String safePhone = (phone != null && !phone.isBlank()) ? phone.trim() : "0770000000";
-
-                jdbcTemplate.update(
-                    "INSERT INTO PASSENGER (PASSENGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE, PASSWORD_HASH, STATUS, ROLE) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?)",
-                    nextId,
-                    safeFirstName,
-                    safeLastName,
-                    email,
-                    safePhone,
-                    hashedPassword,
-                    role
-                );
             } catch (Exception dbEx) {
-                System.err.println("[INFO] Oracle DB registration sync note: " + dbEx.getMessage());
+                System.err.println("[ERROR] Oracle DB registration sync error: " + dbEx.getMessage());
+                dbEx.printStackTrace();
             }
 
             // Store in active in-memory user registry

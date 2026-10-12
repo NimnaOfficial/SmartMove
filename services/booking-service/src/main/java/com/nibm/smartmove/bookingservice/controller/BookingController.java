@@ -52,7 +52,11 @@ public class BookingController {
     @GetMapping("/api/bookings/my-bookings")
     public org.springframework.http.ResponseEntity<?> endpoint4(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId == null) return org.springframework.http.ResponseEntity.ok(java.util.Collections.emptyList());
-        return org.springframework.http.ResponseEntity.ok(service.findByPassengerId(userId));
+        try {
+            return org.springframework.http.ResponseEntity.ok(service.findByPassengerId(userId));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.ok(java.util.Collections.emptyList());
+        }
     }
 
     /**

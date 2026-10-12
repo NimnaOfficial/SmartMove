@@ -23,11 +23,15 @@ Write-Host "==================================================" -ForegroundColor
 Write-Host "       STARTING SMARTMOVE FULL PLATFORM           " -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 
+
+$root = if ($PSScriptRoot) { $PSScriptRoot } else { $PWD.Path }
+
 # 1. Start Backend Microservices
 foreach ($service in $services) {
     Write-Host "[BACKEND] Launching $service..." -ForegroundColor Yellow
     
-    Start-Process -WorkingDirectory $PWD.Path -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle = '$service'; mvn spring-boot:run -pl services/$service" -WindowStyle Minimized
+    $cmd = "`$host.UI.RawUI.WindowTitle = '$service'; mvn spring-boot:run -pl services/$service"
+    Start-Process -WorkingDirectory $root -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Command", $cmd
     
     if ($service -eq "service-registry") {
         Write-Host "Waiting 20 seconds for Service Registry (Eureka :8761) to initialize..." -ForegroundColor Gray
@@ -42,8 +46,9 @@ foreach ($service in $services) {
 
 # 2. Start Frontend Web Application
 Write-Host "`n[FRONTEND] Starting React Vite Web Application (port 3000)..." -ForegroundColor Magenta
-$frontendPath = Join-Path $PWD.Path "frontend\smartmove-web"
-Start-Process -WorkingDirectory $frontendPath -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle = 'smartmove-web'; npm run dev" -WindowStyle Normal
+$frontendPath = Join-Path $root "frontend\smartmove-web"
+$frontendCmd = "`$host.UI.RawUI.WindowTitle = 'smartmove-web'; npm run dev"
+Start-Process -WorkingDirectory $frontendPath -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Command", $frontendCmd
 
 Write-Host "`n==================================================" -ForegroundColor Green
 Write-Host " [SUCCESS] Full SmartMove environment launched!" -ForegroundColor Green
