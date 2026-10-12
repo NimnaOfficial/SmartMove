@@ -28,13 +28,9 @@ const reportService = {
       dailyBreakdown: d.dailyBreakdown || []
     };
   },
-  getPassengerHistory: async (passengerId: number): Promise<PassengerHistoryReport> => {
+  getPassengerHistory: async (passengerId: number): Promise<any> => {
     const res = await apiClient.get(`/reports/passenger-history/${passengerId}`);
-    return res.data || {
-      passengerId,
-      passengerName: 'Passenger #' + passengerId,
-      trips: []
-    };
+    return res.data;
   },
   getMaintenanceDue: async (): Promise<MaintenanceDueReport[]> => {
     const res = await apiClient.get('/reports/maintenance');

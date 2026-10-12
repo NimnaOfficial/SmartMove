@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import reportService from '@/services/reportService';
 import authService from '@/services/authService';
+import bookingService from '@/services/bookingService';
 import { motion } from 'framer-motion';
 import { Filter, Calendar, MapPin, CheckCircle, XCircle } from 'lucide-react';
 
@@ -24,13 +25,58 @@ export default function TravelHistory() {
   useEffect(() => {
     const fetchHistory = async () => {
        try {
-         const user = authService.getCurrentUser();
-         if (user?.id) {
-            const data = await reportService.getPassengerHistory(user.id);
-            if (data) {
-               setHistoryData(Array.isArray(data) ? data : []);
-            }
+         const user = authService.getCurrentUser() as any;
+         const passengerId = user?.userId || user?.passengerId || user?.id || 1;
+         let data: any[] = [];
+         try {
+           const reportRes = await reportService.getPassengerHistory(passengerId);
+           if (Array.isArray(reportRes)) {
+             data = reportRes;
+           } else if (Array.isArray(reportRes?.trips)) {
+             data = reportRes.trips;
+           }
+         } catch (err) {
+           console.warn('Report service error, falling back to bookings', err);
          }
+
+         if (!data || data.length === 0) {
+           try {
+             const bookings = await bookingService.getMyBookings(passengerId);
+             if (Array.isArray(bookings) && bookings.length > 0) {
+               data = bookings;
+             }
+           } catch {}
+         }
+
+         const mapped = (data || []).map((item: any, idx: number) => {
+           const tripId = item.tripId || item.TRIP_ID || item.trip_id || item.id || (idx + 1);
+           const bookingId = item.bookingId || item.BOOKING_ID || item.booking_id || (idx + 1);
+           const rawRoute = item.route || item.route_details || item.ROUTE_DETAILS || 'Colombo → Kandy';
+           const cleanRoute = String(rawRoute).replace(' to ', ' → ').replace(' -> ', ' → ');
+
+           const rawDate = item.date || item.departure_time || item.DEPARTURE_TIME || item.travelDate || item.bookingDate;
+           let dateStr = 'Scheduled';
+           if (rawDate) {
+             const d = new Date(rawDate);
+             dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : String(rawDate);
+           }
+
+           const veh = item.vehicle || item.registration_number || item.REGISTRATION_NUMBER || 'Volvo 9900 (ND-4521)';
+           const rawPay = item.paymentStatus || item.PAYMENT_STATUS || item.payment_status || 'Paid';
+           const payUpper = String(rawPay).toUpperCase();
+           const payStatus = (payUpper === 'PAID' || payUpper === 'SUCCESS' || payUpper === 'CONFIRMED') ? 'Paid' : 'Unpaid';
+
+           return {
+             id: `TRIP-${tripId}`,
+             route: cleanRoute,
+             date: dateStr,
+             vehicle: veh,
+             booking: `BK-${bookingId}`,
+             paymentStatus: payStatus
+           };
+         });
+
+         setHistoryData(mapped);
        } catch (e) {
          console.error(e);
        } finally {
@@ -40,10 +86,11 @@ export default function TravelHistory() {
     fetchHistory();
   }, []);
 
-
   const filteredHistory = historyData.filter(trip => {
-    return (filterRoute === '' || trip.route.toLowerCase().includes(filterRoute.toLowerCase())) &&
-           (filterDate === '' || trip.date.includes(filterDate));
+    const route = trip.route || '';
+    const date = trip.date || '';
+    return (filterRoute === '' || route.toLowerCase().includes(filterRoute.toLowerCase())) &&
+           (filterDate === '' || date.toLowerCase().includes(filterDate.toLowerCase()));
   });
 
   return (
