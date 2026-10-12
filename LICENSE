@@ -1,0 +1,66 @@
+SMARTMOVE™ TRANSPORT SOLUTIONS PROPRIETARY & ACADEMIC INTEGRITY LICENSE
+================================================================================
+COPYRIGHT (C) 2026 NIMNA & SMARTMOVE CORE ENGINEERING TEAM. ALL RIGHTS RESERVED.
+NATIONAL INSTITUTE OF BUSINESS MANAGEMENT (NIBM) — HIGHER NATIONAL DIPLOMA IN SOFTWARE ENGINEERING
+MODULE: DATA MANAGEMENT II (DM2)
+================================================================================
+
+IMPORTANT NOTICE: READ THIS LEGAL AGREEMENT CAREFULLY BEFORE ACCESSING,
+CLONING, COMPILING, OR UTILIZING ANY SOURCE CODE, DOCUMENTATION, ASSETS, 
+DATABASE SCHEMAS, OR SCRIPTS WITHIN THIS REPOSITORY.
+
+1. PROPRIETARY RIGHTS & COPYRIGHT RESERVATION
+The software, system architecture, database implementations (Oracle SQL, 
+PL/SQL, MongoDB NoSQL schemas, stored procedures, triggers, materialized views), 
+backend microservices, frontend codebase, UI/UX designs, algorithms, and documentation 
+comprising "SmartMove Transport Solutions" are the exclusive intellectual property of 
+the authors ("Copyright Holders") and protected by international copyright laws, academic 
+integrity statutes, and intellectual property treaties.
+
+2. STRICT ACADEMIC INTEGRITY & ANTI-PLAGIARISM CLAUSE
+This repository and its codebase are submitted as an original coursework project for 
+the Higher National Diploma in Software Engineering at the National Institute of 
+Business Management (NIBM). 
+- STRICT PROHIBITION ON COPYING FOR ACADEMIC SUBMISSION:
+  No individual, student, academic participant, or third party is permitted to copy, 
+  reproduce, paraphrase, disguise, reformat, translate, or submit any portion of 
+  this source code, SQL/PL/SQL scripts, database schemas, reports, or documentation 
+  as their own coursework, assignment, viva project, or examination deliverable at 
+  NIBM or any other academic or vocational institution worldwide.
+- VIOLATION ENFORCEMENT:
+  Any unauthorized submission or academic theft will be reported directly to academic 
+  integrity boards, examination panels, and institution faculties for disciplinary 
+  action, including immediate disqualification, academic disciplinary hearings, 
+  and permanent institutional records of plagiarism.
+
+3. PROHIBITION OF COMMERCIAL EXPLOITATION & REDISTRIBUTION
+- NO COMMERCIAL USE: You may not use this software, in whole or in part, for any 
+  commercial purpose, service bureau, SaaS offering, deployment, or for-profit operation.
+- NO REDISTRIBUTION: You may not sublicense, sell, rent, lease, distribute, host, 
+  re-upload, mirror, or otherwise convey this codebase, database schemas, or artifacts 
+  to any public or private repository, torrent, code-sharing forum, or website.
+- NO DERIVATIVE WORKS: You may not create derivative works, forks, altered versions, 
+  or adaptations with the intent of circumventing this license or obscuring authorship.
+
+4. LIMITED PERSONAL REFERENCE ONLY
+Permission is granted strictly for internal assessment, grading, peer review authorized 
+by the authors, and evaluation by authorized academic examiners and evaluators of NIBM. 
+Any other use requires prior express written permission signed by the Copyright Holders.
+
+5. DIGITAL FINGERPRINTING & AUDIT NOTICE
+Components of this repository contain unique architectural signatures, custom database 
+constraints, sequence algorithms, telemetry models, and cryptographic salt routines 
+that uniquely identify the provenance of this codebase in static analysis and automated 
+plagiarism detection tools (including Turnitin, MOSS, and AST code similarity analyzers).
+
+6. DISCLAIMER OF WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION 
+OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+================================================================================
+FOR INQUIRIES OR PERMISSIONS, CONTACT THE SMARTMOVE CORE ENGINEERING TEAM.
+================================================================================
