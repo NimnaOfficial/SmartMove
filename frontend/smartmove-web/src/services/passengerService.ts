@@ -17,7 +17,10 @@ const passengerService = {
   getProfile: async (passengerId?: number): Promise<Passenger> => {
     const userStr = localStorage.getItem('smartmove_user');
     const user = userStr ? JSON.parse(userStr) : null;
-    const effectiveId = passengerId || (user as any)?.passengerId || user?.userId || user?.id || 1;
+    const effectiveId = passengerId || (user as any)?.passengerId || user?.userId || user?.id;
+    if (!effectiveId) {
+      throw new Error('User not logged in');
+    }
     const res = await apiClient.get('/passengers/profile', {
       params: { passengerId: effectiveId, userId: effectiveId },
       headers: { 'X-User-Id': effectiveId.toString() }
@@ -27,7 +30,10 @@ const passengerService = {
   updateProfile: async (data: any): Promise<Passenger> => {
     const userStr = localStorage.getItem('smartmove_user');
     const user = userStr ? JSON.parse(userStr) : null;
-    const effectiveId = data.passengerId || (user as any)?.passengerId || user?.userId || user?.id || 1;
+    const effectiveId = data.passengerId || (user as any)?.passengerId || user?.userId || user?.id;
+    if (!effectiveId) {
+      throw new Error('User not logged in');
+    }
     const payload = {
       ...data,
       passengerId: effectiveId

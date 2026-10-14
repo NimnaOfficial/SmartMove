@@ -25,7 +25,10 @@ const bookingService = {
     try {
       const userStr = localStorage.getItem('smartmove_user');
       const user = userStr ? JSON.parse(userStr) : null;
-      const effectiveId = passengerId || user?.userId || user?.passengerId || user?.id || 1;
+      const effectiveId = passengerId || user?.userId || user?.passengerId || user?.id;
+      if (!effectiveId) {
+        return [];
+      }
       const res = await apiClient.get('/bookings/my-bookings', {
         params: { passengerId: effectiveId, userId: effectiveId }
       });

@@ -12,7 +12,8 @@ const authService = {
       });
       if (res.data && res.data.token) {
         const u = res.data.user || {};
-        const userId = u.DRIVER_ID || u.driverId || u.PASSENGER_ID || u.passengerId || u.ADMIN_ID || u.adminId || u.userId || res.data.userId || 1;
+        const extractedId = res.data.userId || u.userId || u.DRIVER_ID || u.driverId || u.PASSENGER_ID || u.passengerId || u.ADMIN_ID || u.adminId || u.id;
+        const userId = extractedId != null ? Number(extractedId) : 0;
         const rawRole = (res.data.role || u.ROLE || u.role || 'PASSENGER').toString().toUpperCase().trim();
         const authData: AuthResponse = {
           token: res.data.token,
@@ -91,14 +92,15 @@ const authService = {
     });
     const raw = res.data;
     const u = raw.user || {};
+    const extractedId = raw.userId || u.userId || u.PASSENGER_ID || u.passengerId || u.DRIVER_ID || u.driverId || u.id;
     const authData: AuthResponse = {
       token: raw.token || '',
       role: raw.role || (data.role as any) || 'PASSENGER',
-      userId: u.PASSENGER_ID || u.DRIVER_ID || u.id || 1,
-      firstName: u.FIRST_NAME || data.firstName,
-      lastName: u.LAST_NAME || data.lastName,
-      email: u.EMAIL || data.email,
-      phone: u.PHONE || data.phone || '',
+      userId: extractedId != null ? Number(extractedId) : 0,
+      firstName: u.FIRST_NAME || raw.firstName || data.firstName,
+      lastName: u.LAST_NAME || raw.lastName || data.lastName,
+      email: u.EMAIL || raw.email || data.email,
+      phone: u.PHONE || raw.phone || data.phone || '',
       mustChangePassword: false
     };
 

@@ -240,9 +240,17 @@ public class FeedbackController {
      * Submits new feedback. Only allowed for trips in passenger travel history.
      */
     @PostMapping("/api/feedback")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Feedback payload) {
+    public org.springframework.http.ResponseEntity<?> endpoint1(
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
+            @RequestBody Feedback payload) {
         if (payload.getPassengerId() == null || payload.getPassengerId() <= 0) {
-            payload.setPassengerId(1L);
+            if (headerUserId != null && headerUserId > 0) {
+                payload.setPassengerId(headerUserId);
+            }
+        }
+        if (payload.getPassengerId() == null || payload.getPassengerId() <= 0) {
+            return org.springframework.http.ResponseEntity.badRequest()
+                .body(Collections.singletonMap("message", "Passenger ID is required to submit feedback."));
         }
         if (payload.getTripId() == null || payload.getTripId() <= 0) {
             return org.springframework.http.ResponseEntity.badRequest()
@@ -318,10 +326,16 @@ public class FeedbackController {
      * Retrieves all feedback submitted by a specific passenger.
      */
     @GetMapping("/api/feedback/passenger/{passengerId}")
-    public org.springframework.http.ResponseEntity<?> endpoint3(@PathVariable Long passengerId) {
-        List<Feedback> list = service.findByPassengerId(passengerId);
-        if (list == null || list.isEmpty()) {
-            list = service.findAllDesc();
+    public org.springframework.http.ResponseEntity<?> endpoint3(
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
+            @PathVariable Long passengerId) {
+        Long pId = (passengerId != null && passengerId > 0) ? passengerId : headerUserId;
+        if (pId == null || pId <= 0) {
+            return org.springframework.http.ResponseEntity.ok(Collections.emptyList());
+        }
+        List<Feedback> list = service.findByPassengerId(pId);
+        if (list == null) {
+            list = Collections.emptyList();
         }
         enrichFeedbackList(list);
         return org.springframework.http.ResponseEntity.ok(list);

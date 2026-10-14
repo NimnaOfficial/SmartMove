@@ -56,27 +56,20 @@ export default function PassengerDashboard() {
     }
 
     try {
-      const passengerId = user?.userId || user?.passengerId || user?.id || 1;
-      let data = await feedbackService.getByPassenger(passengerId);
-      if (!Array.isArray(data) || data.length === 0) {
-        data = await feedbackService.getAll();
-      }
-      if (Array.isArray(data) && data.length > 0) {
-        setReviews(data.slice(0, 1));
-      } else {
-        const contentReviews = await contentService.getAllReviews();
-        if (Array.isArray(contentReviews)) {
-          setReviews(contentReviews.slice(0, 1));
+      const passengerId = user?.userId || user?.passengerId || user?.id;
+      if (passengerId) {
+        const data = await feedbackService.getByPassenger(passengerId);
+        if (Array.isArray(data) && data.length > 0) {
+          setReviews(data.slice(0, 1));
+        } else {
+          setReviews([]);
         }
+      } else {
+        setReviews([]);
       }
     } catch (e) {
       console.error('Failed to load recent reviews', e);
-      try {
-        const fallback = await contentService.getAllReviews();
-        if (Array.isArray(fallback)) {
-          setReviews(fallback.slice(0, 1));
-        }
-      } catch {}
+      setReviews([]);
     }
   };
 

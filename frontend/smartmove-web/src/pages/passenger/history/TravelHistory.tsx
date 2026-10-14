@@ -26,7 +26,11 @@ export default function TravelHistory() {
      try {
        if (!silent) setLoading(true);
        const user = authService.getCurrentUser() as any;
-       const passengerId = user?.userId || user?.passengerId || user?.id || 1;
+       const passengerId = user?.userId || user?.passengerId || user?.id;
+       if (!passengerId) {
+         setHistoryData([]);
+         return;
+       }
        let data: any[] = [];
        try {
          const reportRes = await reportService.getPassengerHistory(passengerId);
@@ -37,12 +41,9 @@ export default function TravelHistory() {
          }
        } catch (err) {
          console.warn('Report service error, falling back to bookings', err);
-       }
-
-       if (!data || data.length === 0) {
          try {
            const bookings = await bookingService.getMyBookings(passengerId);
-           if (Array.isArray(bookings) && bookings.length > 0) {
+           if (Array.isArray(bookings)) {
              data = bookings;
            }
          } catch {}

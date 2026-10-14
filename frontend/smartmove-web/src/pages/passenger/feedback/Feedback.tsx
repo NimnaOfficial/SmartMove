@@ -36,18 +36,27 @@ export default function Feedback() {
   const fetchFeedback = async () => {
     try {
       const user = authService.getCurrentUser();
-      const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
+      const passengerId = (user as any)?.passengerId || user?.userId || user?.id;
+      if (!passengerId) {
+        setPreviousFeedback([]);
+        return;
+      }
       const data = await feedbackService.getByPassenger(passengerId);
       setPreviousFeedback(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Failed to fetch feedback', e);
+      setPreviousFeedback([]);
     }
   };
 
   const loadTrips = async () => {
     try {
       const user = authService.getCurrentUser();
-      const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
+      const passengerId = (user as any)?.passengerId || user?.userId || user?.id;
+      if (!passengerId) {
+        setAvailableTrips([]);
+        return;
+      }
 
       const bookings = await bookingService.getMyBookings(passengerId);
       const allTrips = await tripService.getAll();
@@ -171,7 +180,11 @@ export default function Feedback() {
     setIsSubmitting(true);
     try {
       const user = authService.getCurrentUser();
-      const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
+      const passengerId = (user as any)?.passengerId || user?.userId || user?.id;
+      if (!passengerId) {
+        setStatusMessage({ type: 'error', text: 'You must be logged in as a passenger to submit feedback.' });
+        return;
+      }
       const passengerName = user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Passenger';
 
       // 1. Submit to Oracle feedback-service (Relational Transaction)

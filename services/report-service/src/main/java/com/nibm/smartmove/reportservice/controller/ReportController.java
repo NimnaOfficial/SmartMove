@@ -51,7 +51,10 @@ public class ReportController {
     @GetMapping("/api/reports/passenger-history/{passengerId}")
     public org.springframework.http.ResponseEntity<?> endpoint2(@PathVariable Long passengerId) {
         try {
-            Long pId = (passengerId != null && passengerId > 0) ? passengerId : 1L;
+            if (passengerId == null || passengerId <= 0) {
+                return org.springframework.http.ResponseEntity.ok(java.util.Collections.emptyList());
+            }
+            Long pId = passengerId;
             String sql = "SELECT t.trip_id, " +
                          "       b.booking_id, " +
                          "       p.first_name || ' ' || p.last_name AS passenger_name, " +

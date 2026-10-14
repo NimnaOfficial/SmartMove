@@ -215,9 +215,17 @@ public class BookingController {
      * Creates a new booking. Checks seat availability, validates passenger/trip, creates booking record.
      */
     @PostMapping("/api/bookings")
-    public org.springframework.http.ResponseEntity<?> endpoint1(@RequestBody Booking payload) {
+    public org.springframework.http.ResponseEntity<?> endpoint1(
+            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
+            @RequestBody Booking payload) {
         if (payload.getPassengerId() == null || payload.getPassengerId() <= 0) {
-            payload.setPassengerId(1L);
+            if (headerUserId != null && headerUserId > 0) {
+                payload.setPassengerId(headerUserId);
+            }
+        }
+        if (payload.getPassengerId() == null || payload.getPassengerId() <= 0) {
+            return org.springframework.http.ResponseEntity.badRequest()
+                .body(Collections.singletonMap("message", "Passenger ID is required to create a booking."));
         }
         if (payload.getTripId() == null || payload.getTripId() <= 0) {
             payload.setTripId(1L);
@@ -276,11 +284,11 @@ public class BookingController {
             @RequestParam(value = "userId", required = false) Long paramUserId) {
         Long pId = headerUserId != null ? headerUserId : (paramPassengerId != null ? paramPassengerId : paramUserId);
         if (pId == null || pId <= 0) {
-            pId = 1L;
+            return org.springframework.http.ResponseEntity.ok(Collections.emptyList());
         }
         List<Booking> list = service.findByPassengerId(pId);
-        if (list.isEmpty()) {
-            list = service.findByPassengerId(1L);
+        if (list == null) {
+            list = Collections.emptyList();
         }
         enrichBookings(list);
         return org.springframework.http.ResponseEntity.ok(list);

@@ -43,7 +43,19 @@ export default function Profile() {
     const fetchProfile = async () => {
       try {
         const user = authService.getCurrentUser();
-        const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
+        const passengerId = (user as any)?.passengerId || user?.userId || user?.id;
+        if (!passengerId) {
+          if (user) {
+            setProfileData((prev: any) => ({
+              ...prev,
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+              email: user.email || '',
+              phone: user.phone || '',
+            }));
+          }
+          return;
+        }
         const data = await passengerService.getProfile(passengerId);
         if (data) {
           setProfileData((prev: any) => ({
@@ -85,7 +97,7 @@ export default function Profile() {
   const handleSave = async () => {
     try {
       const user = authService.getCurrentUser();
-      const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
+      const passengerId = (user as any)?.passengerId || user?.userId || user?.id;
       const updated = await passengerService.updateProfile({
         ...profileData,
         passengerId,

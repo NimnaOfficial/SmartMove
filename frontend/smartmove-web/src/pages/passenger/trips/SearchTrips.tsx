@@ -228,7 +228,12 @@ export default function SearchTrips() {
     try {
       const userStr = localStorage.getItem('smartmove_user');
       const user = userStr ? JSON.parse(userStr) : null;
-      const passengerId = user?.userId || user?.passengerId || user?.id || 1;
+      const passengerId = user?.userId || user?.passengerId || user?.id;
+      if (!passengerId) {
+        setBookingNotice('Please log in as a passenger to make a booking.');
+        setIsBooking(false);
+        return;
+      }
       
       const payload: any = {
         passengerId: Number(passengerId),

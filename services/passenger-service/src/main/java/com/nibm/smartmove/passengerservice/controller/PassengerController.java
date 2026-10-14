@@ -70,10 +70,13 @@ public class PassengerController {
             @RequestParam(value = "userId", required = false) Long userIdParam) {
         if (userId == null) userId = passengerId;
         if (userId == null) userId = userIdParam;
-        if (userId == null) userId = 1L;
+        if (userId == null || userId <= 0) {
+            return org.springframework.http.ResponseEntity.status(401)
+                    .body(java.util.Collections.singletonMap("message", "Authentication required."));
+        }
         return service.findById(userId)
                 .map(org.springframework.http.ResponseEntity::ok)
-                .orElseGet(() -> service.findById(1L).map(org.springframework.http.ResponseEntity::ok).orElse(org.springframework.http.ResponseEntity.notFound().build()));
+                .orElse(org.springframework.http.ResponseEntity.notFound().build());
     }
 
     /**
@@ -89,7 +92,10 @@ public class PassengerController {
         if (userId == null) userId = userIdParam;
         if (userId == null && payload.getPassengerId() != null) userId = payload.getPassengerId();
         if (userId == null && payload.getId() != null) userId = payload.getId();
-        if (userId == null) userId = 1L;
+        if (userId == null || userId <= 0) {
+            return org.springframework.http.ResponseEntity.status(401)
+                    .body(java.util.Collections.singletonMap("message", "Authentication required."));
+        }
 
         final Long targetId = userId;
         return service.findById(targetId).map(existing -> {
