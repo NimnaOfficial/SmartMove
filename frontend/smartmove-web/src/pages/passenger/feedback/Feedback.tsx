@@ -3,8 +3,9 @@ import feedbackService from '@/services/feedbackService';
 import authService from '@/services/authService';
 import bookingService from '@/services/bookingService';
 import tripService from '@/services/tripService';
+import contentService from '@/services/contentService';
 import { motion } from 'framer-motion';
-import { Star, MessageSquare, MapPin, Send, RotateCcw, Clock } from 'lucide-react';
+import { Star, MessageSquare, MapPin, Send, RotateCcw, Clock, Camera, Image as ImageIcon, X, AlertCircle } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -26,6 +27,10 @@ export default function Feedback() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Optional Review Image Attachments (up to 3 files, <= 5MB)
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachmentPreviews, setAttachmentPreviews] = useState<string[]>([]);
+
   const [previousFeedback, setPreviousFeedback] = useState<any[]>([]);
 
   const fetchFeedback = async () => {
@@ -44,7 +49,6 @@ export default function Feedback() {
       const user = authService.getCurrentUser();
       const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
 
-      // Only fetch trips from passenger's actual bookings (travel history)
       const bookings = await bookingService.getMyBookings(passengerId);
       const allTrips = await tripService.getAll();
 
@@ -66,6 +70,8 @@ export default function Feedback() {
             const meta = tripMetaMap.get(b.tripId);
             trips.push({
               tripId: b.tripId,
+              routeId: b.routeId || meta?.routeId || 1,
+              vehicleId: b.vehicleId || meta?.vehicleId || 1,
               route: b.route || meta?.route || `${meta?.origin || b.origin || 'Terminal'} -> ${meta?.destination || b.destination || 'Station'}`,
               vehicle: b.vehicle || meta?.vehicle || 'Volvo 9900 Coach',
               driverName: b.driverName || meta?.driverName || 'Designated Driver',
@@ -97,11 +103,48 @@ export default function Feedback() {
     setSelectedTrip(found || null);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    
+    // Check total attachments limit
+    if (attachments.length + files.length > 3) {
+      setStatusMessage({ type: 'error', text: 'You can attach a maximum of 3 photos to your review.' });
+      return;
+    }
+
+    const newValidFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    for (const file of files) {
+      if (file.size > 5 * 1024 * 1024) {
+        setStatusMessage({ type: 'error', text: `"${file.name}" exceeds the 5MB size limit.` });
+        return;
+      }
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        setStatusMessage({ type: 'error', text: `"${file.name}" has an unsupported format. Please use JPEG, PNG, or WebP.` });
+        return;
+      }
+      newValidFiles.push(file);
+      newPreviews.push(URL.createObjectURL(file));
+    }
+
+    setAttachments(prev => [...prev, ...newValidFiles]);
+    setAttachmentPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachmentPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleReset = () => {
     setSelectedTripId('');
     setSelectedTrip(null);
     setRating(0);
     setComment('');
+    setAttachments([]);
+    setAttachmentPreviews([]);
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -129,7 +172,9 @@ export default function Feedback() {
     try {
       const user = authService.getCurrentUser();
       const passengerId = (user as any)?.passengerId || user?.userId || user?.id || 1;
+      const passengerName = user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Passenger';
 
+      // 1. Submit to Oracle feedback-service (Relational Transaction)
       await feedbackService.submit({
         passengerId,
         tripId: Number(selectedTripId),
@@ -139,7 +184,38 @@ export default function Feedback() {
         type: rating >= 4 ? 'APPRECIATION' : rating <= 2 ? 'COMPLAINT' : 'SUGGESTION'
       } as any);
 
-      setStatusMessage({ type: 'success', text: 'Thank you! Your feedback has been submitted successfully.' });
+      // 2. Submit to MongoDB reviews collection (Schema-flexible Document)
+      let createdReview: any = null;
+      try {
+        createdReview = await contentService.submitReview({
+          passengerId,
+          passengerName,
+          routeId: selectedTrip?.routeId || 1,
+          vehicleId: selectedTrip?.vehicleId || 1,
+          driverId: selectedTrip?.driverId || 1,
+          rating,
+          comment: comment.trim(),
+          type: rating <= 2 ? 'COMPLAINT' : 'REVIEW',
+          tags: [selectedTrip?.route || 'Transit'],
+          createdAt: new Date().toISOString()
+        });
+      } catch (mongoErr) {
+        console.warn('MongoDB review synchronization notice:', mongoErr);
+      }
+
+      // 3. Upload review attachments if provided
+      if (createdReview && (createdReview.id || createdReview._id) && attachments.length > 0) {
+        const reviewId = String(createdReview.id || createdReview._id);
+        for (const file of attachments) {
+          try {
+            await contentService.uploadReviewAttachment(reviewId, file);
+          } catch (attErr) {
+            console.warn('Failed to upload review attachment:', attErr);
+          }
+        }
+      }
+
+      setStatusMessage({ type: 'success', text: 'Thank you! Your feedback and review have been submitted successfully.' });
       handleReset();
       await fetchFeedback();
     } catch (e: any) {
@@ -155,8 +231,8 @@ export default function Feedback() {
     <div className="max-w-4xl mx-auto h-full flex flex-col gap-8 w-full pb-10">
       {/* Header */}
       <motion.div variants={fadeUp} initial="hidden" animate="visible">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Feedback & Reviews</h1>
-        <p className="text-gray-500 mt-2 font-light">Share your travel experience to help us improve our services.</p>
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Feedback & Reviews</h1>
+        <p className="text-gray-500 mt-2 font-medium">Share your travel experience, rate your trip, and optionally attach photos of your journey.</p>
       </motion.div>
 
       {/* Submission Form */}
@@ -165,7 +241,7 @@ export default function Feedback() {
           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
             <MessageSquare className="w-5 h-5" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Submit New Feedback</h2>
+          <h2 className="text-xl font-bold text-gray-900">Submit New Trip Review</h2>
         </div>
 
         {statusMessage && (
@@ -254,12 +330,55 @@ export default function Feedback() {
               rows={4}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Tell us about your experience..." 
+              placeholder="Tell us about your trip experience, bus cleanliness, or punctuality..." 
               className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3 outline-none resize-none"
             ></textarea>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-2">
+          {/* Optional Review Image Attachments */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-blue-600" />
+                Optional Photo Attachments (Max 3 images, &le; 5MB each)
+              </label>
+              <span className="text-xs text-gray-400 font-medium">JPEG, PNG, WebP</span>
+            </div>
+
+            {/* Thumbnail preview list */}
+            {attachmentPreviews.length > 0 && (
+              <div className="flex flex-wrap gap-3 mb-2">
+                {attachmentPreviews.map((previewUrl, index) => (
+                  <div key={index} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-gray-200 shadow-sm group">
+                    <img src={previewUrl} alt={`Attachment ${index + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(index)}
+                      className="absolute top-1 right-1 p-1 bg-black/70 text-white rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {attachments.length < 3 && (
+              <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 hover:border-blue-400 bg-gray-50/50 hover:bg-blue-50/30 rounded-2xl cursor-pointer transition-colors">
+                <ImageIcon className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-semibold text-gray-600">Click to attach photos of your travel</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={handleReset}
@@ -270,7 +389,7 @@ export default function Feedback() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 bg-[#1e3f7a] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#152e5e] transition-colors shadow-md hover:-translate-y-0.5 disabled:opacity-50"
+              className="flex items-center gap-2 bg-[#1e3f7a] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#152e5e] transition-colors shadow-md hover:-translate-y-0.5 disabled:opacity-50"
             >
               <Send className="w-4 h-4" /> {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
             </button>
@@ -281,7 +400,7 @@ export default function Feedback() {
       {/* Previous Feedback List */}
       <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6 mt-4">
         <motion.h3 variants={fadeUp} className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-gray-500" /> Previous Feedback
+          <Clock className="w-5 h-5 text-gray-500" /> Previous Feedback & Reviews
         </motion.h3>
 
         {previousFeedback.map((fb) => (

@@ -5,7 +5,7 @@ import driverService from '@/services/driverService';
 import authService from '@/services/authService';
 import { 
   MapPin, Clock, Navigation, CheckCircle2,
-  Calendar, Star, TrendingUp, RefreshCw, Car
+  Calendar, Star, TrendingUp, RefreshCw, Car, Camera
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, Tooltip, ResponsiveContainer 
@@ -110,12 +110,21 @@ export default function DriverDashboard() {
                      {nextTrip.routeOrigin || 'Colombo'} ➔ {nextTrip.routeDestination || 'Kandy'} • {new Date(nextTrip.departureTime || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                    </p>
                  </div>
-                 <button 
-                   onClick={() => navigate(`/driver/trips/${nextTrip.tripId}`)} 
-                   className="ml-4 bg-black text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors cursor-pointer"
-                 >
-                   {nextTrip.status === 'IN_PROGRESS' ? 'Resume' : 'Start'}
-                 </button>
+                 <div className="ml-4 flex items-center gap-2">
+                   <button 
+                     onClick={() => navigate(`/driver/trips/${nextTrip.tripId}`)} 
+                     className="bg-black text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors cursor-pointer"
+                   >
+                     {nextTrip.status === 'IN_PROGRESS' ? 'Resume' : 'Start'}
+                   </button>
+                   <button 
+                     onClick={() => navigate(`/driver/trips/${nextTrip.tripId}`)} 
+                     className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                     title="Upload pre-trip safety evidence & review vehicle photos"
+                   >
+                     <Camera className="w-3.5 h-3.5" /> Evidence
+                   </button>
+                 </div>
               </div>
             ) : (
               <div className="mt-6 p-4 rounded-xl bg-white border border-gray-100 text-xs text-gray-500">

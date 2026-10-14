@@ -4,7 +4,7 @@ import { Link, useLocation, useOutlet, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Car, Users, Map, CalendarCheck, 
   CreditCard, Wrench, MessageSquare, FileText, Database,
-  Hexagon, LogOut
+  Hexagon, LogOut, Image as ImageIcon
 } from 'lucide-react';
 import authService from '@/services/authService';
 
@@ -18,6 +18,7 @@ const navLinks = [
   { name: 'Maintenance', icon: Wrench, path: '/admin/maintenance' },
   { name: 'Feedback', icon: MessageSquare, path: '/admin/feedback' },
   { name: 'Content', icon: Database, path: '/admin/content' },
+  { name: 'Media', icon: ImageIcon, path: '/admin/media' },
   { name: 'Reports', icon: FileText, path: '/admin/reports' },
 ];
 

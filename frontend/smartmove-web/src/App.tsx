@@ -29,6 +29,7 @@ import AdminMaintenance from '@/pages/admin/maintenance/AdminMaintenance';
 import AdminFeedback from '@/pages/admin/feedback/AdminFeedback';
 import AdminReports from '@/pages/admin/reports/AdminReports';
 import AdminContent from '@/pages/admin/content/AdminContent';
+import AdminMedia from '@/pages/admin/media/AdminMedia';
 import AdminProfile from '@/pages/admin/profile/AdminProfile';
 
 // Error Pages Imports
@@ -105,6 +106,7 @@ function App() {
             <Route path="feedback" element={<AdminFeedback />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="content" element={<AdminContent />} />
+            <Route path="media" element={<AdminMedia />} />
             <Route path="profile" element={<AdminProfile />} />
           </Route>
         </Route>

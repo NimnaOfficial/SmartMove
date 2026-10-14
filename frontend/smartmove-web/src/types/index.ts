@@ -33,7 +33,9 @@ export interface AuthResponse {
 // ─── Vehicle (Oracle) ────────────────────────────────────────
 export interface Vehicle {
   vehicleId: number;
+  id?: number;
   registrationNumber: string;
+  registration?: string;
   type: string;
   model: string;
   year: number;
@@ -295,6 +297,15 @@ export interface Review {
   comment: string;
   type: 'REVIEW' | 'COMPLAINT';
   tags?: string[];
+  attachments?: {
+    id: string;
+    fileName: string;
+    storageKey: string;
+    contentType: string;
+    fileSize: number;
+    url: string;
+    uploadedAt?: string;
+  }[];
   createdAt?: string;
 }
 
@@ -333,6 +344,7 @@ export interface VehicleDocument {
 
 export interface VehicleImage {
   _id?: string;
+  id?: string;
   vehicleId: number;
   url: string;
   caption?: string;
@@ -344,10 +356,64 @@ export interface TripMedia {
   _id?: string;
   tripId: number;
   routeId?: number;
-  mediaType: 'IMAGE' | 'VIDEO';
+  mediaType: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   url: string;
   caption?: string;
   uploadedAt?: string;
+}
+
+// ─── Unified Media Management Types ─────────────────────────
+export interface MediaItem {
+  id: string;
+  entityType: 'VEHICLE' | 'TRIP';
+  vehicleId?: number;
+  tripId?: number;
+  routeId?: number;
+  driverId?: number;
+  registration?: string;
+  title: string;
+  description?: string;
+  category: string;
+  mediaType: 'IMAGE' | 'DOCUMENT' | 'VIDEO';
+  originalFileName: string;
+  storedFileName?: string;
+  storageKey?: string;
+  contentType?: string;
+  fileSize?: number;
+  formattedFileSize?: string;
+  streamUrl?: string;
+  downloadUrl?: string;
+  externalUrl?: string;
+  fileUrl?: string;
+  uploadedBy?: string;
+  uploaderRole?: string;
+  status?: string;
+  isPublic?: boolean;
+  approvalStatus?: string;
+  isLocalFile: boolean;
+  createdAt?: string;
+  uploadedAt?: string;
+}
+
+export interface MediaSummary {
+  totalVehicleDocuments: number;
+  totalVehicleImages: number;
+  totalTripMedia: number;
+  totalStorageSizeBytes: number;
+  formattedTotalSize: string;
+}
+
+export interface MediaUploadFormData {
+  entityType: 'VEHICLE' | 'TRIP';
+  vehicleId?: number;
+  tripId?: number;
+  routeId?: number;
+  title: string;
+  description?: string;
+  category: string;
+  mediaType?: string;
+  status?: string;
+  file: File;
 }
 
 // ─── Reports ─────────────────────────────────────────────────

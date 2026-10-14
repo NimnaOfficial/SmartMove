@@ -77,3 +77,7 @@ refer/
 UIskills/
 issuesUI/
 /ALLmems/credentials.env
+
+# Media Storage Directory
+storage/
+data/smartmove-media/
