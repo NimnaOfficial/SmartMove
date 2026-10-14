@@ -31,14 +31,14 @@ All frontend requests must be routed through the **API Gateway** on Port 8080.
 - Example Booking API: `http://localhost:8080/api/bookings`
 - Example Auth API: `http://localhost:8080/api/auth/login`
 
-### Internal Microservice Ports (For debugging only):
+* `auth-service`: 8081
 * `vehicle-service`: 8082
 * `driver-service`: 8083
 * `route-service`: 8084
 * `passenger-service`: 8085
 * `trip-service`: 8086
 * `booking-service`: 8087
-* `auth-service`: 8088
+* `payment-service`: 8088
 * `maintenance-service`: 8089
 * `feedback-service`: 8090
 * `content-service` (MongoDB): 8091
