@@ -1,26 +1,3 @@
--- ===================================================================
--- Data Management 2 - Coursework 1
--- Student Name : D.D. Kandeepan
--- Student ID   : COHNDSE261F-028
--- Responsibility : Member 3 - Transactional Tables, Trigger, Procedures & Reports 4, 5
--- Database     : Oracle Database 21c Express Edition (XE)
--- ===================================================================
-
--- -------------------------------------------------------------------
--- 1. DROP EXISTING TABLES & SEQUENCES (IF RE-CREATING)
--- -------------------------------------------------------------------
-DROP TABLE FEEDBACK CASCADE CONSTRAINTS;
-DROP TABLE MAINTENANCE CASCADE CONSTRAINTS;
-DROP TABLE PAYMENT CASCADE CONSTRAINTS;
-DROP TABLE BOOKING CASCADE CONSTRAINTS;
-DROP TABLE TRIP CASCADE CONSTRAINTS;
-
-DROP SEQUENCE SEQ_FEEDBACK;
-DROP SEQUENCE SEQ_MAINTENANCE;
-DROP SEQUENCE SEQ_PAYMENT;
-DROP SEQUENCE SEQ_BOOKING;
-DROP SEQUENCE SEQ_TRIP;
-
 
 -- -------------------------------------------------------------------
 -- 2. SEQUENCES FOR TRANSACTIONAL TABLES
@@ -361,7 +338,7 @@ COMMIT;
 -- 7. REPORT 4: FLEET MAINTENANCE DUE ANALYSIS (6-MONTH RULE)
 -- -------------------------------------------------------------------
 -- Lists vehicles where last maintenance was more than 6 months ago, or never serviced
-SELECT 
+SELECT
     v.VEHICLE_ID,
     v.REGISTRATION,
     v.MODEL,
@@ -371,7 +348,7 @@ SELECT
 FROM VEHICLE v
 LEFT JOIN MAINTENANCE m ON v.VEHICLE_ID = m.VEHICLE_ID
 GROUP BY v.VEHICLE_ID, v.REGISTRATION, v.MODEL, v.TYPE
-HAVING MAX(m.MAINTENANCE_DATE) IS NULL 
+HAVING MAX(m.MAINTENANCE_DATE) IS NULL
     OR ADD_MONTHS(MAX(m.MAINTENANCE_DATE), 6) <= SYSDATE
 ORDER BY DUE_DATE ASC;
 
@@ -380,7 +357,7 @@ ORDER BY DUE_DATE ASC;
 -- 8. REPORT 5: TRIP OPERATIONAL PERFORMANCE & SEAT OCCUPANCY
 -- -------------------------------------------------------------------
 -- Calculates seat occupancy percentage for each scheduled or completed trip
-SELECT 
+SELECT
     t.TRIP_ID,
     r.ORIGIN || ' -> ' || r.DESTINATION AS ROUTE_NAME,
     t.STATUS AS TRIP_STATUS,

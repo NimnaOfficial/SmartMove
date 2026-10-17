@@ -1,10 +1,3 @@
--- ===================================================================
--- Data Management 2 - Coursework 1
--- Student Name : J.H.N. Fernando
--- Student ID   : COHNDSE261F-037
--- Responsibility : Member 1 - Master Schema, Constraints, Security Roles & Backup
--- Database     : Oracle Database 21c Express Edition (XE)
--- ===================================================================
 
 -- 1. DROP EXISTING OBJECTS (IF RE-CREATING)
 DROP TABLE PASSENGER CASCADE CONSTRAINTS;

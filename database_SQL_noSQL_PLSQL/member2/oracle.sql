@@ -1,10 +1,3 @@
--- ===================================================================
--- Data Management 2 - Coursework 1
--- Student Name : Arshath MLM
--- Student ID   : COHNDSE261F-036
--- Responsibility : Member 2 - PL/SQL Programming, Financial Reports 1-3
--- Database     : Oracle Database 21c Express Edition (XE)
--- ===================================================================
 
 -- 1. PL/SQL STORED FUNCTION: CALCULATE_FARE
 CREATE OR REPLACE FUNCTION CALCULATE_FARE (
