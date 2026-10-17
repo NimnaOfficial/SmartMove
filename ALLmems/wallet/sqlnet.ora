@@ -1,2 +1,0 @@
-WALLET_LOCATION = (SOURCE = (METHOD = file) (METHOD_DATA = (DIRECTORY="E:\University\Higher National Diploma in Software Engineering\DM 2\SmartMove\ALLmems\wallet")))
-SSL_SERVER_DN_MATCH=yes
